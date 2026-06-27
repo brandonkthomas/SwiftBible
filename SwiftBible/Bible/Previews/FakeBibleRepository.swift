@@ -10,14 +10,21 @@ final class FakeBibleRepository: BibleRepository {
 
     private let translations: [Translation]
     private let books: [Book]
+    private let throwWhenLoadingTranslations: Bool
 
     init(translations: [Translation] = FakeBibleRepository.defaultTranslations,
-         books: [Book] = FakeBibleRepository.defaultBooks) {
+         books: [Book] = FakeBibleRepository.defaultBooks,
+         throwWhenLoadingTranslations: Bool = false) {
         self.translations = translations
         self.books = books
+        self.throwWhenLoadingTranslations = throwWhenLoadingTranslations
     }
 
     func translations(languageTag: String?) async throws -> [Translation] {
+        if throwWhenLoadingTranslations {
+            throw TestError.testError("Test Error thrown.")
+        }
+
         return translations
     }
 
@@ -54,4 +61,8 @@ final class FakeBibleRepository: BibleRepository {
              canon: .deuterocanon,
              chapters: [])
     ]
+
+    enum TestError: Error {
+        case testError(String)
+    }
 }

@@ -52,4 +52,49 @@ struct ReaderStoreTests {
         #expect(store.selectedBook == nil)
         #expect(store.selectedChapter == nil)
     }
+
+    /// No translations matches expected state;
+    /// no selected translation/book/chapter
+    @Test func noTranslationsReturned() async {
+        let repository = FakeBibleRepository(translations: [])
+        let store = ReaderStore(repository: repository)
+
+        await store.loadTranslations(languageTag: "en")
+
+        #expect(store.loadState == .emptyTranslations)
+        #expect(store.selectedTranslation == nil)
+        #expect(store.selectedBook == nil)
+        #expect(store.selectedChapter == nil)
+    }
+
+    /// No books matches expected state;
+    /// no selected book/chapter
+    @Test func noBooksReturned() async {
+        let repository = FakeBibleRepository(books: [])
+        let store = ReaderStore(repository: repository)
+
+        await store.loadTranslations(languageTag: "en")
+
+        #expect(store.loadState == .emptyBooks)
+        #expect(store.selectedTranslation == store.translations.first)
+        #expect(store.selectedBook == nil)
+        #expect(store.selectedChapter == nil)
+    }
+
+    /// Exceptions thrown in protocol implementations will set failed status
+    /// and clear data
+    @Test func selectionsClearedOnLoadTranslationsThrow() async {
+        let repository = FakeBibleRepository(throwWhenLoadingTranslations: true)
+        let store = ReaderStore(repository: repository)
+
+        await store.loadTranslations(languageTag: "en")
+
+        #expect(store.loadState == .failed("Unable to load translations."))
+
+        #expect(store.translations == [])
+        #expect(store.selectedTranslation == nil)
+        #expect(store.books == [])
+        #expect(store.selectedBook == nil)
+        #expect(store.selectedChapter == nil)
+    }
 }
