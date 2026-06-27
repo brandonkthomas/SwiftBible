@@ -68,7 +68,7 @@ struct RootTabView: View {
             // prevent tab bar from covering up bottom few lines
             .padding(EdgeInsets(top: 24, leading: 0, bottom: 75, trailing: 0))
         }
-        .background(themeDefault) // TODO: remove in favor of theme service
+        .background(themeOffWhite) // TODO: remove in favor of theme service
     }
 
     /// Saved tab
