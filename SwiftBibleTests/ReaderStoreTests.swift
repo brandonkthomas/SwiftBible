@@ -21,14 +21,14 @@ struct ReaderStoreTests {
         #expect(store.loadState == .idle)
     }
 
-    /// Loading Translations should select first Translation initially
+    /// Loading translations should select the first translation, book, and chapter.
     @Test func loadTranslationsSelectsInitialReferences() async {
         let repository = FakeBibleRepository()
         let store = ReaderStore(repository: repository)
 
         await store.loadTranslations(languageTag: "en")
 
-        #expect(store.loadState == .emptyChapters)
+        #expect(store.loadState == .loaded)
 
         #expect(store.selectedTranslation != nil)
         #expect(store.selectedTranslation == store.translations.first)
@@ -36,6 +36,20 @@ struct ReaderStoreTests {
         #expect(store.selectedBook != nil)
         #expect(store.selectedBook == store.books.first)
 
+        #expect(store.selectedChapter != nil)
+        #expect(store.selectedChapter == store.selectedBook?.chapters.first)
+    }
+
+    /// Loading a book without chapters should stop in the empty chapters state.
+    @Test func loadTranslationsWithBookWithoutChaptersStopsAtEmptyChapters() async {
+        let repository = FakeBibleRepository(books: FakeBibleRepository.booksWithoutChapters)
+        let store = ReaderStore(repository: repository)
+
+        await store.loadTranslations(languageTag: "en")
+
+        #expect(store.loadState == .emptyChapters)
+        #expect(store.selectedTranslation == store.translations.first)
+        #expect(store.selectedBook == nil)
         #expect(store.selectedChapter == nil)
     }
 }
