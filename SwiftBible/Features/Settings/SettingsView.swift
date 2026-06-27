@@ -9,7 +9,15 @@ import SwiftUI
 
 struct SettingsView: View {
     var body: some View {
-        Text(/*@START_MENU_TOKEN@*/"Hello, World!"/*@END_MENU_TOKEN@*/)
+        NavigationStack {
+            ContentUnavailableView(
+                "Themes",
+                systemImage: "paintbrush",
+                description: Text("Coming soon.")
+            )
+            .navigationTitle("Themes")
+            .navigationBarHidden(true)
+        }
     }
 }
 
