@@ -9,4 +9,5 @@
 enum Canon: String, CaseIterable {
     case oldTestament
     case newTestament
+    case deuterocanon
 }

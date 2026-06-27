@@ -11,5 +11,5 @@ struct Book: Identifiable, Equatable {
     let code: String
     let displayName: String
     let canon: Canon
-    let chapters: [Int]
+    let chapters: [Chapter]
 }
