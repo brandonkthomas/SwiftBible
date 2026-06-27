@@ -100,4 +100,16 @@ struct ScriptureReferenceTests {
 
         #expect(scriptureReference == nil)
     }
+
+    /// startVerse == endVerse is valid
+    @Test func sameStartAndEndVerseIsValid() {
+        let scriptureReference = ScriptureReference(translationID: "NIV",
+                                                    bookCode: "GEN",
+                                                    chapter: 1,
+                                                    startVerse: 1,
+                                                    endVerse: 1)
+
+        #expect(scriptureReference?.startVerse == 1)
+        #expect(scriptureReference?.endVerse == 1)
+    }
 }

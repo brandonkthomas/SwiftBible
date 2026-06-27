@@ -39,7 +39,7 @@ struct ScriptureReference: Equatable {
         }
 
         // endVerse cannot be before/equal to startVerse if both exist
-        if let startVerse, let endVerse, startVerse >= endVerse {
+        if let startVerse, let endVerse, startVerse > endVerse {
             return nil
         }
 
