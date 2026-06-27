@@ -5,7 +5,8 @@
 //  Created by Brandon Thomas on 6/26/26.
 //
 
-/// Represents local Bible location
+/// Represents local Bible general reference location
+/// (translation, book, chapter, verse)
 struct ScriptureReference: Equatable {
     let translationID: String
     let bookCode: String

@@ -5,6 +5,7 @@
 //  Created by Brandon Thomas on 6/26/26.
 //
 
+/// Represents a Bible translation
 struct Translation: Identifiable, Equatable {
     let id: String
     let abbreviation: String
