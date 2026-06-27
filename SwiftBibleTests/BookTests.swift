@@ -19,12 +19,12 @@ struct BookTests {
         let chapter2 = Chapter(id: "GEN.2",
                                number: 2,
                                bookID: "GEN",
-                               displayName: "1")
+                               displayName: "2")
         let chapter3 = Chapter(id: "GEN.3",
                                number: 3,
                                bookID: "GEN",
-                               displayName: "1")
-        
+                               displayName: "3")
+
         let book = Book(id: "GEN",
                         code: "GEN",
                         displayName: "Genesis",
@@ -43,11 +43,11 @@ struct BookTests {
         let chapter2 = Chapter(id: "GEN.2",
                                number: 2,
                                bookID: "GEN",
-                               displayName: "1")
+                               displayName: "2")
         let chapter3 = Chapter(id: "GEN.3",
                                number: 3,
                                bookID: "GEN",
-                               displayName: "1")
+                               displayName: "3")
 
         let book1 = Book(id: "GEN",
                          code: "GEN",
@@ -72,11 +72,11 @@ struct BookTests {
         let chapter2 = Chapter(id: "GEN.2",
                                number: 2,
                                bookID: "GEN",
-                               displayName: "1")
+                               displayName: "2")
         let chapter3 = Chapter(id: "GEN.3",
                                number: 3,
                                bookID: "GEN",
-                               displayName: "1")
+                               displayName: "3")
 
         let book = Book(id: "GEN",
                         code: "GEN",
@@ -85,7 +85,6 @@ struct BookTests {
                         chapters: [chapter1,chapter2,chapter3])
 
         #expect(book.chapters.map(\.number) == [1,2,3])
-//        #expect(book.chapters == [chapter1,chapter2,chapter3])
     }
 
     /// Books can store "deuterocanon" value i.e.
@@ -97,11 +96,11 @@ struct BookTests {
         let chapter2 = Chapter(id: "GEN.2",
                                number: 2,
                                bookID: "GEN",
-                               displayName: "1")
+                               displayName: "2")
         let chapter3 = Chapter(id: "GEN.3",
                                number: 3,
                                bookID: "GEN",
-                               displayName: "1")
+                               displayName: "3")
 
         let book = Book(id: "BOK",
                         code: "BOK",
