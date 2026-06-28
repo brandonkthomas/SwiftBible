@@ -98,8 +98,18 @@ struct ContentView: View {
     }
 }
 
-#Preview("Loaded") {
+// MARK: Xcode Canvas Previews
+
+#Preview("Idle") {
     let repository = FakeBibleRepository()
+    let readerStore = ReaderStore(repository: repository)
+
+    ContentView()
+        .environment(readerStore)
+}
+
+#Preview("Failed") {
+    let repository = FakeBibleRepository(throwWhenLoadingTranslations: true)
     let readerStore = ReaderStore(repository: repository)
 
     ContentView()
@@ -122,8 +132,8 @@ struct ContentView: View {
         .environment(readerStore)
 }
 
-#Preview("Failed") {
-    let repository = FakeBibleRepository(throwWhenLoadingTranslations: true)
+#Preview("Loading") {
+    let repository = FakeBibleRepository(forceLoadingState: true)
     let readerStore = ReaderStore(repository: repository)
 
     ContentView()

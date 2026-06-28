@@ -49,7 +49,10 @@ final class ReaderStore {
     func loadTranslations(languageTag: String? = "en") async {
         // Only load if we're not doing anything right now OR if we failed previously
         // (allow retries)
-        guard self.loadState == .idle else {
+        switch loadState {
+        case .idle, .failed:
+            break
+        default:
             return
         }
 

@@ -11,18 +11,25 @@ final class FakeBibleRepository: BibleRepository {
     private let translations: [Translation]
     private let books: [Book]
     private let throwWhenLoadingTranslations: Bool
+    private let forceLoadingState: Bool
 
     init(translations: [Translation] = FakeBibleRepository.defaultTranslations,
          books: [Book] = FakeBibleRepository.defaultBooks,
-         throwWhenLoadingTranslations: Bool = false) {
+         throwWhenLoadingTranslations: Bool = false,
+         forceLoadingState: Bool = false) {
         self.translations = translations
         self.books = books
         self.throwWhenLoadingTranslations = throwWhenLoadingTranslations
+        self.forceLoadingState = forceLoadingState
     }
 
     func translations(languageTag: String?) async throws -> [Translation] {
         if throwWhenLoadingTranslations {
             throw TestError.testError("Test Error thrown.")
+        }
+
+        if forceLoadingState {
+            try await Task.sleep(for: .seconds(99999))
         }
 
         return translations

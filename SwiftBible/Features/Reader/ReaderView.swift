@@ -29,18 +29,46 @@ struct ReaderView: View {
 
     /// Reader view
     var body: some View {
-        Group {
-            if case .failed = readerStore.loadState {
+        ZStack {
+            // TODO: Store user preference + fix font color to match
+            // aka store font alongside theme background
+            themeOffWhite
+                .ignoresSafeArea()
+
+            // Show corresponding View to current loadState
+            // This will automatically refresh when we change @Observable loadState
+            switch readerStore.loadState {
+            case .loading:
+                ProgressView()
+                    .controlSize(.large)
+            case .emptyTranslations:
                 ContentUnavailableView(
                     "Content Unavailable",
-                    systemImage: "exclamationmark.circle",
-                    description: Text("An error occurred while loading content.")
+                    systemImage: "text.page.slash",
+                    description: Text("The selected translation could not be retrieved.")
                 )
-            } else {
+            case .emptyBooks:
+                ContentUnavailableView(
+                    "Content Unavailable",
+                    systemImage: "text.page.slash",
+                    description: Text("The selected translation contains no books.")
+                )
+            case .emptyChapters:
+                ContentUnavailableView(
+                    "Content Unavailable",
+                    systemImage: "text.page.slash",
+                    description: Text("The selected book contains no chapters.")
+                )
+            case .failed(let message):
+                ContentUnavailableView(
+                    "Content Unavailable",
+                    systemImage: "text.page.slash",
+                    description: Text(message)
+                )
+            default:
                 mainReaderView
             }
         }
-        .background(themeOffWhite) // TODO: remove in favor of theme service
         .task {
             await readerStore.loadTranslations()
         }
@@ -68,8 +96,40 @@ struct ReaderView: View {
 
 // MARK: Xcode Canvas Previews
 
-#Preview {
+#Preview("Idle") {
     let repository = FakeBibleRepository()
+    let readerStore = ReaderStore(repository: repository)
+
+    ReaderView()
+        .environment(readerStore)
+}
+
+#Preview("Failed") {
+    let repository = FakeBibleRepository(throwWhenLoadingTranslations: true)
+    let readerStore = ReaderStore(repository: repository)
+
+    ReaderView()
+        .environment(readerStore)
+}
+
+#Preview("No Translations") {
+    let repository = FakeBibleRepository(translations: [])
+    let readerStore = ReaderStore(repository: repository)
+
+    ReaderView()
+        .environment(readerStore)
+}
+
+#Preview("No Books") {
+    let repository = FakeBibleRepository(books: [])
+    let readerStore = ReaderStore(repository: repository)
+
+    ReaderView()
+        .environment(readerStore)
+}
+
+#Preview("Loading") {
+    let repository = FakeBibleRepository(forceLoadingState: true)
     let readerStore = ReaderStore(repository: repository)
 
     ReaderView()
