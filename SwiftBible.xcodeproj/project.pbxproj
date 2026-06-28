@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		85BBD28C2FF0EC9B00C2FE15 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 85BBD28B2FF0EC9B00C2FE15 /* Assets.xcassets */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		8539B6802FEEE6C0007FC718 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -27,6 +31,7 @@
 		8539B6722FEEE6C0007FC718 /* SwiftBible.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SwiftBible.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		8539B67F2FEEE6C0007FC718 /* SwiftBibleTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SwiftBibleTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		8539B6892FEEE6C0007FC718 /* SwiftBibleUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SwiftBibleUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		85BBD28B2FF0EC9B00C2FE15 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -75,6 +80,7 @@
 		8539B6692FEEE6C0007FC718 = {
 			isa = PBXGroup;
 			children = (
+				85BBD28B2FF0EC9B00C2FE15 /* Assets.xcassets */,
 				8539B6742FEEE6C0007FC718 /* SwiftBible */,
 				8539B6822FEEE6C0007FC718 /* SwiftBibleTests */,
 				8539B68C2FEEE6C0007FC718 /* SwiftBibleUITests */,
@@ -212,6 +218,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				85BBD28C2FF0EC9B00C2FE15 /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
