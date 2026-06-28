@@ -60,38 +60,41 @@ struct PassagePickerView: View {
             .menuOrder(.fixed)
         } label: {
             // Label: selected Book/Chapter names & Translation abbreviation
-            Group {
-                // Show corresponding View to current loadState
-                // This will automatically refresh when we change @Observable loadState
-                switch readerStore.loadState {
-                case .emptyBooks:
-                    Text("Select Translation")
-                // no translations should never happen
-                case .emptyTranslations,
-                     .failed(_):
-                    Text("Content Unavailable")
-                default:
-                    tabBarAccessoryDefaultView
-                }
-            }
-//            .frame(alignment: .leading) // TODO: not working; may just keep centered
-            .font(.system(size: UIFontMetrics(forTextStyle: .body).scaledValue(for: 14),
-                          weight: .medium,
-                          design: .serif))
+            tabBarAccessoryLabel
+                .font(.system(size: UIFontMetrics(forTextStyle: .body).scaledValue(for: 14),
+                              weight: .medium,
+                              design: .serif))
+                .frame(maxWidth: .infinity)
+                .contentShape(Rectangle())
         }
         .foregroundStyle(.primary) // Automatically adapts to light/dark
         .menuOrder(.fixed)
     }
 
-    /// Default TabBarAccessory view (Book 1  NIV)
-    private var tabBarAccessoryDefaultView: some View {
+    /// TabBarAccessory label view
+    private var tabBarAccessoryLabel: some View {
         Group {
-            Text(
-                "\(readerStore.selectedBook?.displayName ?? "Select Book") \(readerStore.selectedChapter?.displayName ?? "")"
-            )
-//                .padding(EdgeInsets(top: 0, leading: 15, bottom: 0, trailing: 0))
-            Text("\(readerStore.selectedTranslation?.abbreviation ?? "")")
-                .foregroundColor(.secondary)
+            // Show corresponding View to current loadState
+            // This will automatically refresh when we change @Observable loadState
+            switch readerStore.loadState {
+            case .emptyBooks:
+                Text("Select Translation")
+                    .frame(maxWidth: .infinity)
+            // no translations should never happen
+            case .emptyTranslations,
+                 .failed(_):
+                Text("Content Unavailable")
+                    .frame(maxWidth: .infinity)
+            default:
+                HStack(spacing: 8) {
+                    Text(
+                        "\(readerStore.selectedBook?.displayName ?? "Select Book") \(readerStore.selectedChapter?.displayName ?? "")"
+                    )
+                    Text("\(readerStore.selectedTranslation?.abbreviation ?? "")")
+                        .foregroundColor(.secondary)
+                }
+                .frame(maxWidth: .infinity)
+            }
         }
     }
 }
