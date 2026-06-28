@@ -9,9 +9,6 @@ import Foundation
 import Testing
 @testable import SwiftBible
 
-// for testing only; Swift warns about main-actor default isolation,
-// why is this needed here?
-@MainActor
 struct YouVersionBibleIndexResponseTests {
 
     private var indexResponse: String = """
@@ -69,7 +66,7 @@ struct YouVersionBibleIndexResponseTests {
         """
 
     /// Attempt to parse test JSON via YouVersionBibleIndexResponse mapping
-    @Test func mapperFunctionsSucceed() async throws {
+    @Test func mapperFunctionsSucceed() {
         guard let responseData: Data = indexResponse.data(using: .utf8) else {
             #expect(Bool(false), "Could not parse `indexResponse` as UTF-8 encoded data")
             return
@@ -91,11 +88,23 @@ struct YouVersionBibleIndexResponseTests {
             #expect(firstBook.id == "GEN")
 
             guard let firstChapter = firstBook.chapters.first else {
-                #expect(Bool(false), "Could not parse first book's first chapter")
+                #expect(Bool(false), "Could not parse first chapter")
                 return
             }
 
             #expect(firstChapter.id == "GEN.1")
+            #expect(firstChapter.number == 1)
+
+            guard let firstVerse = firstChapter.verses.first else {
+                #expect(Bool(false), "Could not parse first verse")
+                return
+            }
+
+            #expect(firstVerse.id == "GEN.1.1")
+            #expect(firstVerse.number == 1)
+            #expect(firstVerse.chapterID == "GEN.1")
+            #expect(firstVerse.bookID == "GEN")
+            #expect(firstVerse.displayName == "1")
         } catch {
             #expect(Bool(false), "Failed to decode `indexResponse`: \(error.localizedDescription)")
         }

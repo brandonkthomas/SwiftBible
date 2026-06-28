@@ -12,24 +12,10 @@ struct BookTests {
 
     /// Book exposes a stable identity thru "id" property
     @Test func exposesStableIdentity() {
-        let chapter1 = Chapter(id: "GEN.1",
-                               number: 1,
-                               bookID: "GEN",
-                               displayName: "1")
-        let chapter2 = Chapter(id: "GEN.2",
-                               number: 2,
-                               bookID: "GEN",
-                               displayName: "2")
-        let chapter3 = Chapter(id: "GEN.3",
-                               number: 3,
-                               bookID: "GEN",
-                               displayName: "3")
-
-        let book = Book(id: "GEN",
-                        code: "GEN",
-                        displayName: "Genesis",
-                        canon: Canon.oldTestament,
-                        chapters: [chapter1,chapter2,chapter3])
+        guard let book = FakeBibleRepository.defaultBooks.first else {
+            #expect(Bool(false), "fixture should contain at least 1 book")
+            return
+        }
 
         #expect(book.id == "GEN")
     }
@@ -39,15 +25,18 @@ struct BookTests {
         let chapter1 = Chapter(id: "GEN.1",
                                number: 1,
                                bookID: "GEN",
-                               displayName: "1")
+                               displayName: "1",
+                               verses: [])
         let chapter2 = Chapter(id: "GEN.2",
                                number: 2,
                                bookID: "GEN",
-                               displayName: "2")
+                               displayName: "2",
+                               verses: [])
         let chapter3 = Chapter(id: "GEN.3",
                                number: 3,
                                bookID: "GEN",
-                               displayName: "3")
+                               displayName: "3",
+                               verses: [])
 
         let book1 = Book(id: "GEN",
                          code: "GEN",
@@ -68,15 +57,18 @@ struct BookTests {
         let chapter1 = Chapter(id: "GEN.1",
                                number: 1,
                                bookID: "GEN",
-                               displayName: "1")
+                               displayName: "1",
+                               verses: [])
         let chapter2 = Chapter(id: "GEN.2",
                                number: 2,
                                bookID: "GEN",
-                               displayName: "2")
+                               displayName: "2",
+                               verses: [])
         let chapter3 = Chapter(id: "GEN.3",
                                number: 3,
                                bookID: "GEN",
-                               displayName: "3")
+                               displayName: "3",
+                               verses: [])
 
         let book = Book(id: "GEN",
                         code: "GEN",
@@ -92,15 +84,18 @@ struct BookTests {
         let chapter1 = Chapter(id: "GEN.1",
                                number: 1,
                                bookID: "GEN",
-                               displayName: "1")
+                               displayName: "1",
+                               verses: [])
         let chapter2 = Chapter(id: "GEN.2",
                                number: 2,
                                bookID: "GEN",
-                               displayName: "2")
+                               displayName: "2",
+                               verses: [])
         let chapter3 = Chapter(id: "GEN.3",
                                number: 3,
                                bookID: "GEN",
-                               displayName: "3")
+                               displayName: "3",
+                               verses: [])
 
         let book = Book(id: "BOK",
                         code: "BOK",
