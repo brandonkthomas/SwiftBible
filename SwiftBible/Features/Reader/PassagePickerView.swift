@@ -64,7 +64,7 @@ struct PassagePickerView: View {
                 .font(.system(size: UIFontMetrics(forTextStyle: .body).scaledValue(for: 14),
                               weight: .medium,
                               design: .serif))
-                .frame(maxWidth: .infinity)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .contentShape(Rectangle())
         }
         .foregroundStyle(.primary) // Automatically adapts to light/dark
@@ -79,12 +79,12 @@ struct PassagePickerView: View {
             switch readerStore.loadState {
             case .emptyBooks:
                 Text("Select Translation")
-                    .frame(maxWidth: .infinity)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             // no translations should never happen
             case .emptyTranslations,
                  .failed(_):
                 Text("Content Unavailable")
-                    .frame(maxWidth: .infinity)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             default:
                 HStack(spacing: 8) {
                     Text(
@@ -93,7 +93,7 @@ struct PassagePickerView: View {
                     Text("\(readerStore.selectedTranslation?.abbreviation ?? "")")
                         .foregroundColor(.secondary)
                 }
-                .frame(maxWidth: .infinity)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
     }
