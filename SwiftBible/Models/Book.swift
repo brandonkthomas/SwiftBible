@@ -6,6 +6,8 @@
 //
 
 /// Represents a Bible book
+///
+/// nonisolated: this type is safe to use from any actor (it's just value/data logic)
 nonisolated struct Book: Identifiable, Equatable {
     let id: String
     let code: String
