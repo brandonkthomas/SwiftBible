@@ -89,7 +89,7 @@ struct ReaderStoreTests {
 
         await store.loadTranslationsAndBooks(languageTag: "en")
 
-        #expect(store.loadState == .failed("Unable to load translations."))
+        #expect(store.loadState == .failed("An error occurred while loading Bibles."))
 
         #expect(store.translations == [])
         #expect(store.selectedTranslation == nil)
@@ -108,7 +108,8 @@ struct ReaderStoreTests {
 
         guard let book = FakeBibleRepository.defaultBooks.first,
               let firstChapter = book.chapters.first,
-              let lastChapter = book.chapters.last else {
+              let lastChapter = book.chapters.last,
+              firstChapter != lastChapter else {
             #expect(Bool(false), "fixture should contain at least 1 book with 2+ chapters")
             return
         }

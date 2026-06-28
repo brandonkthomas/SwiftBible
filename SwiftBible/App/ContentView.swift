@@ -30,7 +30,7 @@ struct ContentView: View {
             Tab("Saved", systemImage: "bookmark", value: CurrentTab.saved) {
                 LibraryView()
             }
-            Tab("Themes", systemImage: "paintbrush", value: CurrentTab.themes) {
+            Tab("Customize", systemImage: "switch.2", value: CurrentTab.themes) {
                 SettingsView()
             }
             Tab(value: CurrentTab.search, role: .search) {
@@ -53,6 +53,7 @@ struct ContentView: View {
     /// TODO: move to own file...?
     var tabBarAccessory: some View {
         Menu {
+            // Books + Chapters nested menus
             Menu {
                 ForEach(readerStore.books) { book in
                     Menu(book.displayName) {
@@ -67,9 +68,11 @@ struct ContentView: View {
                     }
                 }
             } label: {
-                Label("Books", systemImage: "book.pages")
+                Label("Books", systemImage: "books.vertical")
             }
+            .menuOrder(.fixed)
 
+            // Translations menu
             Menu {
                 ForEach(readerStore.translations) { translation in
                     Button(action: {
@@ -83,25 +86,41 @@ struct ContentView: View {
                     }
                 }
             } label: {
-                Label("Translations", systemImage: "textformat") // alt: character.book.closed
+                Label("Translations", systemImage: "text.redaction")
             }
             .menuOrder(.fixed)
         } label: {
+            // Label: selected Book/Chapter names & Translation abbreviation
             Group {
-                Text(
-                    "\(readerStore.selectedBook?.displayName ?? "Select Book") \(readerStore.selectedChapter?.displayName ?? "")"
-                )
-                    .padding(EdgeInsets(top: 0, leading: 15, bottom: 0, trailing: 0))
-                Text("\(readerStore.selectedTranslation?.abbreviation ?? "")")
-                    .foregroundColor(.secondary)
-                Spacer()
+                // Show corresponding View to current loadState
+                // This will automatically refresh when we change @Observable loadState
+                switch readerStore.loadState {
+                // no translations should never happen
+                case .emptyTranslations,
+                     .failed(_):
+                    Text("Content Unavailable")
+                default:
+                    tabBarAccessoryDefaultView
+                }
             }
+//            .frame(alignment: .leading) // TODO: not working; may just keep centered
             .font(.system(size: UIFontMetrics(forTextStyle: .body).scaledValue(for: 14),
                           weight: .medium,
                           design: .serif))
         }
         .foregroundStyle(.primary) // Automatically adapts to light/dark
         .menuOrder(.fixed)
+    }
+
+    private var tabBarAccessoryDefaultView: some View {
+        Group {
+            Text(
+                "\(readerStore.selectedBook?.displayName ?? "Select Book") \(readerStore.selectedChapter?.displayName ?? "")"
+            )
+//                .padding(EdgeInsets(top: 0, leading: 15, bottom: 0, trailing: 0))
+            Text("\(readerStore.selectedTranslation?.abbreviation ?? "")")
+                .foregroundColor(.secondary)
+        }
     }
 }
 
@@ -131,8 +150,16 @@ struct ContentView: View {
         .environment(readerStore)
 }
 
-#Preview("No Books") {
+#Preview("No Books") { // TODO: this case needs tabBarAccessory to read "Select Translation"
     let repository = FakeBibleRepository(books: [])
+    let readerStore = ReaderStore(repository: repository)
+
+    ContentView()
+        .environment(readerStore)
+}
+
+#Preview("No Chapters") {
+    let repository = FakeBibleRepository(books: FakeBibleRepository.booksWithoutChapters)
     let readerStore = ReaderStore(repository: repository)
 
     ContentView()

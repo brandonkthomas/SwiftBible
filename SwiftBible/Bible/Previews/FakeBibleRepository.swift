@@ -40,6 +40,12 @@ final class FakeBibleRepository: BibleRepository {
     }
 
     static let defaultTranslations: [Translation] = [
+        Translation(id: "1234",
+                    abbreviation: "NIV",
+                    title: "New International Version",
+                    languageTag: "en",
+                    license: "Copyright (c) 2026 by Publishing Company.",
+                    promotionalText: nil),
         Translation(id: "1849",
                     abbreviation: "TPT",
                     title: "The Passion Translation",
@@ -66,7 +72,12 @@ final class FakeBibleRepository: BibleRepository {
                         number: 3,
                         bookID: "GEN",
                         displayName: "3")
-             ])
+             ]),
+        Book(id: "EXO",
+             code: "EXO",
+             displayName: "Exodus",
+             canon: .oldTestament,
+             chapters: [])
     ]
 
     static let booksWithoutChapters: [Book] = [

@@ -76,7 +76,7 @@ final class ReaderStore {
         } catch {
             // TODO: log exception
             clearAllStates()
-            self.loadState = .failed("Unable to load translations.")
+            self.loadState = .failed("An error occurred while loading Bibles.")
         }
     }
 
@@ -90,7 +90,10 @@ final class ReaderStore {
         await self.loadBooks()
     }
 
-    /// If book ID exists in store, select it
+    /// If book ID exists in store, select it + attempt to select its first chapter as well;
+    /// if no chapters exist, clear book+chapter selections
+    ///
+    /// (TODO: may need to remove the clear logic for UI sake)
     func selectBook(id: String) {
         guard let requestedBook = self.books.first(where: { $0.id == id }) else {
             return

@@ -50,22 +50,23 @@ struct ReaderView: View {
                 ProgressView()
                     .controlSize(.large)
             case .emptyTranslations:
+                // no translations should never happen
                 ContentUnavailableView(
                     "Content Unavailable",
                     systemImage: "text.page.slash",
-                    description: Text("The selected translation could not be retrieved.")
+                    description: Text("An error occurred while loading Bibles.")
                 )
             case .emptyBooks:
                 ContentUnavailableView(
                     "Content Unavailable",
                     systemImage: "text.page.slash",
-                    description: Text("The selected translation contains no books.")
+                    description: Text("The selected translation is unavailable.")
                 )
             case .emptyChapters:
                 ContentUnavailableView(
                     "Content Unavailable",
                     systemImage: "text.page.slash",
-                    description: Text("The selected book contains no chapters.")
+                    description: Text("The selected book is unavailable.")
                 )
             case .failed(let message):
                 ContentUnavailableView(
@@ -130,6 +131,14 @@ struct ReaderView: View {
 
 #Preview("No Books") {
     let repository = FakeBibleRepository(books: [])
+    let readerStore = ReaderStore(repository: repository)
+
+    ReaderView()
+        .environment(readerStore)
+}
+
+#Preview("No Chapters") {
+    let repository = FakeBibleRepository(books: FakeBibleRepository.booksWithoutChapters)
     let readerStore = ReaderStore(repository: repository)
 
     ReaderView()

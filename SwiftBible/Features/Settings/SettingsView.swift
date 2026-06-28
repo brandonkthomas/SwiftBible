@@ -11,8 +11,8 @@ struct SettingsView: View {
     var body: some View {
         NavigationStack {
             ContentUnavailableView(
-                "Themes",
-                systemImage: "paintbrush",
+                "Customize",
+                systemImage: "switch.2",
                 description: Text("Coming soon.")
             )
             .navigationTitle("Themes")
