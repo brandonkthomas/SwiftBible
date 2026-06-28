@@ -6,7 +6,7 @@
 //
 
 /// Represents a Bible book
-struct Book: Identifiable, Equatable {
+nonisolated struct Book: Identifiable, Equatable {
     let id: String
     let code: String
     let displayName: String

@@ -5,7 +5,7 @@
 //  Created by Brandon Thomas on 6/27/26.
 //
 
-struct Chapter: Identifiable, Equatable {
+nonisolated struct Chapter: Identifiable, Equatable {
     /// i.e. "GEN.1"
     let id: String
     /// i.e. 1

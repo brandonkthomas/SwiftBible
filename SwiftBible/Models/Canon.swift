@@ -6,7 +6,7 @@
 //
 
 /// Which testament is this book in?
-enum Canon: String, CaseIterable {
+nonisolated enum Canon: String, CaseIterable {
     case oldTestament
     case newTestament
     case deuterocanon

@@ -6,7 +6,7 @@
 //
 
 /// Represents a Bible translation
-struct Translation: Identifiable, Equatable {
+nonisolated struct Translation: Identifiable, Equatable {
     let id: String
     let abbreviation: String
     let title: String

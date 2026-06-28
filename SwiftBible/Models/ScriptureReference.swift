@@ -7,7 +7,7 @@
 
 /// Represents local Bible general reference location
 /// (translation, book, chapter, verse)
-struct ScriptureReference: Equatable {
+nonisolated struct ScriptureReference: Equatable {
     let translationID: String
     let bookCode: String
     let chapter: Int

@@ -6,7 +6,7 @@
 //
 
 /// Maps to "~/v1/bibles/{bible\_id\_path}/index"
-struct YouVersionBibleIndexResponse: Decodable {
+nonisolated struct YouVersionBibleIndexResponse: Decodable {
     let textDirection: String
     let books: [YouVersionBook]
 

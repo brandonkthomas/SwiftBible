@@ -6,7 +6,7 @@
 //
 
 /// YouVersion chapter object + SwiftBible mapper
-struct YouVersionChapter: Decodable {
+nonisolated struct YouVersionChapter: Decodable {
     let id: String
     let passageID: String
     let title: String
