@@ -86,8 +86,19 @@ final class ReaderStore {
             return
         }
 
+        // Store now for attempted restoration after we refresh
+        let previousBookId = self.selectedBook?.id
+        let previousChapterId = self.selectedChapter?.id
+
+        // Select Translation + refresh available Books/Chapters
         self.selectedTranslation = requestedTranslation
         await self.loadBooks()
+
+        // Attempt to restore previous Book/Chapter selection
+        if let previousBookId, let previousChapterId {
+            self.selectBook(id: previousBookId)
+            self.selectChapter(id: previousChapterId)
+        }
     }
 
     /// If book ID exists in store, select it + attempt to select its first chapter as well;
