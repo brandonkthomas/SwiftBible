@@ -11,6 +11,12 @@ struct ReaderView: View {
 
     // MARK: Properties (Private)
 
+    /// Read appEnvironment.readerStore environment value from current view environment
+    ///
+    /// Don't need "\." here because this is a type-based lookup for an observable object
+    /// placed into the environment: .environment(readerStore))
+    @Environment(ReaderStore.self) private var readerStore: ReaderStore
+
     private var themeDefault: Color = .init(.systemBackground)
     private var themeOffBlack: Color = .init(red: 0.075, green: 0.075, blue: 0.075)
     private var themeBlack: Color = .init(.black)
@@ -21,8 +27,26 @@ struct ReaderView: View {
 
     // MARK: Views
 
-    /// 
+    /// Reader view
     var body: some View {
+        Group {
+            if case .failed = readerStore.loadState {
+                ContentUnavailableView(
+                    "Content Unavailable",
+                    systemImage: "exclamationmark.circle",
+                    description: Text("An error occurred while loading content.")
+                )
+            } else {
+                mainReaderView
+            }
+        }
+        .background(themeOffWhite) // TODO: remove in favor of theme service
+        .task {
+            await readerStore.loadTranslations()
+        }
+    }
+
+    var mainReaderView: some View {
         ScrollView {
             VStack {
                 Group {
@@ -39,68 +63,15 @@ struct ReaderView: View {
             // prevent tab bar from covering up bottom few lines
             .padding(EdgeInsets(top: 24, leading: 0, bottom: 75, trailing: 0))
         }
-        .background(themeOffWhite) // TODO: remove in favor of theme service
-    }
-
-    /// Tab bar accessory for Read view
-    ///
-    /// TODO: Populate via API
-    var tabBarAccessory: some View {
-        Menu {
-            Menu {
-                Menu("Matthew") {
-                    Text("1")
-                    Text("2")
-                    Text("3")
-                }
-                Menu("Mark") {
-                    Text("1")
-                    Text("2")
-                    Text("3")
-                }
-                Menu("Luke") {
-                    Text("1")
-                    Text("2")
-                    Text("3")
-                }
-                Menu("John") {
-                    Text("1")
-                    Text("2")
-                    Text("3")
-                }
-            } label: {
-                Label("Books", systemImage: "book.pages")
-            }
-
-            Menu {
-                Group {
-                    Text("NIV")
-                    Text("NLT")
-                    Text("ESV")
-                    Text("TPT")
-                }
-                .font(.system(.body, design: .serif))
-            } label: {
-                Label("Translations", systemImage: "textformat") // alt: character.book.closed
-            }
-            .menuOrder(.fixed)
-        } label: {
-            Group {
-                Text("Matthew 1")
-                    .padding(EdgeInsets(top: 0, leading: 15, bottom: 0, trailing: 0))
-                Text("NIV")
-                    .foregroundColor(.secondary)
-                Spacer()
-            }
-            .font(.system(size: UIFontMetrics(forTextStyle: .body).scaledValue(for: 14),
-                          weight: .medium,
-                          design: .serif))
-        }
-        .foregroundStyle(.primary) // Automatically adapts to light/dark
-        .menuOrder(.fixed)
     }
 }
 
+// MARK: Xcode Canvas Previews
+
 #Preview {
+    let repository = FakeBibleRepository()
+    let readerStore = ReaderStore(repository: repository)
+
     ReaderView()
+        .environment(readerStore)
 }

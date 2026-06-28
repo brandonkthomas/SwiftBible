@@ -47,6 +47,12 @@ final class ReaderStore {
 
     /// Load a collection of available Translations w/ optional languageTag filter
     func loadTranslations(languageTag: String? = "en") async {
+        // Only load if we're not doing anything right now OR if we failed previously
+        // (allow retries)
+        guard self.loadState == .idle else {
+            return
+        }
+
         self.loadState = .loading
 
         do {

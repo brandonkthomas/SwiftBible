@@ -42,23 +42,23 @@ final class FakeBibleRepository: BibleRepository {
     ]
 
     static let defaultBooks: [Book] = [
-        Book(id: "BOK",
-             code: "BOK",
-             displayName: "Book Name",
-             canon: .deuterocanon,
+        Book(id: "GEN",
+             code: "GEN",
+             displayName: "Genesis",
+             canon: .oldTestament,
              chapters: [
-                Chapter(id: "BOK.1",
+                Chapter(id: "GEN.1",
                         number: 1,
-                        bookID: "BOK",
+                        bookID: "GEN",
                         displayName: "1")
              ])
     ]
 
     static let booksWithoutChapters: [Book] = [
-        Book(id: "BOK",
-             code: "BOK",
-             displayName: "Book Name",
-             canon: .deuterocanon,
+        Book(id: "GEN",
+             code: "GEN",
+             displayName: "Genesis",
+             canon: .oldTestament,
              chapters: [])
     ]
 
