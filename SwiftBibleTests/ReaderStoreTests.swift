@@ -26,7 +26,7 @@ struct ReaderStoreTests {
         let repository = FakeBibleRepository()
         let store = ReaderStore(repository: repository)
 
-        await store.loadTranslations(languageTag: "en")
+        await store.loadTranslationsAndBooks(languageTag: "en")
 
         #expect(store.loadState == .loaded)
 
@@ -45,7 +45,7 @@ struct ReaderStoreTests {
         let repository = FakeBibleRepository(books: FakeBibleRepository.booksWithoutChapters)
         let store = ReaderStore(repository: repository)
 
-        await store.loadTranslations(languageTag: "en")
+        await store.loadTranslationsAndBooks(languageTag: "en")
 
         #expect(store.loadState == .emptyChapters)
         #expect(store.selectedTranslation == store.translations.first)
@@ -59,7 +59,7 @@ struct ReaderStoreTests {
         let repository = FakeBibleRepository(translations: [])
         let store = ReaderStore(repository: repository)
 
-        await store.loadTranslations(languageTag: "en")
+        await store.loadTranslationsAndBooks(languageTag: "en")
 
         #expect(store.loadState == .emptyTranslations)
         #expect(store.selectedTranslation == nil)
@@ -73,7 +73,7 @@ struct ReaderStoreTests {
         let repository = FakeBibleRepository(books: [])
         let store = ReaderStore(repository: repository)
 
-        await store.loadTranslations(languageTag: "en")
+        await store.loadTranslationsAndBooks(languageTag: "en")
 
         #expect(store.loadState == .emptyBooks)
         #expect(store.selectedTranslation == store.translations.first)
@@ -87,7 +87,7 @@ struct ReaderStoreTests {
         let repository = FakeBibleRepository(throwWhenLoadingTranslations: true)
         let store = ReaderStore(repository: repository)
 
-        await store.loadTranslations(languageTag: "en")
+        await store.loadTranslationsAndBooks(languageTag: "en")
 
         #expect(store.loadState == .failed("Unable to load translations."))
 
@@ -96,5 +96,31 @@ struct ReaderStoreTests {
         #expect(store.books == [])
         #expect(store.selectedBook == nil)
         #expect(store.selectedChapter == nil)
+    }
+
+    /// selectBookAndChapter() functions as intended
+    /// (persists selected book/chapter IDs to store's selectedBook and selectedChapter fields)
+    @Test func selectBookAndChapterSucceeds() async {
+        let repository = FakeBibleRepository()
+        let store = ReaderStore(repository: repository)
+
+        await store.loadTranslationsAndBooks(languageTag: "en")
+
+        guard let book = FakeBibleRepository.defaultBooks.first,
+              let firstChapter = book.chapters.first,
+              let lastChapter = book.chapters.last else {
+            #expect(Bool(false), "fixture should contain at least 1 book with 2+ chapters")
+            return
+        }
+
+        #expect(store.loadState == .loaded)
+
+        #expect(store.selectedBook == book)
+        #expect(store.selectedChapter == firstChapter)
+
+        store.selectBookAndChapter(bookID: book.id, chapterID: lastChapter.id)
+
+        #expect(store.selectedBook == book)
+        #expect(store.selectedChapter == lastChapter)
     }
 }

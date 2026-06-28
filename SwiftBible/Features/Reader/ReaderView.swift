@@ -13,7 +13,7 @@ struct ReaderView: View {
 
     /// Read appEnvironment.readerStore environment value from current view environment
     ///
-    /// Don't need "\." here because this is a type-based lookup for an observable object
+    /// Don't need "\." here because this is a type-based lookup for an observable instance
     /// placed into the environment: .environment(readerStore))
     @Environment(ReaderStore.self) private var readerStore: ReaderStore
 
@@ -78,7 +78,7 @@ struct ReaderView: View {
             }
         }
         .task {
-            await readerStore.loadTranslations()
+            await readerStore.loadTranslationsAndBooks()
         }
     }
 
@@ -104,7 +104,7 @@ struct ReaderView: View {
 
 // MARK: Xcode Canvas Previews
 
-#Preview("Idle") {
+#Preview("Loaded") {
     let repository = FakeBibleRepository()
     let readerStore = ReaderStore(repository: repository)
 

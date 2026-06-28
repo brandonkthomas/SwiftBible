@@ -57,7 +57,15 @@ final class FakeBibleRepository: BibleRepository {
                 Chapter(id: "GEN.1",
                         number: 1,
                         bookID: "GEN",
-                        displayName: "1")
+                        displayName: "1"),
+                Chapter(id: "GEN.2",
+                        number: 2,
+                        bookID: "GEN",
+                        displayName: "2"),
+                Chapter(id: "GEN.3",
+                        number: 3,
+                        bookID: "GEN",
+                        displayName: "3")
              ])
     ]
 

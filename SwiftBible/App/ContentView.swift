@@ -6,7 +6,7 @@ struct ContentView: View {
 
     /// Read appEnvironment.store environment value from current view environment
     ///
-    /// Don't need "\." here because this is a type-based lookup for an observable object
+    /// Don't need "\." here because this is a type-based lookup for an observable instance
     /// placed into the environment: .environment(store))
     @Environment(ReaderStore.self) private var readerStore: ReaderStore
 
@@ -50,14 +50,17 @@ struct ContentView: View {
 
     /// Tab bar accessory for Read view
     ///
-    /// TODO: Populate via API
+    /// TODO: move to own file...?
     var tabBarAccessory: some View {
         Menu {
             Menu {
                 ForEach(readerStore.books) { book in
                     Menu(book.displayName) {
                         ForEach(book.chapters) { chapter in
-                            Button(action: {}) {
+                            Button(action: {
+                                readerStore.selectBookAndChapter(bookID: book.id,
+                                                                 chapterID: chapter.id)
+                            }) {
                                 Text(chapter.displayName)
                             }
                         }
@@ -69,7 +72,11 @@ struct ContentView: View {
 
             Menu {
                 ForEach(readerStore.translations) { translation in
-                    Button(action: {}) {
+                    Button(action: {
+                        Task {
+                            await readerStore.selectTranslationAndReloadBooks(id: translation.id)
+                        }
+                    }) {
                         Text(translation.title)
                         Text(translation.abbreviation)
                             .foregroundColor(.secondary)
@@ -100,7 +107,7 @@ struct ContentView: View {
 
 // MARK: Xcode Canvas Previews
 
-#Preview("Idle") {
+#Preview("Loaded") {
     let repository = FakeBibleRepository()
     let readerStore = ReaderStore(repository: repository)
 
