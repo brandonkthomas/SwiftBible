@@ -20,12 +20,6 @@ struct ReaderView: View {
     /// Calculated -- what is our current system theme?
     @Environment(\.colorScheme) private var colorScheme
 
-    private var themeDefault: Color = .init(.systemBackground)
-    private var themeOffBlack: Color = .init(red: 0.075, green: 0.075, blue: 0.075)
-    private var themeBlack: Color = .init(.black)
-    private var themeOffWhite: Color = .init(red: 0.925, green: 0.901, blue: 0.858)
-    private var themeWhite: Color = .init(.white)
-
     private var demoText: String = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aliquam ac libero non ipsum convallis suscipit at a tortor. In ligula elit, rhoncus sit amet auctor id, ornare id purus. Nullam neque mauris, luctus euismod malesuada at, tempus et enim. Cras tempus efficitur mauris, non dapibus diam rutrum nec. Praesent sollicitudin massa et elementum efficitur. Interdum et malesuada fames ac ante ipsum primis in faucibus. Phasellus metus ipsum, pharetra sed urna et, facilisis maximus massa. Suspendisse potenti. Curabitur elementum tellus in nulla vulputate eleifend. Sed at pharetra nunc, sed tempus ligula. Vestibulum scelerisque ut enim vel malesuada. Mauris in est sem. Donec mollis dolor vitae mi gravida, eu feugiat est interdum. Sed eu elit a diam sodales ornare. Integer rhoncus, quam non eleifend lacinia, enim arcu interdum enim, vel cursus quam ante a magna. Mauris sodales mi ante, a suscipit enim egestas at."
 
     // MARK: Views
@@ -36,10 +30,10 @@ struct ReaderView: View {
             // TODO: Store user preference + fix font color to match
             // aka store font alongside theme background
             if colorScheme == .dark {
-                themeOffBlack
+                AppTheme.themeOffBlack
                     .ignoresSafeArea()
             } else {
-                themeOffWhite
+                AppTheme.themeOffWhite
                     .ignoresSafeArea()
             }
 

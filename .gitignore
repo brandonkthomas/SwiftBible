@@ -6,3 +6,6 @@ xcuserdata/
 
 # Local YouVersion configuration
 SwiftBible/Resources/Configuration/Secrets.xcconfig
+SwiftBible/Resources/Configuration/*Secrets.xcconfig
+SwiftBible/Resources/Configuration/DebugSecrets.xcconfig
+SwiftBible/Resources/Configuration/ReleaseSecrets.xcconfig

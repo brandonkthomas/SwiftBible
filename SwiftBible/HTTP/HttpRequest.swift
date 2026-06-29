@@ -9,7 +9,7 @@ import Foundation
 
 enum HttpRequest {
 
-    /// Performs a GET request for a specific
+    /// Performs a GET/POST/etc HTTP request for a given URL w/ optional headers
     static func fetchData(url: URL,
                           httpMethod: String,
                           headers: [String: String],
