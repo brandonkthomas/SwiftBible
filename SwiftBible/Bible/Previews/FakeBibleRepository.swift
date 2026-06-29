@@ -35,23 +35,25 @@ final class FakeBibleRepository: BibleRepository {
         return translations
     }
 
-    func books(for translationID: String) async throws -> [Book] {
+    func books(for translationID: Int) async throws -> [Book] {
         return books
     }
 
     static let defaultTranslations: [Translation] = [
-        Translation(id: "1234",
+        Translation(id: 1234,
                     abbreviation: "NIV",
                     title: "New International Version",
                     languageTag: "en",
                     license: "Copyright (c) 2026 by Publishing Company.",
-                    promotionalText: nil),
-        Translation(id: "1849",
+                    promotionalText: nil,
+                    availableBookCodes: ["GEN", "EXO", "LEV"]),
+        Translation(id: 1849,
                     abbreviation: "TPT",
                     title: "The Passion Translation",
                     languageTag: "en",
                     license: "Copyright (c) 2026 by BroadStreet Publishing.",
-                    promotionalText: nil)
+                    promotionalText: nil,
+                    availableBookCodes: ["GEN", "EXO", "LEV"])
     ]
 
     static let defaultBooks: [Book] = [

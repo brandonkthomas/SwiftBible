@@ -81,7 +81,7 @@ final class ReaderStore {
     }
 
     /// If translation ID exists in store, select it and reload self.books + self.chapters
-    func selectTranslationAndReloadBooks(id: String) async {
+    func selectTranslationAndReloadBooks(id: Int) async {
         guard let requestedTranslation = self.translations.first(where: { $0.id == id }) else {
             return
         }

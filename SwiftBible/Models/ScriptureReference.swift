@@ -8,14 +8,14 @@
 /// Represents local Bible general reference location
 /// (translation, book, chapter, verse)
 nonisolated struct ScriptureReference: Equatable {
-    let translationID: String
+    let translationID: Int
     let bookCode: String
     let chapter: Int
     let startVerse: Int?
     let endVerse: Int?
 
     // Failable (init?): allow for validation
-    init?(translationID: String,
+    init?(translationID: Int,
           bookCode: String,
           chapter: Int,
           startVerse: Int? = nil,

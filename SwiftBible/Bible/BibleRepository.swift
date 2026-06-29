@@ -11,5 +11,5 @@ protocol BibleRepository {
     func translations(languageTag: String?) async throws -> [Translation]
 
     /// Returns all available books for a given translation w/ canon and individual chapters
-    func books(for translationID: String) async throws -> [Book]
+    func books(for translationID: Int) async throws -> [Book]
 }

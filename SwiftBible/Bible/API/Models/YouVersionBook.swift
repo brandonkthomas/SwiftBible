@@ -38,7 +38,6 @@ nonisolated struct YouVersionBook: Decodable {
             code: self.id,
             displayName: self.title,
             canon: canon,
-            chapters: chapters
-        )
+            chapters: chapters)
     }
 }
