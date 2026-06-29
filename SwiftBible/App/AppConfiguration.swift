@@ -13,20 +13,31 @@ struct AppConfiguration {
     let youVersionBaseURL: URL
 
     static let defaultYouVersionBaseURL = URL(string: "https://api.youversion.com")!
+    private static let secretsResourceName = "Secrets"
+    private static let youVersionApiKeyName = "YOUVERSION_APP_KEY"
 
     init(bundle: Bundle = .main,
          youVersionBaseURL: URL = Self.defaultYouVersionBaseURL) {
         self.youVersionBaseURL = youVersionBaseURL
 
-        let rawApiKey = bundle.object(forInfoDictionaryKey: "YOUVERSION_APP_KEY") as? String
+        let rawApiKey = Self.secretString(named: Self.youVersionApiKeyName, in: bundle)
         let trimmedApiKey = rawApiKey?.trimmingCharacters(in: .whitespacesAndNewlines)
 
         if let trimmedApiKey,
            !trimmedApiKey.isEmpty,
-           trimmedApiKey != "$(YOUVERSION_APP_KEY)" {
+           trimmedApiKey != "$(\(Self.youVersionApiKeyName))" {
             self.youVersionApiKey = trimmedApiKey
         } else {
             self.youVersionApiKey = nil
         }
+    }
+
+    private static func secretString(named key: String, in bundle: Bundle) -> String? {
+        guard let secretsURL = bundle.url(forResource: secretsResourceName, withExtension: "plist"),
+              let secrets = NSDictionary(contentsOf: secretsURL) as? [String: Any] else {
+            return nil
+        }
+
+        return secrets[key] as? String
     }
 }

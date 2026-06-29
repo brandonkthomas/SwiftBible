@@ -29,17 +29,13 @@ final class AppEnvironment {
         let appConfiguration = AppConfiguration()
         self.appConfiguration = appConfiguration
 
-        // If we have an API key, use real data; else use fake data
-        // TODO: make this an init error in Release build just to be safe;
-        //  dont want to ship fake data
-        if let apiKey = appConfiguration.youVersionApiKey {
-            let repository = YouVersionBibleRepository(apiKey: apiKey,
-                                                       baseURL: appConfiguration.youVersionBaseURL,
-                                                       urlSession: .shared)
-            self.readerStore = ReaderStore(repository: repository)
-        } else {
-            let repository = FakeBibleRepository()
-            self.readerStore = ReaderStore(repository: repository)
+        guard let apiKey = appConfiguration.youVersionApiKey else {
+            preconditionFailure("Missing YOUVERSION_APP_KEY in bundled Secrets.plist")
         }
+
+        let repository = YouVersionBibleRepository(apiKey: apiKey,
+                                                   baseURL: appConfiguration.youVersionBaseURL,
+                                                   urlSession: .shared)
+        self.readerStore = ReaderStore(repository: repository)
     }
 }

@@ -5,6 +5,8 @@ xcuserdata/
 *.xcuserstate
 
 # Local YouVersion configuration
+LocalConfiguration/
+SwiftBible/Resources/Configuration/Secrets.plist
 SwiftBible/Resources/Configuration/Secrets.xcconfig
 SwiftBible/Resources/Configuration/*Secrets.xcconfig
 SwiftBible/Resources/Configuration/DebugSecrets.xcconfig
