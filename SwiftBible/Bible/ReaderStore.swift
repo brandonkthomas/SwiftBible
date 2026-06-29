@@ -133,8 +133,8 @@ final class ReaderStore {
     }
 
     /// Selects a book ID + chapter ID if they exist
-    func selectBookAndChapter(bookID: String,
-                              chapterID: String) {
+    func selectBookAndChapter(bookID: Book.ID,
+                              chapterID: Chapter.ID) {
         guard let requestedBook = self.books.first(where: { $0.id == bookID }),
               let requestedChapter = requestedBook.chapters.first(where: { $0.id == chapterID }) else {
             return

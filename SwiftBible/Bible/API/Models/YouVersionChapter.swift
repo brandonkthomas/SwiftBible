@@ -21,7 +21,7 @@ nonisolated struct YouVersionChapter: Decodable {
     }
 
     /// Map YouVersion chapter object to SwiftBible Chapter
-    func chapterForApp(bookID: String) -> Chapter? {
+    func chapterForApp(bookID: Book.ID) -> Chapter? {
         guard let idString = self.id.split(separator: ".").last?.description,
               let id = Int(idString) else {
             return nil

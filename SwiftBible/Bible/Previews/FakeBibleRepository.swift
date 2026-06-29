@@ -35,7 +35,7 @@ final class FakeBibleRepository: BibleRepository {
         return translations
     }
 
-    func books(for translationID: Int) async throws -> [Book] {
+    func books(for translationID: Translation.ID) async throws -> [Book] {
         return books
     }
 
