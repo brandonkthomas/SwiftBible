@@ -27,11 +27,20 @@ struct PassagePickerView: View {
                 ForEach(readerStore.books) { book in
                     Menu(book.displayName) {
                         ForEach(book.chapters) { chapter in
-                            Button(action: {
-                                readerStore.selectBookAndChapter(bookID: book.id,
-                                                                 chapterID: chapter.id)
-                            }) {
-                                Text(chapter.displayName)
+                            if readerStore.selectedChapter?.id == chapter.id {
+                                // Shows a menu item with a tick
+                                Toggle(isOn: .constant(true), label: {
+                                    Text(chapter.displayName)
+                                })
+                            }
+                            else {
+                                // Shows a menu item without a tick
+                                Button(action: {
+                                    readerStore.selectBookAndChapter(bookID: book.id,
+                                                                     chapterID: chapter.id)
+                                }) {
+                                    Text(chapter.displayName)
+                                }
                             }
                         }
                     }
@@ -43,15 +52,26 @@ struct PassagePickerView: View {
 
             // Translations menu
             Menu {
-                ForEach(readerStore.translations) { translation in
-                    Button(action: {
-                        Task {
-                            await readerStore.selectTranslationAndReloadBooks(id: translation.id)
+                ForEach(readerStore.translations.sorted { $0.title < $1.title }) { translation in
+                    if readerStore.selectedTranslation?.id == translation.id {
+                        // Shows a menu item with a tick
+                        Toggle(isOn: .constant(true), label: {
+                            Text(translation.title)
+                            Text(translation.abbreviation)
+                                .foregroundColor(.secondary)
+                        })
+                    }
+                    else {
+                        // Shows a menu item without a tick
+                        Button(action: {
+                            Task {
+                                await readerStore.selectTranslationAndReloadBooks(id: translation.id)
+                            }
+                        }) {
+                            Text(translation.title)
+                            Text(translation.abbreviation)
+                                .foregroundColor(.secondary)
                         }
-                    }) {
-                        Text(translation.title)
-                        Text(translation.abbreviation)
-                            .foregroundColor(.secondary)
                     }
                 }
             } label: {

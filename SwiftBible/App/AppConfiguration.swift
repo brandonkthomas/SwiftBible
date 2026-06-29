@@ -32,6 +32,7 @@ struct AppConfiguration {
         }
     }
 
+    /// Retrieve a string from Secrets.plist
     private static func secretString(named key: String, in bundle: Bundle) -> String? {
         guard let secretsURL = bundle.url(forResource: secretsResourceName, withExtension: "plist"),
               let secrets = NSDictionary(contentsOf: secretsURL) as? [String: Any] else {
