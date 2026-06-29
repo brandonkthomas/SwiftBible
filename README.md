@@ -30,3 +30,13 @@ SwiftBible/
 SwiftBibleTests/
 SwiftBibleUITests/
 ```
+
+## Local Configuration
+
+The app reads the YouVersion key from an ignored bundled plist:
+
+`SwiftBible/Resources/Configuration/Secrets.plist`
+
+Expected key:
+
+`YOUVERSION_APP_KEY`

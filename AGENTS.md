@@ -21,7 +21,7 @@ Initial product areas:
 
 Before changing architecture, scope, or implementation order, read:
 
-`/Users/brandonthomas/SynologyDrive/Application Data/Obsidian Notes/SwiftBible/SwiftBible iOS Learning Plan.md`
+`/Users/brandonthomas/SynologyDrive/Application Data/Obsidian Notes/Personal/SwiftBible/SwiftBible iOS Learning Plan.md`
 
 ## Teaching Contract
 
