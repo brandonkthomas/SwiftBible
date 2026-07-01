@@ -19,6 +19,11 @@
         }
       ],
       "lighting" : "individual",
+      "refractivity" : {
+        "depth" : 0,
+        "enabled" : false,
+        "strength" : 0.5
+      },
       "shadow-specializations" : [
         {
           "value" : {
