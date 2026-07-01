@@ -23,14 +23,40 @@ final class ReaderStore {
 
     // MARK: Properties
 
+    // State
     var loadState: ReaderLoadState = .idle
 
+    // Collections
     var translations: [Translation] = []
-    var selectedTranslation: Translation?
-
     var books: [Book] = []
+
+    // Selections
+    var selectedTranslation: Translation?
     var selectedBook: Book?
     var selectedChapter: Chapter?
+
+    var selectedReference: ScriptureReference? {
+        get {
+            guard let selectedTranslation,
+                  let selectedBook,
+                  let selectedChapter else {
+                return nil
+            }
+            return ScriptureReference(translationID: selectedTranslation.id,
+                                      bookCode: selectedBook.code,
+                                      chapter: selectedChapter.number,
+                                      startVerse: nil,
+                                      endVerse: nil)
+        }
+    }
+
+    var selectedReferenceFriendlyName: String? {
+        guard let selectedBook,
+              let selectedChapter else {
+            return nil
+        }
+        return "\(selectedBook.displayName) \(selectedChapter.number)"
+    }
 
     // MARK: Properties (Private)
 

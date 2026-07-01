@@ -69,12 +69,26 @@ struct ReaderView: View {
                     description: Text(message)
                 )
             default:
-                mainReaderView
+                if readerStore.selectedReference != nil {
+                    mainReaderView
+                } else {
+                    ContentUnavailableView {
+                        Label {
+                            Text("No Passage Selected")
+                        } icon: {
+                            Image(systemName: "rectangle.dashed")
+                                .rotationEffect(.degrees(90)) // Rotate only the image
+                        }
+                    } description: {
+                        Text("Select a passage using the picker below.")
+                    }
+                }
             }
         }
         .task {
             await readerStore.loadTranslationsAndBooks()
         }
+        .navigationTitle(readerStore.selectedReferenceFriendlyName ?? "No Passage Selected")
     }
 
     var mainReaderView: some View {

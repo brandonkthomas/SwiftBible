@@ -13,12 +13,13 @@ import Testing
 @MainActor
 struct ReaderStoreTests {
 
-    /// ReaderStore loadState is idle initially
+    /// ReaderStore initial loadState = idle & selectedReference = nil
     @Test func readerStoreStartsIdle() {
         let repository = FakeBibleRepository()
         let store = ReaderStore(repository: repository)
 
         #expect(store.loadState == .idle)
+        #expect(store.selectedReference == nil)
     }
 
     /// Loading translations should select the first translation, book, and chapter.
@@ -38,6 +39,10 @@ struct ReaderStoreTests {
 
         #expect(store.selectedChapter != nil)
         #expect(store.selectedChapter == store.selectedBook?.chapters.first)
+
+        #expect(store.selectedReference?.translationID == store.selectedTranslation?.id)
+        #expect(store.selectedReference?.bookCode == store.selectedBook?.code)
+        #expect(store.selectedReference?.chapter == store.selectedChapter?.number)
     }
 
     /// Loading a book without chapters should stop in the empty chapters state.
@@ -96,6 +101,7 @@ struct ReaderStoreTests {
         #expect(store.books == [])
         #expect(store.selectedBook == nil)
         #expect(store.selectedChapter == nil)
+        #expect(store.selectedReference == nil)
     }
 
     /// selectBookAndChapter() functions as intended
@@ -103,6 +109,8 @@ struct ReaderStoreTests {
     @Test func selectBookAndChapterSucceeds() async {
         let repository = FakeBibleRepository()
         let store = ReaderStore(repository: repository)
+
+        #expect(store.selectedReference == nil)
 
         await store.loadTranslationsAndBooks(languageTag: "en")
 
@@ -123,5 +131,9 @@ struct ReaderStoreTests {
 
         #expect(store.selectedBook == book)
         #expect(store.selectedChapter == lastChapter)
+
+        #expect(store.selectedReference?.translationID == store.selectedTranslation?.id)
+        #expect(store.selectedReference?.bookCode == store.selectedBook?.code)
+        #expect(store.selectedReference?.chapter == store.selectedChapter?.number)
     }
 }
