@@ -10,15 +10,18 @@ final class FakeBibleRepository: BibleRepository {
 
     private let translations: [Translation]
     private let books: [Book]
+    private let passages: [Passage]
     private let throwWhenLoadingTranslations: Bool
     private let forceLoadingState: Bool
 
     init(translations: [Translation] = FakeBibleRepository.defaultTranslations,
          books: [Book] = FakeBibleRepository.defaultBooks,
+         passages: [Passage] = FakeBibleRepository.defaultPassages,
          throwWhenLoadingTranslations: Bool = false,
          forceLoadingState: Bool = false) {
         self.translations = translations
         self.books = books
+        self.passages = passages
         self.throwWhenLoadingTranslations = throwWhenLoadingTranslations
         self.forceLoadingState = forceLoadingState
     }
@@ -37,6 +40,14 @@ final class FakeBibleRepository: BibleRepository {
 
     func books(for translationID: Translation.ID) async throws -> [Book] {
         return books
+    }
+
+    func passage(for reference: ScriptureReference) async throws -> Passage {
+        guard let passage = passages.first(where: { $0.id == reference.passageID }) else {
+            throw TestError.passageNotFound
+        }
+
+        return passage
     }
 
     static let defaultTranslations: [Translation] = [
@@ -109,7 +120,23 @@ final class FakeBibleRepository: BibleRepository {
              chapters: [])
     ]
 
+    static let defaultPassages: [Passage] = [
+        Passage(id: "GEN.1",
+                reference: "Genesis 1",
+                htmlContent: """
+                <div>
+                    <div class="p">
+                        <span class="yv-v" v="1"></span><span class="yv-vlbl">1</span>In the beginning God created the heavens and the earth.
+                    </div>
+                    <div class="p">
+                        <span class="yv-v" v="2"></span><span class="yv-vlbl">2</span>Now the earth was formless and empty.
+                    </div>
+                </div>
+                """)
+    ]
+
     enum TestError: Error {
         case testError(String)
+        case passageNotFound
     }
 }

@@ -1,23 +1,26 @@
 //
-//  YouVersionBibleIndexResponse.swift
+//  YouVersionPassageResponse.swift
 //  SwiftBible
 //
-//  Created by Brandon Thomas on 6/28/26.
+//  Created by Brandon Thomas on 6/30/26.
 //
 
-/// Maps to "~/v1/bibles/{bible\_id\_path}/index"
-nonisolated struct YouVersionBibleIndexResponse: Decodable {
-    let textDirection: String
-    let books: [YouVersionBook]
+/// Maps to "~/v1/bibles/{bible\_id\_path}/passages/{passage\_id\_path}"
+nonisolated struct YouVersionPassageResponse: Decodable {
+    let id: String
+    let htmlContent: String
+    let reference: String
 
     // aliases for JSONDecoder
     enum CodingKeys: String, CodingKey {
-        case textDirection = "text_direction"
-        case books
+        case id
+        case htmlContent = "content"
+        case reference
     }
 
-    /// Map YouVersion book/chapter objects to SwiftBible Book/Chapter
-    func booksForApp() -> [Book] {
-        return self.books.compactMap { $0.bookForApp() }
+    func passageForApp() -> Passage {
+        Passage(id: id,
+                reference: reference,
+                htmlContent: htmlContent)
     }
 }

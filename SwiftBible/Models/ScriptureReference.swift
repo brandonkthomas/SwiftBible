@@ -17,6 +17,14 @@ nonisolated struct ScriptureReference: Equatable {
     let startVerse: Int?
     let endVerse: Int?
 
+    // MARK: Properties (Computed)
+
+    var passageID: Passage.ID {
+        return "\(bookCode).\(chapter)"
+    }
+
+    // MARK: Init
+
     // Failable (init?): allow for validation
     init?(translationID: Int,
           bookCode: String,

@@ -1,19 +1,14 @@
 //
-//  Verse.swift
+//  Passage.swift
 //  SwiftBible
 //
-//  Created by Brandon Thomas on 6/28/26.
+//  Created by Brandon Thomas on 6/30/26.
 //
 
-nonisolated struct Verse: Identifiable, Equatable {
-    /// i.e. "GEN.1.1"
-    let id: String
-    /// i.e. 1
-    let number: Int // redundant w/ id but only used for UI purposes
+nonisolated struct Passage: Identifiable, Equatable {
     /// i.e. "GEN.1"
-    let chapterID: String
-    /// i.e. "GEN"
-    let bookID: String
-    /// i.e. "1"
-    let displayName: String // likely reudndant w/ id
+    let id: String
+    /// i.e. "Genesis 1"
+    let reference: String
+    let htmlContent: String
 }

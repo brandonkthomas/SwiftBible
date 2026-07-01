@@ -33,7 +33,7 @@ final class YouVersionBibleRepository: BibleRepository {
 
         guard var components = URLComponents(url: bibleCollectionPath,
                                              resolvingAgainstBaseURL: false) else {
-            throw BibleRepositoryError.internalError
+            throw BibleRepositoryError.internalError("Unable to create translation request URL")
         }
 
         var items: [URLQueryItem] = []
@@ -76,5 +76,37 @@ final class YouVersionBibleRepository: BibleRepository {
                                                         from: data)
 
         return indexResponse.booksForApp()
+    }
+
+    /// Load HTML passage content for a given ScriptureReference
+    func passage(for reference: ScriptureReference) async throws -> Passage {
+        let passagePath = baseURL.appending(path: "v1/bibles/\(reference.translationID)/passages/\(reference.passageID)")
+
+        guard var components = URLComponents(url: passagePath,
+                                             resolvingAgainstBaseURL: false) else {
+            throw BibleRepositoryError.internalError("Unable to create passage request URL")
+        }
+
+        // "text" option doesnt give us any info;
+        // need to use "html" to get verse#/redtext/etc back
+        components.queryItems = [
+            URLQueryItem(name: "format",
+                         value: "html")
+        ]
+
+        guard let builtUrl = components.url else {
+            throw BibleRepositoryError.invalidRequestURL
+        }
+
+        let data = try await HttpRequest.fetchData(url: builtUrl,
+                                                   httpMethod: "GET",
+                                                   headers: ["X-YVP-App-Key": apiKey],
+                                                   urlSession: urlSession)
+
+        let jsonDecoder = JSONDecoder()
+        let passageResponse = try jsonDecoder.decode(YouVersionPassageResponse.self,
+                                                     from: data)
+
+        return passageResponse.passageForApp()
     }
 }
