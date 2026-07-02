@@ -1,5 +1,5 @@
 //
-//  ReaderView.swift
+//  ReaderPassageView.swift
 //  SwiftBible
 //
 //  Created by Brandon Thomas on 6/27/26.
@@ -20,9 +20,7 @@ struct ReaderPassageView: View {
     var body: some View {
         ScrollView {
             VStack {
-                Group {
-                    Text(passage.htmlContent)
-                }
+                Text(passage.htmlContent)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .lineHeight(AttributedString.LineHeight.exact(points: 30))
                 // inset on L/R edges; spacing between paragraphs

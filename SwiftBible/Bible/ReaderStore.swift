@@ -6,6 +6,7 @@
 //
 
 import Observation
+import OSLog
 
 /// Flow: BibleRepository -> ReaderStore -> ReaderView / picker UI
 ///
@@ -65,6 +66,9 @@ final class ReaderStore {
     /// Command implementations
     private let repository: BibleRepository
 
+    /// OS Logging
+    private static let logger = Logger(subsystem: "SwiftBible", category: "ReaderStore")
+
     // MARK: Init
 
     init(repository: BibleRepository) {
@@ -76,6 +80,8 @@ final class ReaderStore {
     /// Load a collection of available Translations w/ optional languageTag filter;
     /// set self.translations to results
     func loadTranslationsAndBooks(languageTag: String? = "en") async {
+        Self.logger.debug("ENTRY ReaderStore.loadTranslationsAndBooks(languageTag: \(languageTag ?? "nil", privacy: .public))")
+
         // Only load if we're not doing anything right now OR if we failed previously
         // (allow retries)
         switch loadState {
@@ -109,7 +115,9 @@ final class ReaderStore {
     }
 
     /// If translation ID exists in store, select it and reload self.books + self.chapters
-    func selectTranslationAndReloadBooks(id: Int) async {
+    func selectTranslationAndReloadBooksAndPassage(id: Int) async {
+        Self.logger.debug("ENTRY ReaderStore.selectTranslationAndReloadBooks(id: \(id, privacy: .public))")
+
         guard let requestedTranslation = self.translations.first(where: { $0.id == id }) else {
             return
         }
@@ -127,6 +135,8 @@ final class ReaderStore {
             self.selectBook(id: previousBookId)
             self.selectChapter(id: previousChapterId)
         }
+
+        await self.loadSelectedPassage()
     }
 
     /// If book ID exists in store, select it + attempt to select its first chapter as well;
@@ -134,6 +144,8 @@ final class ReaderStore {
     ///
     /// (TODO: may need to remove the clear logic for UI sake)
     func selectBook(id: String) {
+        Self.logger.debug("ENTRY ReaderStore.selectBook(id: \(id, privacy: .public))")
+
         guard let requestedBook = self.books.first(where: { $0.id == id }) else {
             return
         }
@@ -157,6 +169,8 @@ final class ReaderStore {
 
     /// If chapter ID exists in selected Book, select it
     func selectChapter(id: String) {
+        Self.logger.debug("ENTRY ReaderStore.selectChapter(id: \(id, privacy: .public))")
+
         guard let selectedBook = self.selectedBook,
               let requestedChapter = selectedBook.chapters.first(where: { $0.id == id }) else {
             clearPassageStates() // invalidate passage selection
@@ -171,6 +185,8 @@ final class ReaderStore {
     /// Selects a book ID + chapter ID if they exist
     func selectBookAndChapter(bookID: Book.ID,
                               chapterID: Chapter.ID) {
+        Self.logger.debug("ENTRY ReaderStore.selectBookAndChapter(bookID: \(bookID, privacy: .public), chapterID: \(chapterID, privacy: .public))")
+
         guard let requestedBook = self.books.first(where: { $0.id == bookID }),
               let requestedChapter = requestedBook.chapters.first(where: { $0.id == chapterID }) else {
             clearPassageStates() // invalidate passage selection
@@ -185,6 +201,8 @@ final class ReaderStore {
 
     /// Load the selected passage from calculated selectedReference property
     func loadSelectedPassage() async {
+        Self.logger.debug("ENTRY ReaderStore.loadSelectedPassage()")
+
         guard let selectedReference else {
             self.passageLoadState = .failed("No passage selected.")
             return
@@ -221,6 +239,8 @@ final class ReaderStore {
     ///
     /// Private for now unless needed externally
     private func loadBooks() async {
+        Self.logger.debug("ENTRY ReaderStore.loadBooks()")
+
         guard let selectedTranslation else {
             return
         }
@@ -257,18 +277,21 @@ final class ReaderStore {
     /// Clear translations, books, selections
     /// (loadState not modified)
     private func clearAllStates() {
+        Self.logger.debug("ENTRY ReaderStore.clearAllStates()")
         clearTranslationStates()
         clearBookAndChapterStates()
     }
 
     /// Clear translations + selectedTranslation
     private func clearTranslationStates() {
+        Self.logger.debug("ENTRY ReaderStore.clearTranslationStates()")
         self.translations = []
         self.selectedTranslation = nil
     }
 
     /// Clear books + selectedBook + selectedChapter
     private func clearBookAndChapterStates() {
+        Self.logger.debug("ENTRY ReaderStore.clearBookAndChapterStates()")
         self.books = []
         self.selectedBook = nil
         self.selectedChapter = nil
@@ -276,6 +299,7 @@ final class ReaderStore {
 
     /// Clear selectedPassage + passageLoadState
     private func clearPassageStates() {
+        Self.logger.debug("ENTRY ReaderStore.clearPassageStates()")
         self.selectedPassage = nil
         self.passageLoadState = .idle
     }

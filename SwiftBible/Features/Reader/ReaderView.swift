@@ -38,8 +38,9 @@ struct ReaderView: View {
             // Show corresponding View to current loadState
             // This will automatically refresh when we change @Observable loadState
             switch readerStore.loadState {
-            case .idle, // TODO: do we need a specific view for this state?
+            case .idle,
                  .loading:
+                // TODO: continue to show ReaderPassageView but blur+overlay ProgressView while we load new data
                 ProgressView()
                     .controlSize(.large)
             case .emptyTranslations:
@@ -77,7 +78,8 @@ struct ReaderView: View {
                     // This will automatically refresh when we change @Observable passageLoadState
                     switch readerStore.passageLoadState {
                     case .idle:
-                        passageUnavailableView
+                        ProgressView()
+                           .controlSize(.large)
                     case .loading:
                         ProgressView()
                             .controlSize(.large)
@@ -97,6 +99,7 @@ struct ReaderView: View {
                 }
             }
         }
+        // initial load
         .task {
             await readerStore.loadTranslationsAndBooks()
             await readerStore.loadSelectedPassage()

@@ -36,8 +36,11 @@ struct PassagePickerView: View {
                             else {
                                 // Shows a menu item without a tick
                                 Button(action: {
-                                    readerStore.selectBookAndChapter(bookID: book.id,
-                                                                     chapterID: chapter.id)
+                                    Task {
+                                        readerStore.selectBookAndChapter(bookID: book.id,
+                                                                         chapterID: chapter.id)
+                                        await readerStore.loadSelectedPassage()
+                                    }
                                 }) {
                                     Text(chapter.displayName)
                                 }
@@ -65,7 +68,7 @@ struct PassagePickerView: View {
                         // Shows a menu item without a tick
                         Button(action: {
                             Task {
-                                await readerStore.selectTranslationAndReloadBooks(id: translation.id)
+                                await readerStore.selectTranslationAndReloadBooksAndPassage(id: translation.id)
                             }
                         }) {
                             Text(translation.title)
@@ -75,7 +78,7 @@ struct PassagePickerView: View {
                     }
                 }
             } label: {
-                Label("Translations", systemImage: "text.redaction")
+                Label("Translations", systemImage: "text.book.closed") // was text.redaction
             }
             .menuOrder(.fixed)
         } label: {
