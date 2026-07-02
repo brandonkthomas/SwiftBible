@@ -115,8 +115,8 @@ final class ReaderStore {
     }
 
     /// If translation ID exists in store, select it and reload self.books + self.chapters
-    func selectTranslationAndReloadBooksAndPassage(id: Int) async {
-        Self.logger.debug("ENTRY ReaderStore.selectTranslationAndReloadBooks(id: \(id, privacy: .public))")
+    func selectTranslationAndReloadAll(id: Int) async {
+        Self.logger.debug("ENTRY ReaderStore.selectTranslationAndReloadAll(id: \(id, privacy: .public))")
 
         guard let requestedTranslation = self.translations.first(where: { $0.id == id }) else {
             return
@@ -130,61 +130,27 @@ final class ReaderStore {
         self.selectedTranslation = requestedTranslation
         await self.loadBooks()
 
-        // Attempt to restore previous Book/Chapter selection
+        // sanity check
+        guard self.loadState == .loaded else {
+            return
+        }
+
+        // Attempt to restore previous Book/Chapter selection w/o reloading
         if let previousBookId, let previousChapterId {
-            self.selectBook(id: previousBookId)
-            self.selectChapter(id: previousChapterId)
+            await self.selectBookAndChapter(bookID: previousBookId,
+                                            chapterID: previousChapterId,
+                                            reloadPassage: false)
         }
 
-        await self.loadSelectedPassage()
-    }
-
-    /// If book ID exists in store, select it + attempt to select its first chapter as well;
-    /// if no chapters exist, clear book+chapter selections
-    ///
-    /// (TODO: may need to remove the clear logic for UI sake)
-    func selectBook(id: String) {
-        Self.logger.debug("ENTRY ReaderStore.selectBook(id: \(id, privacy: .public))")
-
-        guard let requestedBook = self.books.first(where: { $0.id == id }) else {
-            return
-        }
-
-        self.selectedBook = requestedBook
-
-        // ensure there's at least one chapter
-        guard let firstChapter = requestedBook.chapters.first else {
-            clearBookAndChapterStates()
-
-            self.loadState = .emptyChapters
-            clearPassageStates() // invalidate passage selection
-
-            return
-        }
-
-        self.selectedChapter = firstChapter
-
-        clearPassageStates() // invalidate passage selection
-    }
-
-    /// If chapter ID exists in selected Book, select it
-    func selectChapter(id: String) {
-        Self.logger.debug("ENTRY ReaderStore.selectChapter(id: \(id, privacy: .public))")
-
-        guard let selectedBook = self.selectedBook,
-              let requestedChapter = selectedBook.chapters.first(where: { $0.id == id }) else {
-            clearPassageStates() // invalidate passage selection
-            return
-        }
-
-        self.selectedChapter = requestedChapter
-
-        clearPassageStates() // invalidate passage selection
+        // Regardless of prev selection state, clear + load current passage
+        clearPassageStates()
+        await loadSelectedPassage()
     }
 
     /// Selects a book ID + chapter ID if they exist
     func selectBookAndChapter(bookID: Book.ID,
-                              chapterID: Chapter.ID) {
+                              chapterID: Chapter.ID,
+                              reloadPassage: Bool) async {
         Self.logger.debug("ENTRY ReaderStore.selectBookAndChapter(bookID: \(bookID, privacy: .public), chapterID: \(chapterID, privacy: .public))")
 
         guard let requestedBook = self.books.first(where: { $0.id == bookID }),
@@ -196,7 +162,12 @@ final class ReaderStore {
         self.selectedBook = requestedBook
         self.selectedChapter = requestedChapter
 
-        clearPassageStates() // invalidate passage selection
+        // invalidate passage selection then optionally refresh
+        clearPassageStates()
+
+        if reloadPassage {
+            await self.loadSelectedPassage()
+        }
     }
 
     /// Load the selected passage from calculated selectedReference property
@@ -231,7 +202,7 @@ final class ReaderStore {
         }
     }
 
-    // MARK: Functions (Private)
+    // MARK: Functions (Load; Private)
 
     /// Load a collection of available Books;
     /// set self.books to results;
@@ -273,6 +244,8 @@ final class ReaderStore {
             self.loadState = .failed("Unable to load books and chapters.")
         }
     }
+
+    // MARK: Functions (State; Private)
 
     /// Clear translations, books, selections
     /// (loadState not modified)

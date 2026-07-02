@@ -127,8 +127,11 @@ struct ReaderStoreTests {
         #expect(store.selectedBook == book)
         #expect(store.selectedChapter == firstChapter)
 
-        store.selectBookAndChapter(bookID: book.id, chapterID: lastChapter.id)
+        await store.selectBookAndChapter(bookID: book.id,
+                                         chapterID: lastChapter.id,
+                                         reloadPassage: true)
 
+        #expect(store.loadState == .loaded)
         #expect(store.selectedBook == book)
         #expect(store.selectedChapter == lastChapter)
 
@@ -140,15 +143,15 @@ struct ReaderStoreTests {
     /// loadSelectedPassage() functions as intended
     @Test func loadSelectedPassageSucceeds() async {
         let repository = FakeBibleRepository()
-        let store = ReaderStore(repository: repository)
+        let readerStore = ReaderStore(repository: repository)
 
-        await store.loadTranslationsAndBooks(languageTag: "en")
+        await readerStore.loadTranslationsAndBooks(languageTag: "en")
 
-        await store.loadSelectedPassage()
+        await readerStore.loadSelectedPassage()
 
-        #expect(store.passageLoadState == .loaded)
-        #expect(store.selectedPassage?.id == "GEN.1")
-        #expect(store.selectedPassage?.htmlContent.isEmpty == false)
+        #expect(readerStore.passageLoadState == .loaded)
+        #expect(readerStore.selectedPassage?.id == "GEN.1")
+        #expect(readerStore.selectedPassage?.htmlContent.isEmpty == false)
     }
 
     /// load passage, change chapter/book, verify selectedPassage becomes nil
@@ -165,7 +168,9 @@ struct ReaderStoreTests {
         #expect(store.selectedPassage?.id == "GEN.1")
         #expect(store.selectedPassage?.htmlContent.isEmpty == false)
 
-        store.selectBookAndChapter(bookID: "GEN", chapterID: "GEN.2")
+        await store.selectBookAndChapter(bookID: "GEN",
+                                         chapterID: "GEN.2",
+                                         reloadPassage: false)
 
         #expect(store.passageLoadState == .idle)
         #expect(store.selectedPassage == nil)
