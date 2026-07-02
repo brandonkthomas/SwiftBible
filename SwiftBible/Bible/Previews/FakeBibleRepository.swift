@@ -8,15 +8,23 @@
 /// Fake dummy data implementation for Canvas Previews & unit testing
 final class FakeBibleRepository: BibleRepository {
 
+    /// fake repo does not have a real URL/server to separate translation in results;
+    /// If it stores two fake passages with the same id then it needs some private extra
+    /// key to know which one to return. That private key is translationID
+    struct PassageFixture {
+        let translationID: Translation.ID
+        let passage: Passage
+    }
+
     private let translations: [Translation]
     private let books: [Book]
-    private let passages: [Passage]
+    private let passages: [PassageFixture]
     private let throwWhenLoadingTranslations: Bool
     private let forceLoadingState: Bool
 
     init(translations: [Translation] = FakeBibleRepository.defaultTranslations,
          books: [Book] = FakeBibleRepository.defaultBooks,
-         passages: [Passage] = FakeBibleRepository.defaultPassages,
+         passages: [PassageFixture] = FakeBibleRepository.defaultPassages,
          throwWhenLoadingTranslations: Bool = false,
          forceLoadingState: Bool = false) {
         self.translations = translations
@@ -43,11 +51,14 @@ final class FakeBibleRepository: BibleRepository {
     }
 
     func passage(for reference: ScriptureReference) async throws -> Passage {
-        guard let passage = passages.first(where: { $0.id == reference.passageID }) else {
+        guard let fixture = passages.first(where: {
+            $0.translationID == reference.translationID &&
+            $0.passage.id == reference.passageID
+        }) else {
             throw TestError.passageNotFound
         }
 
-        return passage
+        return fixture.passage
     }
 
     static let defaultTranslations: [Translation] = [
@@ -120,19 +131,33 @@ final class FakeBibleRepository: BibleRepository {
              chapters: [])
     ]
 
-    static let defaultPassages: [Passage] = [
-        Passage(id: "GEN.1",
-                reference: "Genesis 1",
-                htmlContent: """
-                <div>
-                    <div class="p">
-                        <span class="yv-v" v="1"></span><span class="yv-vlbl">1</span>In the beginning God created the heavens and the earth.
-                    </div>
-                    <div class="p">
-                        <span class="yv-v" v="2"></span><span class="yv-vlbl">2</span>Now the earth was formless and empty.
-                    </div>
-                </div>
-                """)
+    static let defaultPassages: [PassageFixture] = [
+        PassageFixture(translationID: 1234,
+                       passage: Passage(id: "GEN.1",
+                                        reference: "Genesis 1",
+                                        htmlContent: """
+                                        <div>
+                                            <div class="p">
+                                                <span class="yv-v" v="1"></span><span class="yv-vlbl">1</span>In the beginning God created the heavens and the earth.
+                                            </div>
+                                            <div class="p">
+                                                <span class="yv-v" v="2"></span><span class="yv-vlbl">2</span>Now the earth was formless and empty.
+                                            </div>
+                                        </div>
+                                        """)),
+        PassageFixture(translationID: 1849,
+                       passage: Passage(id: "GEN.1",
+                                        reference: "Genesis 1",
+                                        htmlContent: """
+                                        <div>
+                                            <div class="p">
+                                                <span class="yv-v" v="1"></span><span class="yv-vlbl">1</span>In the beginning the Living Expression was already there.
+                                            </div>
+                                            <div class="p">
+                                                <span class="yv-v" v="2"></span><span class="yv-vlbl">2</span>They were together in the very beginning.
+                                            </div>
+                                        </div>
+                                        """))
     ]
 
     enum TestError: Error {

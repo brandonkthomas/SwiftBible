@@ -79,6 +79,16 @@ final class YouVersionBibleRepository: BibleRepository {
     }
 
     /// Load HTML passage content for a given ScriptureReference
+    ///
+    /// ScriptureReference
+    ///  translationID: 1849
+    ///  passageID: JHN.1
+    ///
+    /// YouVersionBibleRepository builds:
+    ///  /v1/bibles/1849/passages/JHN.1?format=html
+    ///
+    /// YouVersion returns:
+    ///  Passage(id: "JHN.1", reference: "John 1", htmlContent: "<div>...</div>")
     func passage(for reference: ScriptureReference) async throws -> Passage {
         let passagePath = baseURL.appending(path: "v1/bibles/\(reference.translationID)/passages/\(reference.passageID)")
 

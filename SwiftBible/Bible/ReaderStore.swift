@@ -25,6 +25,7 @@ final class ReaderStore {
 
     // State
     var loadState: ReaderLoadState = .idle
+    var passageLoadState: PassageLoadState = .idle
 
     // Collections
     var translations: [Translation] = []
@@ -34,6 +35,7 @@ final class ReaderStore {
     var selectedTranslation: Translation?
     var selectedBook: Book?
     var selectedChapter: Chapter?
+    var selectedPassage: Passage?
 
     var selectedReference: ScriptureReference? {
         get {
@@ -141,21 +143,29 @@ final class ReaderStore {
         // ensure there's at least one chapter
         guard let firstChapter = requestedBook.chapters.first else {
             clearBookAndChapterStates()
+
             self.loadState = .emptyChapters
+            clearPassageStates() // invalidate passage selection
+
             return
         }
 
         self.selectedChapter = firstChapter
+
+        clearPassageStates() // invalidate passage selection
     }
 
     /// If chapter ID exists in selected Book, select it
     func selectChapter(id: String) {
         guard let selectedBook = self.selectedBook,
               let requestedChapter = selectedBook.chapters.first(where: { $0.id == id }) else {
+            clearPassageStates() // invalidate passage selection
             return
         }
 
         self.selectedChapter = requestedChapter
+
+        clearPassageStates() // invalidate passage selection
     }
 
     /// Selects a book ID + chapter ID if they exist
@@ -163,11 +173,44 @@ final class ReaderStore {
                               chapterID: Chapter.ID) {
         guard let requestedBook = self.books.first(where: { $0.id == bookID }),
               let requestedChapter = requestedBook.chapters.first(where: { $0.id == chapterID }) else {
+            clearPassageStates() // invalidate passage selection
             return
         }
 
         self.selectedBook = requestedBook
         self.selectedChapter = requestedChapter
+
+        clearPassageStates() // invalidate passage selection
+    }
+
+    /// Load the selected passage from calculated selectedReference property
+    func loadSelectedPassage() async {
+        guard let selectedReference else {
+            self.passageLoadState = .failed("No passage selected.")
+            return
+        }
+
+        // Only load if we're not doing anything right now OR if we failed previously
+        // (allow retries)
+        switch self.passageLoadState {
+        case .idle, .failed(_):
+            break
+        default:
+            return
+        }
+
+        self.passageLoadState = .loading
+
+        do {
+            let passage = try await repository.passage(for: selectedReference)
+
+            self.selectedPassage = passage
+            self.passageLoadState = .loaded
+        } catch {
+            // TODO: log exception
+            self.selectedPassage = nil
+            self.passageLoadState = .failed("An error occurred while loading the selected passage.")
+        }
     }
 
     // MARK: Functions (Private)
@@ -229,6 +272,12 @@ final class ReaderStore {
         self.books = []
         self.selectedBook = nil
         self.selectedChapter = nil
+    }
+
+    /// Clear selectedPassage + passageLoadState
+    private func clearPassageStates() {
+        self.selectedPassage = nil
+        self.passageLoadState = .idle
     }
 }
 

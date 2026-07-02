@@ -136,4 +136,38 @@ struct ReaderStoreTests {
         #expect(store.selectedReference?.bookCode == store.selectedBook?.code)
         #expect(store.selectedReference?.chapter == store.selectedChapter?.number)
     }
+
+    /// loadSelectedPassage() functions as intended
+    @Test func loadSelectedPassageSucceeds() async {
+        let repository = FakeBibleRepository()
+        let store = ReaderStore(repository: repository)
+
+        await store.loadTranslationsAndBooks(languageTag: "en")
+
+        await store.loadSelectedPassage()
+
+        #expect(store.passageLoadState == .loaded)
+        #expect(store.selectedPassage?.id == "GEN.1")
+        #expect(store.selectedPassage?.htmlContent.isEmpty == false)
+    }
+
+    /// load passage, change chapter/book, verify selectedPassage becomes nil
+    /// and passageLoadState becomes idle again
+    @Test func changeSelectedChapterInvalidatesSelectedPassage() async {
+        let repository = FakeBibleRepository()
+        let store = ReaderStore(repository: repository)
+
+        await store.loadTranslationsAndBooks(languageTag: "en")
+
+        await store.loadSelectedPassage()
+
+        #expect(store.passageLoadState == .loaded)
+        #expect(store.selectedPassage?.id == "GEN.1")
+        #expect(store.selectedPassage?.htmlContent.isEmpty == false)
+
+        store.selectBookAndChapter(bookID: "GEN", chapterID: "GEN.2")
+
+        #expect(store.passageLoadState == .idle)
+        #expect(store.selectedPassage == nil)
+    }
 }
