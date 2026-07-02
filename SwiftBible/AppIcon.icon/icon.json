@@ -7,7 +7,8 @@
       "blur-material" : null,
       "layers" : [
         {
-          "image-name" : "icon-SwiftBible 2.png",
+          "hidden" : false,
+          "image-name" : "icon-SwiftBible.png",
           "name" : "Bible",
           "position" : {
             "scale" : 0.75,
@@ -19,11 +20,6 @@
         }
       ],
       "lighting" : "individual",
-      "refractivity" : {
-        "depth" : 0,
-        "enabled" : false,
-        "strength" : 0.5
-      },
       "shadow-specializations" : [
         {
           "value" : {
