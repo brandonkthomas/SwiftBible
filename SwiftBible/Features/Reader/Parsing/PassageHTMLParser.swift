@@ -50,6 +50,9 @@ private nonisolated final class PassageHTMLParserDelegate: NSObject, XMLParserDe
     /// true after <span class="yv-vlbl">
     private var isInsideVerseLabel: Bool = false
 
+    /// increments after <span class="yv-n f">
+    private var footnoteDepth: Int = 0
+
     // MARK: Functions (Delegate)
 
     /// Sent by parser when it encounters a start tag for a given element
@@ -62,13 +65,24 @@ private nonisolated final class PassageHTMLParserDelegate: NSObject, XMLParserDe
         qualifiedName qName: String?,
         attributes attributeDict: [String : String] = [:]
     ) {
-        // <div class="p"> encountered; set currentParagraph to new empty item
+        if footnoteDepth > 0 {
+            // we're already inside a footnote; keep tracking depth + short-circuit
+            footnoteDepth += 1
+            return
+        } else if elementName == "span",
+                  attributeDict["class"] == "yv-n f" {
+            // we're opening a new footnote; start tracking depth + short-circuit
+            footnoteDepth = 1
+            return
+        }
+
+        // New paragraph: <div class="p">
         if elementName == "div",
-           attributeDict["class"] == "p" {
+           (attributeDict["class"] == "p" || attributeDict["class"] == "q1") {
             currentParagraph = .init(runs: [])
         }
 
-        // <span class="yv-vlbl"> encountered; this is verse content
+        // Verse: <span class="yv-vlbl">
         if elementName == "span",
            attributeDict["class"] == "yv-vlbl" {
             isInsideVerseLabel = true
@@ -80,6 +94,11 @@ private nonisolated final class PassageHTMLParserDelegate: NSObject, XMLParserDe
         _ parser: XMLParser,
         foundCharacters string: String
     ) {
+        // we should not append footnotes
+        guard footnoteDepth == 0 else {
+            return
+        }
+
         // Clean up input
         let trimmedCharacters = string.trimmingCharacters(in: .whitespacesAndNewlines)
 
@@ -109,12 +128,19 @@ private nonisolated final class PassageHTMLParserDelegate: NSObject, XMLParserDe
         namespaceURI: String?,
         qualifiedName qName: String?
     ) {
-        // </span> encountered; this is end of verse content
-        if elementName == "span" {
+        if footnoteDepth > 0 {
+            // we're already inside a footnote; keep tracking depth + short-circuit
+            footnoteDepth -= 1
+            return
+        }
+
+        // Verse ended: </span>
+        if elementName == "span",
+           isInsideVerseLabel {
             isInsideVerseLabel = false
         }
 
-        // </div> encountered; set currentParagraph to new empty item
+        // Paragraph ended: </div>
         if elementName == "div" {
             if let finishedParagraph = self.currentParagraph {
                 paragraphs.append(finishedParagraph)

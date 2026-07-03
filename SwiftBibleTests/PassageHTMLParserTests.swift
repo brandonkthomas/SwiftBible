@@ -29,6 +29,25 @@ struct PassageHTMLParserTests {
         #expect(passage.paragraphs[0].runs[1] == .text("In the beginning God created the heavens and the earth."))
     }
 
+    @Test func parserSucceedsWithOneVerseAndQ1Class() async throws {
+        let html = """
+            <div class="q1">
+            <span class="yv-v" v="1"></span>
+            <span class="yv-vlbl">1</span>
+            In the beginning God created the heavens and the earth.
+            </div>
+            """
+
+        let parser = PassageHTMLParser()
+        let passage = try parser.parse(html: html)
+
+        #expect(passage.paragraphs.count == 1)
+
+        #expect(passage.paragraphs[0].runs.count == 2)
+        #expect(passage.paragraphs[0].runs[0] == .verseLabel("1"))
+        #expect(passage.paragraphs[0].runs[1] == .text("In the beginning God created the heavens and the earth."))
+    }
+
     @Test func parserSucceedsWithTwoVerses() async throws {
         let html = """
             <div class="p">
@@ -98,6 +117,29 @@ struct PassageHTMLParserTests {
         #expect(passage.paragraphs[0].runs.count == 2)
         #expect(passage.paragraphs[0].runs[0] == .verseLabel("1"))
         #expect(passage.paragraphs[0].runs[1] == .text("Visible text only."))
+    }
+
+    @Test func parserHandlesFootnotes() async throws {
+        let html = """
+            <div class="p">
+            <span class="yv-v" v="1"></span>
+            <span class="yv-vlbl">1</span>
+            In the beginning 
+            <span class="yv-n f">
+            <span class="fr">1:1</span>
+            <span class="ft">Footnote body should not render inline.</span>
+            </span>
+            the Living Expression was already there.
+            </div>
+            """
+
+        let parser = PassageHTMLParser()
+        let passage = try parser.parse(html: html)
+
+        #expect(passage.paragraphs[0].runs.count == 3)
+        #expect(passage.paragraphs[0].runs[0] == .verseLabel("1"))
+        #expect(passage.paragraphs[0].runs[1] == .text("In the beginning"))
+        #expect(passage.paragraphs[0].runs[2] == .text("the Living Expression was already there."))
     }
 
 }
