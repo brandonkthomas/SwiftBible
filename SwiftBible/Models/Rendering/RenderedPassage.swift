@@ -10,6 +10,7 @@ nonisolated struct RenderedPassage {
     // MARK: Properties
 
     var paragraphs: [RenderedParagraph]
+    var footnotes: [Footnote]
 }
 
 /// What type of passage run is this?
@@ -18,4 +19,5 @@ nonisolated struct RenderedPassage {
 nonisolated enum RenderedPassageRun: Equatable {
     case text(String)
     case verseLabel(String)
+    case footnoteMarker(Footnote.ID)
 }

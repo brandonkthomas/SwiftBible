@@ -62,7 +62,7 @@ struct ReaderPassageView: View {
         for run in paragraph.runs {
             switch run {
             case .text(let text):
-                var attributedText = AttributedString(text)
+                let attributedText = AttributedString(text)
                 result.append(attributedText + " ")
 
             case .verseLabel(let label):
@@ -71,6 +71,9 @@ struct ReaderPassageView: View {
                 attributedLabel.font = .system(.caption2, design: .serif)
                 attributedLabel.foregroundColor = .secondary
                 result.append(attributedLabel + " ")
+
+            case .footnoteMarker(let id):
+                break // not rendering these yet
             }
         }
 

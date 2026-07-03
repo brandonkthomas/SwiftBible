@@ -32,7 +32,8 @@ nonisolated struct PassageHTMLParser {
         }
 
         // return parser/delegate results
-        return .init(paragraphs: delegate.paragraphs)
+        return .init(paragraphs: delegate.paragraphs,
+                     footnotes: delegate.footnotes)
     }
 }
 
@@ -43,12 +44,22 @@ private nonisolated final class PassageHTMLParserDelegate: NSObject, XMLParserDe
 
     /// finished output
     var paragraphs: [RenderedParagraph] = []
+    var footnotes: [Footnote] = []
 
     /// paragrph we're currently viewing
     private var currentParagraph: RenderedParagraph?
 
+    /// footnote we're currently rendering
+    private var currentFootnoteID: Footnote.ID?
+
+    /// footnote text we're currently rendering
+    private var currentFootnoteText: String = ""
+
     /// true after <span class="yv-vlbl">
     private var isInsideVerseLabel: Bool = false
+
+    /// true after <span class="ft">
+    private var isInsideFootnoteText: Bool = false
 
     /// increments after <span class="yv-n f">
     private var footnoteDepth: Int = 0
@@ -68,11 +79,27 @@ private nonisolated final class PassageHTMLParserDelegate: NSObject, XMLParserDe
         if footnoteDepth > 0 {
             // we're already inside a footnote; keep tracking depth + short-circuit
             footnoteDepth += 1
+            
+            if elementName == "span",
+               attributeDict["class"] == "ft" {
+                isInsideFootnoteText = true
+            }
+
             return
         } else if elementName == "span",
-                  attributeDict["class"] == "yv-n f" {
+                  attributeDict["class"] == "yv-n f",
+                  var paragraph = self.currentParagraph {
             // we're opening a new footnote; start tracking depth + short-circuit
             footnoteDepth = 1
+            currentFootnoteText = ""
+
+            let newID = UUID()
+            currentFootnoteID = newID
+            paragraph.runs.append(.footnoteMarker(newID))
+
+            // Assign locally-unwrapped copy back to parent
+            self.currentParagraph = paragraph
+
             return
         }
 
@@ -94,11 +121,6 @@ private nonisolated final class PassageHTMLParserDelegate: NSObject, XMLParserDe
         _ parser: XMLParser,
         foundCharacters string: String
     ) {
-        // we should not append footnotes
-        guard footnoteDepth == 0 else {
-            return
-        }
-
         // Clean up input
         let trimmedCharacters = string.trimmingCharacters(in: .whitespacesAndNewlines)
 
@@ -110,8 +132,14 @@ private nonisolated final class PassageHTMLParserDelegate: NSObject, XMLParserDe
 
         // Append results
         if isInsideVerseLabel {
+            // Verse Label
             currentParagraph.runs.append(.verseLabel(trimmedCharacters))
+        } else if footnoteDepth > 0,
+                  isInsideFootnoteText {
+            // Footnote
+            currentFootnoteText.append(trimmedCharacters)
         } else {
+            // Text (Verse Content)
             currentParagraph.runs.append(.text(trimmedCharacters))
         }
 
@@ -131,7 +159,23 @@ private nonisolated final class PassageHTMLParserDelegate: NSObject, XMLParserDe
         if footnoteDepth > 0 {
             // we're already inside a footnote; keep tracking depth + short-circuit
             footnoteDepth -= 1
+
+            if elementName == "span",
+               isInsideFootnoteText {
+                isInsideFootnoteText = false
+            }
+
             return
+        } else if footnoteDepth == 0,
+                  let currentFootnoteID {
+            // we just closed a footnote; wrap up our tracking
+            let footnote = Footnote(id: currentFootnoteID,
+                                    text: currentFootnoteText)
+
+            footnotes.append(footnote)
+
+            self.currentFootnoteID = nil
+            self.currentFootnoteText = ""
         }
 
         // Verse ended: </span>
