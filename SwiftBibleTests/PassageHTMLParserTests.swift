@@ -136,14 +136,13 @@ struct PassageHTMLParserTests {
         let parser = PassageHTMLParser()
         let passage = try parser.parse(html: html)
 
-        #expect(passage.paragraphs[0].runs.count == 5)
+        #expect(passage.paragraphs[0].runs.count == 4)
         #expect(passage.paragraphs[0].runs[0] == .verseLabel("1"))
         #expect(passage.paragraphs[0].runs[1] == .text("In the beginning"))
         #expect(passage.paragraphs[0].runs[2] == .footnoteMarker(passage.footnotes[0].id))
-        #expect(passage.paragraphs[0].runs[4] == .text("the Living Expression was already there."))
+        #expect(passage.paragraphs[0].runs[3] == .text("the Living Expression was already there."))
 
         #expect(passage.footnotes.count == 1)
         #expect(passage.footnotes[0].text == "Footnote body should not render inline.")
     }
-
 }

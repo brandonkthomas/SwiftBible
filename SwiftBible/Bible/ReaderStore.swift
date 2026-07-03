@@ -18,7 +18,7 @@ import OSLog
 /// - selected chapter
 /// - loading state
 /// - error state
-/// - TODO: selected verse range, last-read restoration, next/previous chapter behavior
+/// - TODO: selected verse range, last-read restoration
 @Observable
 final class ReaderStore {
 

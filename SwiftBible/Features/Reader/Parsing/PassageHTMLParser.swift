@@ -93,7 +93,6 @@ private nonisolated final class PassageHTMLParserDelegate: NSObject, XMLParserDe
             footnoteDepth = 1
             currentFootnoteText = ""
 
-            let newID = UUID()
             currentFootnoteID = newID
             paragraph.runs.append(.footnoteMarker(newID))
 
@@ -117,6 +116,8 @@ private nonisolated final class PassageHTMLParserDelegate: NSObject, XMLParserDe
     }
 
     /// Sent by parser when it encounters a specific character
+    ///
+    /// Inherited from XMLParserDelegate
     func parser(
         _ parser: XMLParser,
         foundCharacters string: String
@@ -134,10 +135,14 @@ private nonisolated final class PassageHTMLParserDelegate: NSObject, XMLParserDe
         if isInsideVerseLabel {
             // Verse Label
             currentParagraph.runs.append(.verseLabel(trimmedCharacters))
-        } else if footnoteDepth > 0,
-                  isInsideFootnoteText {
+        } else if footnoteDepth > 0 {
             // Footnote
-            currentFootnoteText.append(trimmedCharacters)
+            // Ignore non-text footnote items (i.e. "1:1")
+            if isInsideFootnoteText {
+                currentFootnoteText.append(trimmedCharacters)
+            } else {
+                return
+            }
         } else {
             // Text (Verse Content)
             currentParagraph.runs.append(.text(trimmedCharacters))
@@ -164,19 +169,20 @@ private nonisolated final class PassageHTMLParserDelegate: NSObject, XMLParserDe
                isInsideFootnoteText {
                 isInsideFootnoteText = false
             }
-        }
 
-        // we just closed a footnote; wrap up our tracking
-        if footnoteDepth == 0,
-           let currentFootnoteID {
-            let footnote = Footnote(id: currentFootnoteID,
-                                    text: currentFootnoteText)
+            // we just closed a footnote; wrap up our tracking
+            if footnoteDepth == 0,
+               let currentFootnoteID {
+                let footnote = Footnote(id: currentFootnoteID,
+                                        text: currentFootnoteText)
 
-            footnotes.append(footnote)
+                footnotes.append(footnote)
 
-            self.currentFootnoteID = nil
-            self.currentFootnoteText = ""
+                self.currentFootnoteID = nil
+                self.currentFootnoteText = ""
+            }
 
+            // we're done here
             return
         }
 

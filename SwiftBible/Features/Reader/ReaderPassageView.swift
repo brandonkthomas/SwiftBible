@@ -72,7 +72,7 @@ struct ReaderPassageView: View {
                 attributedLabel.foregroundColor = .secondary
                 result.append(attributedLabel + " ")
 
-            case .footnoteMarker(let id):
+            case .footnoteMarker(_):
                 break // not rendering these yet
             }
         }

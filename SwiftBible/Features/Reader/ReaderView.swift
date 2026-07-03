@@ -7,6 +7,7 @@
 
 import SwiftUI
 
+/// TODO: Edge swipe for next/prev chapter
 struct ReaderView: View {
 
     // MARK: Properties (Private)
