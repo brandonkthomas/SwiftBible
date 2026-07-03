@@ -1,6 +1,8 @@
 <div align="center">
   <a href="https://github.com/brandonkthomas/SwiftBible">
     <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="Public/AppIcon/AppIcon-iOS-Dark-256@2x.png">
+      <source media="(prefers-color-scheme: light)" srcset="Public/AppIcon/AppIcon-iOS-Default-256@2x.png">
       <img src="SwiftBible/AppIcon.icon/Assets/icon-SwiftBible.png" alt="Logo" width="80" height="80">
     </picture>
   </a>
