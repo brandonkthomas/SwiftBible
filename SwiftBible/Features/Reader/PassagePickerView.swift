@@ -61,7 +61,7 @@ struct PassagePickerView: View {
                         Toggle(isOn: .constant(true), label: {
                             Text(translation.title)
                             Text(translation.abbreviation)
-                                .foregroundColor(.secondary)
+                                .foregroundStyle(.secondary)
                         })
                     }
                     else {
@@ -73,7 +73,7 @@ struct PassagePickerView: View {
                         }) {
                             Text(translation.title)
                             Text(translation.abbreviation)
-                                .foregroundColor(.secondary)
+                                .foregroundStyle(.secondary)
                         }
                     }
                 }
@@ -114,7 +114,7 @@ struct PassagePickerView: View {
                         "\(readerStore.selectedBook?.displayName ?? "Select Book") \(readerStore.selectedChapter?.displayName ?? "")"
                     )
                     Text("\(readerStore.selectedTranslation?.abbreviation ?? "")")
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
