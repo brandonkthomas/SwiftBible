@@ -156,19 +156,19 @@ private nonisolated final class PassageHTMLParserDelegate: NSObject, XMLParserDe
         namespaceURI: String?,
         qualifiedName qName: String?
     ) {
+        // we're already inside a footnote; keep tracking depth + short-circuit
         if footnoteDepth > 0 {
-            // we're already inside a footnote; keep tracking depth + short-circuit
             footnoteDepth -= 1
 
             if elementName == "span",
                isInsideFootnoteText {
                 isInsideFootnoteText = false
             }
+        }
 
-            return
-        } else if footnoteDepth == 0,
-                  let currentFootnoteID {
-            // we just closed a footnote; wrap up our tracking
+        // we just closed a footnote; wrap up our tracking
+        if footnoteDepth == 0,
+           let currentFootnoteID {
             let footnote = Footnote(id: currentFootnoteID,
                                     text: currentFootnoteText)
 
@@ -176,6 +176,8 @@ private nonisolated final class PassageHTMLParserDelegate: NSObject, XMLParserDe
 
             self.currentFootnoteID = nil
             self.currentFootnoteText = ""
+
+            return
         }
 
         // Verse ended: </span>
@@ -185,11 +187,10 @@ private nonisolated final class PassageHTMLParserDelegate: NSObject, XMLParserDe
         }
 
         // Paragraph ended: </div>
-        if elementName == "div" {
-            if let finishedParagraph = self.currentParagraph {
-                paragraphs.append(finishedParagraph)
-                self.currentParagraph = nil
-            }
+        if elementName == "div",
+           let finishedParagraph = self.currentParagraph{
+            paragraphs.append(finishedParagraph)
+            self.currentParagraph = nil
         }
     }
 }

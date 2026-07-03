@@ -29,8 +29,8 @@ struct ReaderPassageView: View {
     /// Reader view
     var body: some View {
         ScrollView {
-            // LazyVStack only renders components when they're visible
-            LazyVStack {
+            // LazyVStack only renders components when they're visible BUT it makes scrollbar jumpy
+            VStack {
                 Group {
                     let paragraphs = renderedPassage?.paragraphs ?? []
 
