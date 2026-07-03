@@ -51,6 +51,7 @@ private nonisolated final class PassageHTMLParserDelegate: NSObject, XMLParserDe
 
     /// footnote we're currently rendering
     private var currentFootnoteID: Footnote.ID?
+    private var nextFootnoteID: Footnote.ID = 0
 
     /// footnote text we're currently rendering
     private var currentFootnoteText: String = ""
@@ -93,8 +94,11 @@ private nonisolated final class PassageHTMLParserDelegate: NSObject, XMLParserDe
             footnoteDepth = 1
             currentFootnoteText = ""
 
-            currentFootnoteID = newID
-            paragraph.runs.append(.footnoteMarker(newID))
+            let footnoteID = nextFootnoteID
+            nextFootnoteID += 1
+            currentFootnoteID = footnoteID
+
+            paragraph.runs.append(.footnoteMarker(footnoteID))
 
             // Assign locally-unwrapped copy back to parent
             self.currentParagraph = paragraph
