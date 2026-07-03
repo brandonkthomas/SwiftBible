@@ -4,6 +4,10 @@ DerivedData/
 xcuserdata/
 *.xcuserstate
 
+# Local project guidance
+AGENTS.md
+README.md
+
 # Local YouVersion configuration
 LocalConfiguration/
 SwiftBible/Resources/Configuration/Secrets.plist
