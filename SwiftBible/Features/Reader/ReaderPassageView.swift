@@ -68,7 +68,7 @@ struct ReaderPassageView: View {
             case .verseLabel(let label):
                 var attributedLabel = AttributedString(label)
                 attributedLabel.baselineOffset = 6
-                attributedLabel.font = .system(.caption, design: .serif)
+                attributedLabel.font = .system(.caption2, design: .serif)
                 attributedLabel.foregroundColor = .secondary
                 result.append(attributedLabel + " ")
             }
