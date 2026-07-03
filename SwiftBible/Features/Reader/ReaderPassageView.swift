@@ -12,17 +12,7 @@ struct ReaderPassageView: View {
 
     // MARK: Properties
 
-    var passage: Passage
-
-    var renderedPassage: RenderedPassage? {
-        let parser: PassageHTMLParser = .init()
-
-        do {
-            return try parser.parse(html: passage.htmlContent)
-        } catch {
-            return nil
-        }
-    }
+    var renderedPassage: RenderedPassage
 
     // MARK: Views
 
@@ -32,7 +22,7 @@ struct ReaderPassageView: View {
             // LazyVStack only renders components when they're visible BUT it makes scrollbar jumpy
             VStack {
                 Group {
-                    let paragraphs = renderedPassage?.paragraphs ?? []
+                    let paragraphs = renderedPassage.paragraphs
 
                     // all integer indexes (0-based); stop before paragraphs.count
                     ForEach(0..<paragraphs.count, id: \.self) { paragraphIndex in

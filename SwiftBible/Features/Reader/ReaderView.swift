@@ -91,8 +91,8 @@ struct ReaderView: View {
                             description: Text(message)
                         )
                     case .loaded:
-                        if let passage = readerStore.selectedPassage {
-                            ReaderPassageView(passage: passage)
+                        if let renderedPassage = readerStore.selectedRenderedPassage {
+                            ReaderPassageView(renderedPassage: renderedPassage)
                         } else {
                             passageUnavailableView
                         }

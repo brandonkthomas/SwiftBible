@@ -126,8 +126,12 @@ struct PassageHTMLParserTests {
             <span class="yv-vlbl">1</span>
             In the beginning 
             <span class="yv-n f">
-            <span class="fr">1:1</span>
-            <span class="ft">Footnote body should not render inline.</span>
+                <span class="fr">1:1</span>
+                <span class="ft">Footnote body should not render inline.</span>
+            </span>
+            <span class="yv-n f">
+                <span class="fr">1:2</span>
+                <span class="ft">Second footnote.</span>
             </span>
             the Living Expression was already there.
             </div>
@@ -136,13 +140,17 @@ struct PassageHTMLParserTests {
         let parser = PassageHTMLParser()
         let passage = try parser.parse(html: html)
 
-        #expect(passage.paragraphs[0].runs.count == 4)
+        #expect(passage.paragraphs[0].runs.count == 5)
         #expect(passage.paragraphs[0].runs[0] == .verseLabel("1"))
         #expect(passage.paragraphs[0].runs[1] == .text("In the beginning"))
         #expect(passage.paragraphs[0].runs[2] == .footnoteMarker(passage.footnotes[0].id))
-        #expect(passage.paragraphs[0].runs[3] == .text("the Living Expression was already there."))
+        #expect(passage.paragraphs[0].runs[3] == .footnoteMarker(passage.footnotes[1].id))
+        #expect(passage.paragraphs[0].runs[4] == .text("the Living Expression was already there."))
 
-        #expect(passage.footnotes.count == 1)
+        #expect(passage.footnotes.count == 2)
+        #expect(passage.footnotes[0].id == 0)
         #expect(passage.footnotes[0].text == "Footnote body should not render inline.")
+        #expect(passage.footnotes[1].id == 1)
+        #expect(passage.footnotes[1].text == "Second footnote.")
     }
 }

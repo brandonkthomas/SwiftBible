@@ -34,9 +34,12 @@ final class ReaderStore {
 
     // Selections
     var selectedTranslation: Translation?
+
     var selectedBook: Book?
     var selectedChapter: Chapter?
+
     var selectedPassage: Passage?
+    var selectedRenderedPassage: RenderedPassage?
 
     var selectedReference: ScriptureReference? {
         get {
@@ -191,9 +194,16 @@ final class ReaderStore {
         self.passageLoadState = .loading
 
         do {
+            // Try to retrieve passage HTML + parse into SwiftBible.Passage
+            // + mark result as selected
             let passage = try await repository.passage(for: selectedReference)
-
             self.selectedPassage = passage
+
+            // Try to render the now-selected passage HTML
+            let parser: PassageHTMLParser = .init()
+            self.selectedRenderedPassage = try parser.parse(html: passage.htmlContent)
+
+            // we're done
             self.passageLoadState = .loaded
         } catch {
             // TODO: log exception
@@ -274,6 +284,7 @@ final class ReaderStore {
     private func clearPassageStates() {
         Self.logger.debug("ENTRY ReaderStore.clearPassageStates()")
         self.selectedPassage = nil
+        self.selectedRenderedPassage = nil
         self.passageLoadState = .idle
     }
 }
