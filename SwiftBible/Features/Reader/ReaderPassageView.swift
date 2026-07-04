@@ -12,9 +12,11 @@ struct ReaderPassageView: View {
 
     // MARK: Properties
 
+    /// Entire pre-rendered passage that we need to display
+    /// Contains all paragraphs (text/labels/footnote markers) & actual footnote content
     var renderedPassage: RenderedPassage
 
-    @State private var selectedFootnoteID: Footnote.ID?
+//    @State private var isShowingPopover = false
 
     // MARK: Views
 
@@ -32,6 +34,14 @@ struct ReaderPassageView: View {
 
                         Text(paragraphText(paragraph))
                             .frame(maxWidth: .infinity, alignment: .leading)
+//                            .onTapGesture {
+//                                isShowingPopover = true
+//                            }
+//                            .popover(isPresented: $isShowingPopover) {
+//                                Text("Test prototype for verse selection options")
+//                                    .padding()
+//                                    .frame(width: 300, height: 200)
+//                            }
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -49,10 +59,12 @@ struct ReaderPassageView: View {
 
     /// Convert a single RenderedParagraph into an AttributedString
     ///
-    /// TODO: change to use RenderedPassage so we can retrieve footnote content...?
+    /// TODO: when footnote sheet tap is implemented, change this to use RenderedPassage so we can retrieve
+    /// footnote content
     private func paragraphText(_ paragraph: RenderedParagraph) -> AttributedString {
         var result = AttributedString()
 
+        // Output
         for run in paragraph.runs {
             switch run {
             case .text(let text, verseRange: _):
@@ -66,10 +78,11 @@ struct ReaderPassageView: View {
                 attributedLabel.foregroundColor = .secondary
                 result.append(attributedLabel + " ")
 
-            case .footnoteMarker(_, verseRange: _):
-                var attributedMarker = AttributedString("\(Image(systemName: "document"))")
+            case .footnoteMarker(let footnoteID, let verseRange):
+                let string = "\(verseRange.startVerse)\(verseRange.endVerse != nil ? "-\(verseRange.endVerse!)" : "")"
+                var attributedMarker = AttributedString() // originally 0-based
                 attributedMarker.baselineOffset = 6
-                attributedMarker.font = .system(.caption2, design: .serif)
+                attributedMarker.font = .system(.caption2, design: .serif, weight: .thin).italic(true)
                 attributedMarker.foregroundColor = .accentColor
 //                attributedMarker.setAttributes(markerID: markerID)
                 result.append(" " + attributedMarker + " ")

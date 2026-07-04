@@ -13,10 +13,11 @@ nonisolated struct RenderedPassage {
 nonisolated enum RenderedPassageRun: Equatable {
     case text(String, verseRange: RenderedVerseRange?)
     case verseLabel(displayText: String, verseRange: RenderedVerseRange?)
-    case footnoteMarker(Footnote.ID, verseRange: RenderedVerseRange?)
+    case footnoteMarker(Footnote.ID, verseRange: RenderedVerseRange)
 }
 
-nonisolated struct RenderedVerseRange: Equatable {
+// Hashable for ReaderPassageFootnoteSheetView's verse comparison/grouping
+nonisolated struct RenderedVerseRange: Equatable, Hashable {
     let startVerse: Int
     let endVerse: Int?
 

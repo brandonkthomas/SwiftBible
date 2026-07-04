@@ -7,5 +7,7 @@
 
 nonisolated struct Footnote: Identifiable {
     let id: Int
+    /// Used by ReaderPassageFootnoteSheetView
+    let verseRange: RenderedVerseRange
     let text: String
 }

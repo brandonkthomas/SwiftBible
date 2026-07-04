@@ -95,6 +95,7 @@ private nonisolated final class PassageHTMLParserDelegate: NSObject, XMLParserDe
             return
         } else if elementName == "span",
                   attributeDict["class"] == "yv-n f",
+                  let currentVerseRange,
                   var paragraph = self.currentParagraph {
             // we're opening a new footnote; start tracking depth + short-circuit
             footnoteDepth = 1
@@ -104,6 +105,7 @@ private nonisolated final class PassageHTMLParserDelegate: NSObject, XMLParserDe
             nextFootnoteID += 1
             currentFootnoteID = footnoteID
 
+            // drop a marker at this exact spot
             paragraph.runs.append(.footnoteMarker(footnoteID,
                                                   verseRange: currentVerseRange))
 
@@ -198,8 +200,10 @@ private nonisolated final class PassageHTMLParserDelegate: NSObject, XMLParserDe
 
             // we just closed a footnote; wrap up our tracking
             if footnoteDepth == 0,
-               let currentFootnoteID {
+               let currentFootnoteID,
+               let currentVerseRange {
                 let footnote = Footnote(id: currentFootnoteID,
+                                        verseRange: currentVerseRange,
                                         text: currentFootnoteText)
 
                 footnotes.append(footnote)
