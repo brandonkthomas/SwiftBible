@@ -101,7 +101,9 @@ final class YouVersionBibleRepository: BibleRepository {
         // need to use "html" to get verse#/redtext/etc back
         components.queryItems = [
             URLQueryItem(name: "format",
-                         value: "html")
+                         value: "html"),
+            URLQueryItem(name: "include_notes",
+                         value: "true")
         ]
 
         guard let builtUrl = components.url else {
