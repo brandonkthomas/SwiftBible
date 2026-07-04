@@ -6,18 +6,22 @@
 //
 
 nonisolated struct RenderedPassage {
-
-    // MARK: Properties
-
     var paragraphs: [RenderedParagraph]
     var footnotes: [Footnote]
 }
 
-/// What type of passage run is this?
-///
-/// Equatable for unit testing
 nonisolated enum RenderedPassageRun: Equatable {
-    case text(String)
-    case verseLabel(String)
-    case footnoteMarker(Footnote.ID)
+    case text(String, verseRange: RenderedVerseRange?)
+    case verseLabel(displayText: String, verseRange: RenderedVerseRange?)
+    case footnoteMarker(Footnote.ID, verseRange: RenderedVerseRange?)
+}
+
+nonisolated struct RenderedVerseRange: Equatable {
+    let startVerse: Int
+    let endVerse: Int?
+
+    init(startVerse: Int, endVerse: Int? = nil) {
+        self.startVerse = startVerse
+        self.endVerse = endVerse
+    }
 }

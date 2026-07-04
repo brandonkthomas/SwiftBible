@@ -14,6 +14,8 @@ struct ReaderPassageView: View {
 
     var renderedPassage: RenderedPassage
 
+    @State private var selectedFootnoteID: Footnote.ID?
+
     // MARK: Views
 
     /// Reader view
@@ -45,25 +47,32 @@ struct ReaderPassageView: View {
 
     // MARK: Functions
 
-    /// Converta single RenderedParagraph into an AttributedString
+    /// Convert a single RenderedParagraph into an AttributedString
+    ///
+    /// TODO: change to use RenderedPassage so we can retrieve footnote content...?
     private func paragraphText(_ paragraph: RenderedParagraph) -> AttributedString {
         var result = AttributedString()
 
         for run in paragraph.runs {
             switch run {
-            case .text(let text):
+            case .text(let text, verseRange: _):
                 let attributedText = AttributedString(text)
                 result.append(attributedText + " ")
 
-            case .verseLabel(let label):
-                var attributedLabel = AttributedString(label)
+            case .verseLabel(displayText: let displayText, verseRange: _):
+                var attributedLabel = AttributedString(displayText)
                 attributedLabel.baselineOffset = 6
                 attributedLabel.font = .system(.caption2, design: .serif)
                 attributedLabel.foregroundColor = .secondary
                 result.append(attributedLabel + " ")
 
-            case .footnoteMarker(_):
-                break // not rendering these yet
+            case .footnoteMarker(_, verseRange: _):
+                var attributedMarker = AttributedString("\(Image(systemName: "document"))")
+                attributedMarker.baselineOffset = 6
+                attributedMarker.font = .system(.caption2, design: .serif)
+                attributedMarker.foregroundColor = .accentColor
+//                attributedMarker.setAttributes(markerID: markerID)
+                result.append(" " + attributedMarker + " ")
             }
         }
 

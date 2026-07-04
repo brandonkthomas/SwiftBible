@@ -53,8 +53,14 @@ private nonisolated final class PassageHTMLParserDelegate: NSObject, XMLParserDe
     private var currentFootnoteID: Footnote.ID?
     private var nextFootnoteID: Footnote.ID = 0
 
-    /// footnote text we're currently rendering
+    /// buffer for footnote text we're currently rendering (XMLParser is streaming)
     private var currentFootnoteText: String = ""
+
+    /// Which verse range are we currently rendering?
+    private var currentVerseRange: RenderedVerseRange?
+
+    /// buffer for current verse label text we're currently rendering (XMLParser is streaming)
+    private var currentVerseLabelText: String = ""
 
     /// true after <span class="yv-vlbl">
     private var isInsideVerseLabel: Bool = false
@@ -98,7 +104,8 @@ private nonisolated final class PassageHTMLParserDelegate: NSObject, XMLParserDe
             nextFootnoteID += 1
             currentFootnoteID = footnoteID
 
-            paragraph.runs.append(.footnoteMarker(footnoteID))
+            paragraph.runs.append(.footnoteMarker(footnoteID,
+                                                  verseRange: currentVerseRange))
 
             // Assign locally-unwrapped copy back to parent
             self.currentParagraph = paragraph
@@ -112,10 +119,24 @@ private nonisolated final class PassageHTMLParserDelegate: NSObject, XMLParserDe
             currentParagraph = .init(runs: [])
         }
 
+        // Verse metadata: <span class="yv-v" v="26" ev="27">
+        if elementName == "span",
+           attributeDict["class"] == "yv-v" {
+            if let startVerseText = attributeDict["v"],
+               let startVerse = Int(startVerseText) {
+                let endVerse = attributeDict["ev"].flatMap { Int($0) }
+                currentVerseRange = .init(startVerse: startVerse,
+                                          endVerse: endVerse)
+            } else {
+                currentVerseRange = nil
+            }
+        }
+
         // Verse: <span class="yv-vlbl">
         if elementName == "span",
            attributeDict["class"] == "yv-vlbl" {
             isInsideVerseLabel = true
+            currentVerseLabelText = ""
         }
     }
 
@@ -138,7 +159,7 @@ private nonisolated final class PassageHTMLParserDelegate: NSObject, XMLParserDe
         // Append results
         if isInsideVerseLabel {
             // Verse Label
-            currentParagraph.runs.append(.verseLabel(trimmedCharacters))
+            currentVerseLabelText.append(trimmedCharacters)
         } else if footnoteDepth > 0 {
             // Footnote
             // Ignore non-text footnote items (i.e. "1:1")
@@ -149,7 +170,8 @@ private nonisolated final class PassageHTMLParserDelegate: NSObject, XMLParserDe
             }
         } else {
             // Text (Verse Content)
-            currentParagraph.runs.append(.text(trimmedCharacters))
+            currentParagraph.runs.append(.text(trimmedCharacters,
+                                               verseRange: currentVerseRange))
         }
 
         // Assign locally-unwrapped copy back to parent
@@ -192,13 +214,20 @@ private nonisolated final class PassageHTMLParserDelegate: NSObject, XMLParserDe
 
         // Verse ended: </span>
         if elementName == "span",
-           isInsideVerseLabel {
+           isInsideVerseLabel,
+           var paragraph = self.currentParagraph {
             isInsideVerseLabel = false
+
+            paragraph.runs.append(.verseLabel(displayText: currentVerseLabelText,
+                                              verseRange: currentVerseRange))
+
+            self.currentParagraph = paragraph
+            self.currentVerseLabelText = ""
         }
 
         // Paragraph ended: </div>
         if elementName == "div",
-           let finishedParagraph = self.currentParagraph{
+           let finishedParagraph = self.currentParagraph {
             paragraphs.append(finishedParagraph)
             self.currentParagraph = nil
         }
