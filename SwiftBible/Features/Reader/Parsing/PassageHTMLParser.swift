@@ -95,7 +95,7 @@ private nonisolated final class PassageHTMLParserDelegate: NSObject, XMLParserDe
             return
         } else if elementName == "span",
                   attributeDict["class"] == "yv-n f",
-                  let currentVerseRange,
+                  let currentVerseRange, // TODO: this will silently skip footnotes appearing BEFORE a verse (!)
                   var paragraph = self.currentParagraph {
             // we're opening a new footnote; start tracking depth + short-circuit
             footnoteDepth = 1
