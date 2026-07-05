@@ -13,7 +13,6 @@ struct ReaderPassageFootnoteSheetView: View {
 
     let verseRange: RenderedVerseRange
     let passage: RenderedPassage
-    let sheetTitle: String
 
     @State private var isShowingSheet = false
     @Environment(\.dismiss) var dismiss
@@ -34,6 +33,10 @@ struct ReaderPassageFootnoteSheetView: View {
 
         return attributedLabel
     }
+
+//    private var sheetTitle: String {
+//        return "\(passage.reference.bookCode) \(verseRange.displayText)"
+//    }
 
     // MARK: Views
 
@@ -62,7 +65,7 @@ struct ReaderPassageFootnoteSheetView: View {
                 // inset on top/bottom
                 .padding(EdgeInsets(top: 4, leading: 24, bottom: 0, trailing: 24))
                 // sheet title
-                .navigationTitle(sheetTitle)
+                .navigationTitle("")
                 .navigationBarTitleDisplayMode(.inline)
             }
             .lineHeight(AttributedString.LineHeight.exact(points: 30))
@@ -87,6 +90,5 @@ struct ReaderPassageFootnoteSheetView: View {
     let passage = try! PassageHTMLParser().parse(html: FakeBibleRepository.footnotePassageHTML)
 
     ReaderPassageFootnoteSheetView(verseRange: RenderedVerseRange(startVerse: 2),
-                                   passage: passage,
-                                   sheetTitle: "Test")
+                                   passage: passage)
 }

@@ -86,7 +86,7 @@ struct PassageTextRenderer {
                                              verseRange: currentVerseRange)
                 result.append(label)
 
-            case .footnoteMarker(let footnoteID,
+            case .footnoteMarker(_,
                                  verseRange: let currentVerseRange):
                 switch mode {
                 case .collapsed:

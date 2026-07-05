@@ -68,8 +68,7 @@ struct ReaderPassageView: View {
         // Open sheet when above openURL handler sets selectedVerse
         .sheet(item: $selectedVerse) { verse in
             ReaderPassageFootnoteSheetView(verseRange: verse,
-                                           passage: renderedPassage,
-                                           sheetTitle: "Title")
+                                           passage: renderedPassage)
                 .presentationDetents([.medium, .large])
                 .presentationContentInteraction(.scrolls)
 //                .presentationBackgroundInteraction(.enabled)
