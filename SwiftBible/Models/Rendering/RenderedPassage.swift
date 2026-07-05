@@ -10,6 +10,34 @@ import Foundation
 nonisolated struct RenderedPassage {
     var paragraphs: [RenderedParagraph]
     var footnotes: [Footnote]
+
+    /// Retrieve all runs from this RenderedPassage for a given RenderedVerseRange
+    func runs(for verseRange: RenderedVerseRange) -> [RenderedPassageRun] {
+        var runs: [RenderedPassageRun] = []
+
+        func appendIfMatching(_ run: RenderedPassageRun,
+                              _ range: RenderedVerseRange?) {
+            if verseRange == range {
+                runs.append(run)
+            }
+        }
+
+        // iterate all paragraphs' runs in order; keep only verse range matches + append to list
+        for paragraph in paragraphs {
+            for run in paragraph.runs {
+                switch run {
+                case .text(_, verseRange: let currentVerseRange):
+                    appendIfMatching(run, currentVerseRange)
+                case .footnoteMarker(_, verseRange: let currentVerseRange):
+                    appendIfMatching(run, currentVerseRange)
+                case .verseLabel(_, verseRange: let currentVerseRange):
+                    appendIfMatching(run, currentVerseRange)
+                }
+            }
+        }
+
+        return runs
+    }
 }
 
 nonisolated enum RenderedPassageRun: Equatable {

@@ -20,16 +20,14 @@ struct ReaderPassageFootnoteSheetView: View {
         passage.footnotes.filter { $0.verseRange == verseRange }
     }
 
-    private var selectedVerse: String {
-//        passage.paragraphs { $0.verseRange == verseRange }
-        return "Verse content."
-    }
-
-    private func footnoteLabel(for footnote: Footnote) -> AttributedString {
-        var attributedLabel = AttributedString("\(footnote.id) ")
+    private func footnoteLabel(for footnote: Footnote,
+                               index: Int) -> AttributedString {
+        // Same a/b/c label that Renderer places inline so list/text stay in sync
+        var attributedLabel = AttributedString("\(PassageTextRenderer.footnoteSymbol(for: index)) ")
         attributedLabel.baselineOffset = 6
-        attributedLabel.font = .system(.caption2, design: .serif)
-        attributedLabel.foregroundColor = .secondary
+        attributedLabel.font = .system(.caption2, design: .serif, weight: .bold)
+        attributedLabel.foregroundColor = .accentColor
+
         return attributedLabel
     }
 
@@ -37,36 +35,34 @@ struct ReaderPassageFootnoteSheetView: View {
 
     /// Footnote sheet view: show selected verse range + all applicable footnotes
     var body: some View {
-        // TODO: align left horizontally
         ScrollView {
-            VStack {
-                Text(selectedVerse)
+            VStack(alignment: .leading) {
+                Text(PassageTextRenderer.attributedString(for: passage.runs(for: verseRange),
+                                                          mode: .inline))
                 Divider()
-                ForEach(footnotesForVerse) { footnote in
-                    // append verse label immediately
-
-                    Group {
-                        Text(footnoteLabel(for: footnote))
-                        Text(footnote.text)
-                    }
+                // Array(...) so enumerated() is a RandomAccessCollection ForEach accepts;
+                // offset drives the a/b/c label, element.id is the stable identity
+                ForEach(Array(footnotesForVerse.enumerated()), id: \.element.id) { index, footnote in
+                    let label = footnoteLabel(for: footnote,
+                                              index: index)
+                    Text("\(label)\(footnote.text)")
                 }
             }
+            // inset on top/bottom
+            .padding(EdgeInsets(top: 24, leading: 0, bottom: 24, trailing: 0))
         }
         .lineHeight(AttributedString.LineHeight.exact(points: 30))
         .font(.system(.body, design: .serif))
         .frame(maxWidth: .infinity, alignment: .topLeading)
-        // inset on L/R edges; spacing between paragraphs
-        .padding(EdgeInsets(top: 24, leading: 24, bottom: 2, trailing: 24))
+        // inset on L/R edges
+        .padding(EdgeInsets(top: 0, leading: 24, bottom: 0, trailing: 24))
     }
 }
 
 #Preview {
-    let range = RenderedVerseRange(startVerse: 1,
-                                   endVerse: 2)
+    // Reuse fake repo's footnote fixture through real parser
+    let passage = try! PassageHTMLParser().parse(html: FakeBibleRepository.footnotePassageHTML)
 
-    ReaderPassageFootnoteSheetView(verseRange: range,
-                                   passage: RenderedPassage(paragraphs: [],
-                                                            footnotes: [Footnote(id: 1,
-                                                                                 verseRange: range,
-                                                                                 text: "hello")]))
+    ReaderPassageFootnoteSheetView(verseRange: RenderedVerseRange(startVerse: 2),
+                                   passage: passage)
 }

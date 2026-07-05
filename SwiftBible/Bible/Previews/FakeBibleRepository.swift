@@ -160,6 +160,17 @@ final class FakeBibleRepository: BibleRepository {
                                         """))
     ]
 
+    /// Passage HTML containing footnotes in verse 2, for previews/tests that need
+    /// footnote rendering. Pass to `PassageHTMLParser` to produce a `RenderedPassage`.
+    static let footnotePassageHTML = """
+    <div class="p">
+        <span class="yv-v" v="1"></span><span class="yv-vlbl">1</span>In the beginning God created the heavens and the earth.
+    </div>
+    <div class="p">
+        <span class="yv-v" v="2"></span><span class="yv-vlbl">2</span>Now the earth was formless<span class="yv-n f"><span class="fr">1:2</span><span class="ft">Or “a wind from God swept over the waters.”</span></span> and empty, and darkness<span class="yv-n f"><span class="fr">1:2</span><span class="ft">Darkness here is a distinct entity, more than the absence of light.</span></span> covered the deep.
+    </div>
+    """
+
     enum TestError: Error {
         case testError(String)
         case passageNotFound
