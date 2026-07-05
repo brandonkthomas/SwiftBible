@@ -167,7 +167,7 @@ final class FakeBibleRepository: BibleRepository {
         <span class="yv-v" v="1"></span><span class="yv-vlbl">1</span>In the beginning God created the heavens and the earth.
     </div>
     <div class="p">
-        <span class="yv-v" v="2"></span><span class="yv-vlbl">2</span>Now the earth was formless<span class="yv-n f"><span class="fr">1:2</span><span class="ft">Or “a wind from God swept over the waters.”</span></span> and empty, and darkness<span class="yv-n f"><span class="fr">1:2</span><span class="ft">Darkness here is a distinct entity, more than the absence of light.</span></span> covered the deep.
+        <span class="yv-v" v="2"></span><span class="yv-vlbl">2</span>Now the earth was formless<span class="yv-n f"><span class="fr">1:2</span><span class="ft">Or “a wind from God swept over the waters.”</span></span> and empty, and darkness<span class="yv-n f"><span class="fr">1:2</span><span class="ft">Darkness here is a distinct entity, more than the absence of light.</span></span><span class="yv-n f"><span class="fr">1:2</span><span class="ft">Footnote # 3</span></span><span class="yv-n f"><span class="fr">1:2</span><span class="ft">Footnote # 4</span></span><span class="yv-n f"><span class="fr">1:2</span><span class="ft">Footnote # 5</span></span><span class="yv-n f"><span class="fr">1:2</span><span class="ft">Footnote # 6</span></span><span class="yv-n f"><span class="fr">1:2</span><span class="ft">Footnote # 7</span></span> covered the deep.
     </div>
     """
 

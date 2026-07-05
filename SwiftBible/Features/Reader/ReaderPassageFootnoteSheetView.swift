@@ -13,6 +13,10 @@ struct ReaderPassageFootnoteSheetView: View {
 
     let verseRange: RenderedVerseRange
     let passage: RenderedPassage
+    let sheetTitle: String
+
+    @State private var isShowingSheet = false
+    @Environment(\.dismiss) var dismiss
 
     // MARK: Properties (Computed)
 
@@ -35,27 +39,46 @@ struct ReaderPassageFootnoteSheetView: View {
 
     /// Footnote sheet view: show selected verse range + all applicable footnotes
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading) {
-                Text(PassageTextRenderer.attributedString(for: passage.runs(for: verseRange),
-                                                          mode: .inline))
-                Divider()
-                // Array(...) so enumerated() is a RandomAccessCollection ForEach accepts;
-                // offset drives the a/b/c label, element.id is the stable identity
-                ForEach(Array(footnotesForVerse.enumerated()), id: \.element.id) { index, footnote in
-                    let label = footnoteLabel(for: footnote,
-                                              index: index)
-                    Text("\(label)\(footnote.text)")
+        // Wrap in NavigationStack for title to render
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+                    // Verse content
+                    Text(PassageTextRenderer.attributedString(for: passage.runs(for: verseRange),
+                                                              mode: .inline))
+
+                    Divider()
+
+                    // stack of ordered footnotes
+                    // Array(...) so enumerated() is a RandomAccessCollection ForEach accepts;
+                    // offset drives the a/b/c label, element.id is the stable identity
+                    ForEach(Array(footnotesForVerse.enumerated()), id: \.element.id) { index, footnote in
+                        let label = footnoteLabel(for: footnote,
+                                                  index: index)
+                        Text("\(label)\(footnote.text)")
+                            .font(.system(.footnote, design: .serif))
+                    }
+                }
+                // inset on top/bottom
+                .padding(EdgeInsets(top: 4, leading: 24, bottom: 0, trailing: 24))
+                // sheet title
+                .navigationTitle(sheetTitle)
+                .navigationBarTitleDisplayMode(.inline)
+            }
+            .lineHeight(AttributedString.LineHeight.exact(points: 30))
+            .font(.system(.body, design: .serif))
+            .frame(maxWidth: .infinity, alignment: .topLeading)
+            // toolbar for NavigationStack (for Close button)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(action: {
+                        dismiss()
+                    }) {
+                        Label("Close", systemImage: "xmark")
+                    }
                 }
             }
-            // inset on top/bottom
-            .padding(EdgeInsets(top: 24, leading: 0, bottom: 24, trailing: 0))
         }
-        .lineHeight(AttributedString.LineHeight.exact(points: 30))
-        .font(.system(.body, design: .serif))
-        .frame(maxWidth: .infinity, alignment: .topLeading)
-        // inset on L/R edges
-        .padding(EdgeInsets(top: 0, leading: 24, bottom: 0, trailing: 24))
     }
 }
 
@@ -64,5 +87,6 @@ struct ReaderPassageFootnoteSheetView: View {
     let passage = try! PassageHTMLParser().parse(html: FakeBibleRepository.footnotePassageHTML)
 
     ReaderPassageFootnoteSheetView(verseRange: RenderedVerseRange(startVerse: 2),
-                                   passage: passage)
+                                   passage: passage,
+                                   sheetTitle: "Test")
 }

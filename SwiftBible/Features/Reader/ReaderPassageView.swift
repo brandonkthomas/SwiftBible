@@ -68,9 +68,11 @@ struct ReaderPassageView: View {
         // Open sheet when above openURL handler sets selectedVerse
         .sheet(item: $selectedVerse) { verse in
             ReaderPassageFootnoteSheetView(verseRange: verse,
-                                           passage: renderedPassage)
+                                           passage: renderedPassage,
+                                           sheetTitle: "Title")
                 .presentationDetents([.medium, .large])
                 .presentationContentInteraction(.scrolls)
+//                .presentationBackgroundInteraction(.enabled)
         }
     }
 
@@ -82,40 +84,7 @@ struct ReaderPassageView: View {
 // MARK: Xcode Canvas Previews
 
 #Preview {
-    ReaderPassageView(
-        renderedPassage: RenderedPassage(
-            paragraphs: [
-                RenderedParagraph(
-                    runs: [
-                        .verseLabel(displayText: "1", verseRange: RenderedVerseRange(startVerse: 1)),
-                        .text(
-                            "In the beginning God created the heavens and the earth.",
-                            verseRange: RenderedVerseRange(startVerse: 1)
-                        ),
-                        .verseLabel(displayText: "2", verseRange: RenderedVerseRange(startVerse: 2)),
-                        .text(
-                            "Now the earth was formless and empty, darkness",
-                            verseRange: RenderedVerseRange(startVerse: 2)
-                        ),
-                        .footnoteMarker(1, verseRange: RenderedVerseRange(startVerse: 2)),
-                        .text(
-                            " was over the surface of the deep.",
-                            verseRange: RenderedVerseRange(startVerse: 2)
-                        ),
-                        .footnoteMarker(2, verseRange: RenderedVerseRange(startVerse: 2)),
-                    ]
-                ),
-                RenderedParagraph(
-                    runs: [
-                        .verseLabel(displayText: "3", verseRange: RenderedVerseRange(startVerse: 3)),
-                        .text(
-                            "And God said, Let there be light, and there was light.",
-                            verseRange: RenderedVerseRange(startVerse: 3)
-                        )
-                    ]
-                )
-            ],
-            footnotes: []
-        )
-    )
+    let passage = try! PassageHTMLParser().parse(html: FakeBibleRepository.footnotePassageHTML)
+
+    ReaderPassageView(renderedPassage: passage)
 }
