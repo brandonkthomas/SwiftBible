@@ -201,7 +201,11 @@ final class ReaderStore {
 
             // Try to render the now-selected passage HTML
             let parser: PassageHTMLParser = .init()
-            self.selectedRenderedPassage = try parser.parse(html: passage.htmlContent)
+
+            var renderedPassage = try parser.parse(html: passage.htmlContent)
+            renderedPassage.referenceBookAndChapterDisplayName = selectedReferenceFriendlyName
+
+            self.selectedRenderedPassage = renderedPassage
 
             // we're done
             self.passageLoadState = .loaded

@@ -22,7 +22,7 @@ nonisolated struct RenderedVerseRange: Identifiable, Equatable, Hashable {
     var displayText: String {
         var end: String = ""
         if let endVerse = endVerse {
-            end = "–\(endVerse)"
+            end = "-\(endVerse)"
         }
         return "\(startVerse)\(end)"
     }

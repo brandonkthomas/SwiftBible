@@ -71,13 +71,8 @@ struct ReaderPassageView: View {
                                            passage: renderedPassage)
                 .presentationDetents([.medium, .large])
                 .presentationContentInteraction(.scrolls)
-//                .presentationBackgroundInteraction(.enabled)
         }
     }
-
-    // MARK: Functions
-
-    
 }
 
 // MARK: Xcode Canvas Previews

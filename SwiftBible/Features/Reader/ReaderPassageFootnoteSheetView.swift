@@ -34,9 +34,12 @@ struct ReaderPassageFootnoteSheetView: View {
         return attributedLabel
     }
 
-//    private var sheetTitle: String {
-//        return "\(passage.reference.bookCode) \(verseRange.displayText)"
-//    }
+    private var sheetTitle: String {
+        guard let bookAndChapter = passage.referenceBookAndChapterDisplayName else {
+            return footnotesForVerse.count == 1 ? "Footnote" : "Footnotes"
+        }
+        return "\(bookAndChapter):\(verseRange.displayText)"
+    }
 
     // MARK: Views
 
@@ -65,7 +68,7 @@ struct ReaderPassageFootnoteSheetView: View {
                 // inset on top/bottom
                 .padding(EdgeInsets(top: 4, leading: 24, bottom: 0, trailing: 24))
                 // sheet title
-                .navigationTitle("")
+                .navigationTitle(sheetTitle)
                 .navigationBarTitleDisplayMode(.inline)
             }
             .lineHeight(AttributedString.LineHeight.exact(points: 30))
