@@ -14,7 +14,6 @@ struct ReaderPassageFootnoteSheetView: View {
     let verseRange: RenderedVerseRange
     let passage: RenderedPassage
 
-    @State private var isShowingSheet = false
     @Environment(\.dismiss) var dismiss
 
     // MARK: Properties (Computed)
