@@ -96,9 +96,10 @@ struct ReaderPassageView: View {
 
                 switch sv {
                 // sv falls inside current selection range...
-                // select only this tapped area (deselect everything else)
                 case current:
-                    selectedVerses = nil
+                    // if the tapped verse IS the entire current selection, deselect;
+                    // otherwise collapse the selection down to just this verse
+                    selectedVerses = (current == sv...top) ? nil : sv...top
                 // sv is below current selection range...
                 // add the difference to the selection
                 case ..<current.lowerBound: // ..<x is Swift one-sided range
