@@ -16,12 +16,16 @@ struct ReaderPassageView: View {
     /// Contains all paragraphs (text/labels/footnote markers) & actual footnote content
     var renderedPassage: RenderedPassage
 
-    /// Tracks tapped verse(s) for use with verse actions
-    @State private var selectedVerses: ClosedRange<Int>?
+    // MARK: Properties (Private)
+
+    /// Read appEnvironment.readerStore environment value from current view environment
+    ///
+    /// Don't need "\." here because this is a type-based lookup for an observable instance
+    /// placed into the environment: .environment(readerStore))
+    @Environment(ReaderStore.self) private var readerStore: ReaderStore
 
     /// When set, ReaderPassageFootnoteSheetView will open
     @State private var selectedVerseRangeForFootnote: RenderedVerseRange?
-
 
     // MARK: Views
 
@@ -38,7 +42,7 @@ struct ReaderPassageView: View {
                         let paragraph = paragraphs[paragraphIndex]
                         Text(PassageTextRenderer.attributedString(for: paragraph.runs,
                                                                   mode: .collapsed,
-                                                                  selectedVerses: selectedVerses))
+                                                                  selectedVerses: readerStore.selectedVerses))
                             .frame(maxWidth: .infinity, alignment: .leading)
                     }
                 }
@@ -79,36 +83,15 @@ struct ReaderPassageView: View {
                 // validation
                 guard let components = URLComponents(string: url.absoluteString),
                       let queryItems = components.queryItems,
-                      let sv = Int(queryItems.first(where: { $0.name == "sv" })?.value ?? "") else {
+                      let startVerse = Int(queryItems.first(where: { $0.name == "sv" })?.value ?? "") else {
                     return .discarded
                 }
                 // start verse / end verse ...
                 // tapped verse's upper bound can be defined as "ev ?? sv"
-                let ev = Int(queryItems.first(where: { $0.name == "ev" })?.value ?? "")
-                let top = ev ?? sv
+                let endVerse = Int(queryItems.first(where: { $0.name == "ev" })?.value ?? "")
 
-                // nothing currently selected...
-                // select current tap target only
-                guard let current = selectedVerses else {
-                    selectedVerses = sv...top
-                    return .handled // we dealt with it; don't open a browser
-                }
-
-                switch sv {
-                // sv falls inside current selection range...
-                case current:
-                    // if the tapped verse IS the entire current selection, deselect;
-                    // otherwise collapse the selection down to just this verse
-                    selectedVerses = (current == sv...top) ? nil : sv...top
-                // sv is below current selection range...
-                // add the difference to the selection
-                case ..<current.lowerBound: // ..<x is Swift one-sided range
-                    selectedVerses = sv...current.upperBound
-                // sv is above current selection range...
-                // add the difference to the selection
-                default:
-                    selectedVerses = current.lowerBound...top
-                }
+                readerStore.handleVerseSelection(startVerse: startVerse,
+                                                 endVerse: endVerse)
 
                 return .handled // we dealt with it; don't open a browser
 
@@ -124,14 +107,16 @@ struct ReaderPassageView: View {
                 .presentationDetents([.medium, .large])
                 .presentationContentInteraction(.scrolls)
         }
-
     }
 }
 
 // MARK: Xcode Canvas Previews
 
 #Preview {
+    let repository = FakeBibleRepository()
+    let readerStore = ReaderStore(repository: repository)
     let passage = try! PassageHTMLParser().parse(html: FakeBibleRepository.footnotePassageHTML)
 
     ReaderPassageView(renderedPassage: passage)
+        .environment(readerStore)
 }

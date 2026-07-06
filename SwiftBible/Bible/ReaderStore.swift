@@ -18,7 +18,8 @@ import OSLog
 /// - selected chapter
 /// - loading state
 /// - error state
-/// - TODO: selected verse range, last-read restoration
+/// - selected verse range (tap-to-select and take action)
+/// - TODO: last-read restoration
 @Observable
 final class ReaderStore {
 
@@ -37,6 +38,11 @@ final class ReaderStore {
 
     var selectedBook: Book?
     var selectedChapter: Chapter?
+
+    /// Tracks tapped verse(s) for use with verse actions
+    ///
+    /// Updated by ReaderPassageView => ReaderStore.handleVerseSelection()
+    var selectedVerses: ClosedRange<Int>?
 
     var selectedPassage: Passage?
     var selectedRenderedPassage: RenderedPassage?
@@ -216,6 +222,36 @@ final class ReaderStore {
         }
     }
 
+    /// Called by ReaderPassageView to refresh current verse selection state
+    /// according to tapped verse's metadata
+    func handleVerseSelection(startVerse: Int,
+                              endVerse: Int?) {
+        let top = endVerse ?? startVerse
+
+        // nothing currently selected...
+        // select current tap target only
+        guard let current = self.selectedVerses else {
+            self.selectedVerses = startVerse...top
+            return
+        }
+
+        switch startVerse {
+        // sv falls inside current selection range...
+        case current:
+            // if the tapped verse IS the entire current selection, deselect;
+            // otherwise collapse the selection down to just this verse
+            self.selectedVerses = (current == startVerse...top) ? nil : startVerse...top
+        // sv is below current selection range...
+        // add the difference to the selection
+        case ..<current.lowerBound: // ..<x is Swift one-sided range
+            self.selectedVerses = startVerse...current.upperBound
+        // sv is above current selection range...
+        // add the difference to the selection
+        default:
+            self.selectedVerses = current.lowerBound...top
+        }
+    }
+
     // MARK: Functions (Load; Private)
 
     /// Load a collection of available Books;
@@ -287,6 +323,7 @@ final class ReaderStore {
     /// Clear selectedPassage + passageLoadState
     private func clearPassageStates() {
         Self.logger.debug("ENTRY ReaderStore.clearPassageStates()")
+        self.selectedVerses = nil // also clear verse selection
         self.selectedPassage = nil
         self.selectedRenderedPassage = nil
         self.passageLoadState = .idle

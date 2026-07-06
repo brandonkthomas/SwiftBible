@@ -1,13 +1,13 @@
 //
-//  PassagePickerView.swift
+//  VerseActionsView.swift
 //  SwiftBible
 //
-//  Created by Brandon Thomas on 6/28/26.
+//  Created by Brandon Thomas on 7/5/26.
 //
 
 import SwiftUI
 
-struct PassagePickerView: View {
+struct VerseActionsView: View {
 
     // MARK: Properties (Private)
 
@@ -17,108 +17,75 @@ struct PassagePickerView: View {
     /// placed into the environment: .environment(readerStore))
     @Environment(ReaderStore.self) private var readerStore: ReaderStore
 
+    private var selectedLabel: String {
+        guard let selectedVerses = readerStore.selectedVerses else {
+            return ""
+        }
+        let count = selectedVerses.count
+        return "\(count) Verse\(count == 1 ? "" : "s")" //... Selected
+    }
+
     // MARK: Views
 
     /// Tab bar accessory for Reader view
     var body: some View {
-        Menu {
-            // Books + Chapters nested menus
-            Menu {
-                ForEach(readerStore.books) { book in
-                    Menu(book.displayName) {
-                        ForEach(book.chapters) { chapter in
-                            if readerStore.selectedChapter?.id == chapter.id {
-                                // Shows a menu item with a tick
-                                Toggle(isOn: .constant(true), label: {
-                                    Text(chapter.displayName)
-                                })
-                            }
-                            else {
-                                // Shows a menu item without a tick
-                                Button(action: {
-                                    Task {
-                                        await readerStore.selectBookAndChapter(bookID: book.id,
-                                                                               chapterID: chapter.id,
-                                                                               reloadPassage: true)
-                                    }
-                                }) {
-                                    Text(chapter.displayName)
-                                }
-                            }
-                        }
-                    }
-                }
-            } label: {
-                Label("Books", systemImage: "books.vertical")
+        HStack(spacing: 15) {
+            // Deselect
+            Button(action: {
+                readerStore.selectedVerses = nil
+            }) {
+                Image(systemName: "xmark.circle")
+                    .imageScale(.large)
             }
-            .menuOrder(.fixed)
 
-            // Translations menu
-            Menu {
-                ForEach(readerStore.translations.sorted { $0.title < $1.title }) { translation in
-                    if readerStore.selectedTranslation?.id == translation.id {
-                        // Shows a menu item with a tick
-                        Toggle(isOn: .constant(true), label: {
-                            Text(translation.title)
-                            Text(translation.abbreviation)
-                                .foregroundStyle(.secondary)
-                        })
-                    }
-                    else {
-                        // Shows a menu item without a tick
-                        Button(action: {
-                            Task {
-                                await readerStore.selectTranslationAndReloadAll(id: translation.id)
-                            }
-                        }) {
-                            Text(translation.title)
-                            Text(translation.abbreviation)
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-                }
-            } label: {
-                Label("Translations", systemImage: "text.book.closed") // was text.redaction
+            // Label
+            // TODO: hide when tab bar collapsed (to preserve space)
+            Text(selectedLabel)
+
+            // Empty space
+            Spacer()
+
+            // Share
+            Button(action: {
+                // TODO: open share sheet w/ verse text
+            }) {
+                Image(systemName: "square.and.arrow.up")
+                    .imageScale(.large)
             }
-            .menuOrder(.fixed)
-        } label: {
-            // Label: selected Book/Chapter names & Translation abbreviation
-            tabBarAccessoryLabel
-                .font(.system(size: UIFontMetrics(forTextStyle: .body).scaledValue(for: 14),
-                              weight: .medium,
-                              design: .serif))
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .contentShape(Rectangle())
-        }
-        .foregroundStyle(.primary) // Automatically adapts to light/dark
-        .menuOrder(.fixed)
-    }
 
-    /// TabBarAccessory label view
-    private var tabBarAccessoryLabel: some View {
-        Group {
-            // Show corresponding View to current loadState
-            // This will automatically refresh when we change @Observable loadState
-            switch readerStore.loadState {
-            case .emptyBooks:
-                Text("Select Translation")
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-            // no translations should never happen
-            case .emptyTranslations,
-                 .failed(_):
-                Text("Content Unavailable")
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-            default:
-                HStack(spacing: 8) {
-                    Text(
-                        "\(readerStore.selectedBook?.displayName ?? "Select Book") \(readerStore.selectedChapter?.displayName ?? "")"
-                    )
-                    Text("\(readerStore.selectedTranslation?.abbreviation ?? "")")
-                        .foregroundStyle(.secondary)
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            // Tag
+            Button(action: {
+                // TODO: open tag sheet
+            }) {
+                Image(systemName: "tag")
+                    .imageScale(.large)
+            }
+
+            // Bookmark
+            Button(action: {
+                // TODO: open bookmark sheet
+            }) {
+                Image(systemName: "text.pad.header.badge.plus")
+                    .imageScale(.large)
+            }
+
+            // Highlight
+            Button(action: {
+                // TODO: open highlight color picker popover
+            }) {
+                Image(systemName: "highlighter")
+                    .imageScale(.large)
             }
         }
+        // font, color
+        .font(.system(size: UIFontMetrics(forTextStyle: .body).scaledValue(for: 14),
+                      weight: .medium,
+                      design: .serif))
+        .foregroundStyle(.primary)
+        // frame, padding, bounding
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(EdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16))
+        .contentShape(Rectangle())
     }
 }
 

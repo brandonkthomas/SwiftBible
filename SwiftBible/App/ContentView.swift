@@ -13,6 +13,12 @@ struct ContentView: View {
         case search
     }
 
+    /// Read appEnvironment.readerStore environment value from current view environment
+    ///
+    /// Don't need "\." here because this is a type-based lookup for an observable instance
+    /// placed into the environment: .environment(readerStore))
+    @Environment(ReaderStore.self) private var readerStore: ReaderStore
+
     // MARK: Views
 
     /// Primary application body
@@ -38,8 +44,13 @@ struct ContentView: View {
         .tabViewSearchActivation(.searchTabSelection) // added in iOS 26
         // "isEnabled" param added in iOS 26.1
         .tabViewBottomAccessory(isEnabled: $selectedTab.wrappedValue == CurrentTab.read) {
-            PassagePickerView()
+            if readerStore.selectedVerses == nil {
+                PassagePickerView()
+            } else {
+                VerseActionsView()
+            }
         }
+        .animation(.easeInOut, value: readerStore.selectedVerses == nil)
     }
 }
 
