@@ -25,7 +25,8 @@ struct PassageTextRenderer {
     /// - Inline mode renders footnote markers at their exact locations inside the verse
     /// - Hidden mode does not render footnote markers
     static func attributedString(for runs: [RenderedPassageRun],
-                                 mode: MarkerMode) -> AttributedString {
+                                 mode: MarkerMode,
+                                 selectedVerses: ClosedRange<Int>? = nil) -> AttributedString {
         var result = AttributedString()
 
         // If mode.collapsed:
@@ -44,7 +45,9 @@ struct PassageTextRenderer {
                   verseHasFootnote,
                   let verseRange = accumulatingVerseRange else { return }
 
-            let marker = styledVerseEndMarker(for: verseRange)
+            let marker = styledVerseEndMarker(for: verseRange,
+                                              useSelectedEffect: isSelected(verseRange,
+                                                                            in: selectedVerses))
             result.append(marker)
 
             verseHasFootnote = false
@@ -72,7 +75,11 @@ struct PassageTextRenderer {
                 beginVerseIfChanged(currentVerseRange)
 
                 // append verse text immediately
-                let text = styledText(text: runText)
+                let text = styledText(runText,
+                                      verseRange: currentVerseRange,
+                                      useLinkAttribute: true,
+                                      useSelectedEffect: isSelected(currentVerseRange,
+                                                                    in: selectedVerses))
                 result.append(text)
 
             case .verseLabel(displayText: let displayText,
@@ -83,7 +90,9 @@ struct PassageTextRenderer {
 
                 // append verse label immediately
                 let label = styledVerseLabel(displayText: displayText,
-                                             verseRange: currentVerseRange)
+                                             verseRange: currentVerseRange,
+                                             useSelectedEffect: isSelected(currentVerseRange,
+                                                                           in: selectedVerses))
                 result.append(label)
 
             case .footnoteMarker(_,
@@ -124,40 +133,81 @@ struct PassageTextRenderer {
 
     // MARK: Functions (Private)
 
-    private static func styledText(text: String) -> AttributedString {
-        return AttributedString("\(text) ")
+    private static func styledText(_ text: String,
+                                   verseRange: RenderedVerseRange?,
+                                   useLinkAttribute: Bool = false,
+                                   useSelectedEffect: Bool = false) -> AttributedString {
+        var result = AttributedString("\(text) ")
+
+        // Tap link (adds support for verse selection via tap action)
+        if useLinkAttribute,
+           let verseRange {
+            var url = "swiftbible://verse?sv=\(verseRange.startVerse)"
+            if let endVerse = verseRange.endVerse {
+                url.append("&ev=\(endVerse)")
+            }
+            result.link = URL(string: url)
+            result.foregroundColor = .primary
+        }
+
+        if useSelectedEffect {
+            result.backgroundColor = Color(.systemGray3)
+        }
+
+        return result
     }
 
     private static func styledVerseLabel(displayText: String,
-                                  verseRange: RenderedVerseRange?) -> AttributedString {
-        var label = AttributedString("\(displayText) ")
-        label.baselineOffset = 6
-        label.font = .system(.caption2, design: .serif)
-        label.foregroundColor = .secondary
-        return label
+                                         verseRange: RenderedVerseRange?,
+                                         useSelectedEffect: Bool = false) -> AttributedString {
+        var result = AttributedString("\(displayText) ")
+        result.baselineOffset = 6
+        result.font = .system(.caption2, design: .serif)
+        result.foregroundColor = .secondary
+
+        if useSelectedEffect {
+            result.backgroundColor = Color(.systemGray3)
+        }
+
+        return result
     }
 
     private static func styledInlineMarker(index: Int) -> AttributedString {
-        var marker = AttributedString("\(footnoteSymbol(for: index)) ")
-        marker.baselineOffset = 6
-        marker.font = .system(.caption2, design: .serif, weight: .bold)
-        marker.foregroundColor = .accentColor
-        return marker
+        var result = AttributedString("\(footnoteSymbol(for: index)) ")
+        result.baselineOffset = 6
+        result.font = .system(.caption2, design: .serif, weight: .bold)
+        result.foregroundColor = .accentColor
+
+        return result
     }
 
-    private static func styledVerseEndMarker(for verseRange: RenderedVerseRange) -> AttributedString {
-        var marker = AttributedString("† ")
-        marker.baselineOffset = 6
-        marker.font = .system(.caption2, design: .serif, weight: .bold)
-        marker.foregroundColor = .accentColor
+    private static func styledVerseEndMarker(for verseRange: RenderedVerseRange,
+                                             useSelectedEffect: Bool = false) -> AttributedString {
+        var result = AttributedString("† ")
+        result.baselineOffset = 6
+        result.font = .system(.caption2, design: .serif, weight: .bold)
+        result.foregroundColor = .accentColor
 
-        // NOTE: this will allow iOS long-press behavior; to replace
+        // Tap link (adds support for opening ReaderPassageFootnoteSheetView via tap action)
         var url = "swiftbible://footnote?sv=\(verseRange.startVerse)"
-
         if let endVerse = verseRange.endVerse {
             url.append("&ev=\(endVerse)")
         }
-        marker.link = URL(string: url)
-        return marker
+        result.link = URL(string: url)
+
+        if useSelectedEffect {
+            result.backgroundColor = Color(.systemGray3)
+        }
+
+        return result
+    }
+
+    private static func isSelected(_ verseRange: RenderedVerseRange?,
+                    in selection: ClosedRange<Int>?) -> Bool {
+        guard let verseRange,
+              let selection else {
+            return false
+        }
+        return selection.contains(verseRange.startVerse)
     }
 }

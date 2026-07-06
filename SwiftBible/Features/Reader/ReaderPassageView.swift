@@ -16,7 +16,12 @@ struct ReaderPassageView: View {
     /// Contains all paragraphs (text/labels/footnote markers) & actual footnote content
     var renderedPassage: RenderedPassage
 
-    @State private var selectedVerse: RenderedVerseRange?
+    /// Tracks tapped verse(s) for use with verse actions
+    @State private var selectedVerses: ClosedRange<Int>?
+
+    /// When set, ReaderPassageFootnoteSheetView will open
+    @State private var selectedVerseRangeForFootnote: RenderedVerseRange?
+
 
     // MARK: Views
 
@@ -31,9 +36,9 @@ struct ReaderPassageView: View {
                     // all integer indexes (0-based); stop before paragraphs.count
                     ForEach(0..<paragraphs.count, id: \.self) { paragraphIndex in
                         let paragraph = paragraphs[paragraphIndex]
-
                         Text(PassageTextRenderer.attributedString(for: paragraph.runs,
-                                                                  mode: .collapsed))
+                                                                  mode: .collapsed,
+                                                                  selectedVerses: selectedVerses))
                             .frame(maxWidth: .infinity, alignment: .leading)
                     }
                 }
@@ -52,26 +57,73 @@ struct ReaderPassageView: View {
                 return .systemAction // we dont want to handle anything else
             }
 
-            guard let components = URLComponents(string: url.absoluteString),
-                  let queryItems = components.queryItems,
-                  let startVerse = Int(queryItems.first(where: { $0.name == "sv" })?.value ?? "") else {
+            // Footnote branch
+            if url.host == "footnote" {
+                // validation
+                guard let components = URLComponents(string: url.absoluteString),
+                      let queryItems = components.queryItems,
+                      let startVerse = Int(queryItems.first(where: { $0.name == "sv" })?.value ?? "") else {
+                    return .discarded
+                }
+                let endVerse = Int(queryItems.first(where: { $0.name == "ev" })?.value ?? "")
+
+                // setting this will open ReaderPassageFootnoteSheetView using the .sheet
+                // modifier below
+                selectedVerseRangeForFootnote = RenderedVerseRange(startVerse: startVerse,
+                                                                   endVerse: endVerse)
+
+                return .handled // we dealt with it; don't open a browser
+
+            // Verse branch
+            } else if url.host == "verse" {
+                // validation
+                guard let components = URLComponents(string: url.absoluteString),
+                      let queryItems = components.queryItems,
+                      let sv = Int(queryItems.first(where: { $0.name == "sv" })?.value ?? "") else {
+                    return .discarded
+                }
+                // start verse / end verse ...
+                // tapped verse's upper bound can be defined as "ev ?? sv"
+                let ev = Int(queryItems.first(where: { $0.name == "ev" })?.value ?? "")
+                let top = ev ?? sv
+
+                // nothing currently selected...
+                // select current tap target only
+                guard let current = selectedVerses else {
+                    selectedVerses = sv...top
+                    return .handled // we dealt with it; don't open a browser
+                }
+
+                switch sv {
+                // sv falls inside current selection range...
+                // select only this tapped area (deselect everything else)
+                case current:
+                    selectedVerses = nil
+                // sv is below current selection range...
+                // add the difference to the selection
+                case ..<current.lowerBound: // ..<x is Swift one-sided range
+                    selectedVerses = sv...current.upperBound
+                // sv is above current selection range...
+                // add the difference to the selection
+                default:
+                    selectedVerses = current.lowerBound...top
+                }
+
+                return .handled // we dealt with it; don't open a browser
+
+            // All other items: we don't need to handle; exit
+            } else {
                 return .discarded
             }
-
-            let endVerse = Int(queryItems.first(where: { $0.name == "ev" })?.value ?? "")
-
-            selectedVerse = RenderedVerseRange(startVerse: startVerse,
-                                               endVerse: endVerse)
-
-            return .handled // we dealt with it; don't open a browser
         })
-        // Open sheet when above openURL handler sets selectedVerse
-        .sheet(item: $selectedVerse) { verse in
+        // Open ReaderPassageFootnoteSheetView when our OpenURLAction handler sets selectedVerse
+        .sheet(item: $selectedVerseRangeForFootnote) { verse in
             ReaderPassageFootnoteSheetView(verseRange: verse,
                                            passage: renderedPassage)
                 .presentationDetents([.medium, .large])
                 .presentationContentInteraction(.scrolls)
         }
+
     }
 }
 
