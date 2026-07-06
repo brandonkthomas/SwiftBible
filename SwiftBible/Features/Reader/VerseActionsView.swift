@@ -32,7 +32,11 @@ struct VerseActionsView: View {
         HStack(spacing: 15) {
             // Deselect
             Button(action: {
-                readerStore.selectedVerses = nil
+                // applies to all views observing this property;
+                // so verse highlights, tabBarAccessory, etc
+                withAnimation(.snappy(duration: 0.35)) {
+                    readerStore.selectedVerses = nil
+                }
             }) {
                 Image(systemName: "xmark.circle")
                     .imageScale(.large)
@@ -86,6 +90,8 @@ struct VerseActionsView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .padding(EdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16))
         .contentShape(Rectangle())
+        // allows transition between this and PassagePickerView on tabBarAccessory
+        .transition(.blurReplace)
     }
 }
 

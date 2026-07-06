@@ -90,8 +90,12 @@ struct ReaderPassageView: View {
                 // tapped verse's upper bound can be defined as "ev ?? sv"
                 let endVerse = Int(queryItems.first(where: { $0.name == "ev" })?.value ?? "")
 
-                readerStore.handleVerseSelection(startVerse: startVerse,
-                                                 endVerse: endVerse)
+                // applies to all views observing this property;
+                // so verse highlights, tabBarAccessory, etc
+                withAnimation(.snappy(duration: 0.35)) {
+                    readerStore.handleVerseSelection(startVerse: startVerse,
+                                                     endVerse: endVerse)
+                }
 
                 return .handled // we dealt with it; don't open a browser
 

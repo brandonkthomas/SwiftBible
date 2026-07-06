@@ -92,6 +92,8 @@ struct PassagePickerView: View {
         }
         .foregroundStyle(.primary) // Automatically adapts to light/dark
         .menuOrder(.fixed)
+        // allows transition between this and VerseActionsView on tabBarAccessory
+        .transition(.blurReplace)
     }
 
     /// TabBarAccessory label view
