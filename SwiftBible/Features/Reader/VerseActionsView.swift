@@ -11,6 +11,9 @@ struct VerseActionsView: View {
 
     // MARK: Properties (Private)
 
+    /// Is the tab bar accessory currently collapsed or expanded?
+    @Environment(\.tabViewBottomAccessoryPlacement) private var placement
+
     /// Read appEnvironment.readerStore environment value from current view environment
     ///
     /// Don't need "\." here because this is a type-based lookup for an observable instance
@@ -42,12 +45,18 @@ struct VerseActionsView: View {
                     .imageScale(.large)
             }
 
-            // Label
-            // TODO: hide when tab bar collapsed (to preserve space)
-            Text(selectedLabel)
+            // only show label + spacer when expanded
+            // this will smoothly transition when bar is collapsed/expanded in real time
+            if placement == .expanded || placement == nil {
+                // Label
+                // TODO: hide when tab bar collapsed (to preserve space)
+                Text(selectedLabel)
+                    .transition(.blurReplace)
 
-            // Empty space
-            Spacer()
+                // Empty space
+                Spacer()
+                    .transition(.blurReplace)
+            }
 
             // Share
             Button(action: {
@@ -92,6 +101,10 @@ struct VerseActionsView: View {
         .contentShape(Rectangle())
         // allows transition between this and PassagePickerView on tabBarAccessory
         .transition(.blurReplace)
+        // allows transition for hiding Label/Spacer based on tabbar collapsed status
+        // TODO: Disabled for now as this causes extra animation overlap + stutter on the 4
+        // rightmost buttons
+//        .animation(.default, value: placement)
     }
 }
 

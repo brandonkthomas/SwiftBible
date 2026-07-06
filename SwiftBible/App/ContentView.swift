@@ -50,7 +50,6 @@ struct ContentView: View {
                 VerseActionsView()
             }
         }
-        .animation(.easeInOut, value: readerStore.selectedVerses == nil)
     }
 }
 
