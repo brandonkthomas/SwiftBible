@@ -41,8 +41,9 @@ struct VerseActionsView: View {
                     readerStore.selectedVerses = nil
                 }
             }) {
-                Image(systemName: "xmark.circle")
-                    .imageScale(.large)
+                Image(systemName: "xmark")
+                    .font(.system(size: UIFontMetrics(forTextStyle: .body).scaledValue(for: 20),
+                                  weight: .bold))
             }
 
             // only show label + spacer when expanded
@@ -58,36 +59,38 @@ struct VerseActionsView: View {
                     .transition(.blurReplace)
             }
 
-            // Share
+            // Highlight
             Button(action: {
-                // TODO: open share sheet w/ verse text
+                // TODO: open highlight color picker popover
             }) {
-                Image(systemName: "square.and.arrow.up")
-                    .imageScale(.large)
-            }
-
-            // Tag
-            Button(action: {
-                // TODO: open tag sheet
-            }) {
-                Image(systemName: "tag")
-                    .imageScale(.large)
+                Image(systemName: "pencil.line") // highlighter doesnt have fill style :(
+                    .font(.system(size: UIFontMetrics(forTextStyle: .body).scaledValue(for: 26)))
+                    .symbolRenderingMode(.palette)
+                    .foregroundStyle(.primary, .yellow)
             }
 
             // Bookmark
             Button(action: {
                 // TODO: open bookmark sheet
             }) {
-                Image(systemName: "text.pad.header.badge.plus")
-                    .imageScale(.large)
+                Image(systemName: "bookmark.fill")
+                    .font(.system(size: UIFontMetrics(forTextStyle: .body).scaledValue(for: 20)))
             }
 
-            // Highlight
+            // Tag
             Button(action: {
-                // TODO: open highlight color picker popover
+                // TODO: open tag sheet
             }) {
-                Image(systemName: "highlighter")
-                    .imageScale(.large)
+                Image(systemName: "tag.fill")
+                    .font(.system(size: UIFontMetrics(forTextStyle: .body).scaledValue(for: 20)))
+            }
+
+            // Share
+            Button(action: {
+                // TODO: open share sheet w/ verse text
+            }) {
+                Image(systemName: "square.and.arrow.up.fill")
+                    .font(.system(size: UIFontMetrics(forTextStyle: .body).scaledValue(for: 20)))
             }
         }
         // font, color
