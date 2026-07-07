@@ -43,6 +43,10 @@ struct ReaderPassageView: View {
                         Text(PassageTextRenderer.attributedString(for: paragraph.runs,
                                                                   mode: .collapsed,
                                                                   selectedVerses: readerStore.selectedVerses))
+                            // SPIKE: tag the whole paragraph so every run carries the attribute,
+                            // then hand drawing to SpikeRenderer. Remove both lines after validating.
+                            .customAttribute(VerseNumberAttribute(number: 1))
+                            .textRenderer(SpikeRenderer())
                             .frame(maxWidth: .infinity, alignment: .leading)
                     }
                 }
