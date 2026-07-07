@@ -7,11 +7,16 @@
 
 import SwiftUI
 
+@Animatable
 struct VerseHighlightRenderer: TextRenderer {
 
     // MARK: Properties
 
+    @AnimatableIgnored // can't interpolate Animatable; ignore
     let selectedVerses: ClosedRange<Int>?
+
+    // CGFloat is basic type for floating-point scalars in Core Graphics
+    var progress: CGFloat
 
     // MARK: Functions
 
@@ -31,7 +36,7 @@ struct VerseHighlightRenderer: TextRenderer {
                         .path(in: run.typographicBounds.rect)
 
                     // ...and fill it FIRST, so it sits behind the glyphs we draw next
-                    ctx.fill(shape, with: .color(.readerVerseSelection))
+                    ctx.fill(shape, with: .color(.readerVerseSelection.opacity(progress)))
                 }
 
                 // Always draw the run's glyphs (skip this and the text disappears)

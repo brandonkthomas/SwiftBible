@@ -30,6 +30,9 @@ struct ReaderPassageView: View {
     /// When set, ReaderPassageFootnoteSheetView will open
     @State private var selectedVerseRangeForFootnote: RenderedVerseRange?
 
+    /// Used for reveal effects on verse highlight renders
+    @State private var revealProgress: CGFloat = 0
+
     // MARK: Views
 
     /// Reader view
@@ -42,11 +45,12 @@ struct ReaderPassageView: View {
 
                     // all integer indexes (0-based); stop before paragraphs.count
                     ForEach(0..<paragraphs.count, id: \.self) { paragraphIndex in
-                        let paragraph = paragraphs[paragraphIndex]
-                        PassageTextRenderer.text(for: paragraph.runs,
+                        PassageTextRenderer.text(for: paragraphs[paragraphIndex].runs,
                                                  mode: .collapsed)
-                            .textRenderer(VerseHighlightRenderer(selectedVerses: readerStore.selectedVerses))
-                            .frame(maxWidth: .infinity, alignment: .leading)
+//                            .frame(maxWidth: .infinity, alignment: .leading)
+                            // custom TextRenderer to support verse highlights w/ animations
+                            .textRenderer(VerseHighlightRenderer(selectedVerses: readerStore.selectedVerses,
+                                                                 progress: revealProgress))
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -56,6 +60,7 @@ struct ReaderPassageView: View {
             }
             .scrollTargetLayout()
             // prevent tab bar from covering up bottom few lines
+            // TODO: resolve properly?
             .padding(EdgeInsets(top: 24, leading: 0, bottom: 75, trailing: 0))
         }
         // Bind footnote tap to set selectedVerse
@@ -93,11 +98,17 @@ struct ReaderPassageView: View {
                 // tapped verse's upper bound can be defined as "ev ?? sv"
                 let endVerse = Int(queryItems.first(where: { $0.name == "ev" })?.value ?? "")
 
+                // reset reveal animation
+                revealProgress = 0
+
                 // applies to all views observing this property;
                 // so verse highlights, tabBarAccessory, etc
                 withAnimation(.snappy(duration: 0.35)) {
                     readerStore.handleVerseSelection(startVerse: startVerse,
                                                      endVerse: endVerse)
+
+                    // trigger reveal animation
+                    revealProgress = 1
                 }
 
                 return .handled // we dealt with it; don't open a browser
@@ -114,6 +125,8 @@ struct ReaderPassageView: View {
                 .presentationDetents([.medium, .large])
                 .presentationContentInteraction(.scrolls)
         }
+        // trigger slight tap on selection change
+        .sensoryFeedback(.selection, trigger: readerStore.selectedVerses)
     }
 }
 
