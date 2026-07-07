@@ -25,6 +25,50 @@ struct VerseHighlightRenderer: TextRenderer {
     /// Implementation of TextRenderer
     func draw(layout: Text.Layout,
               in ctx: inout GraphicsContext) {
+        // walk each run and collect typographicBounds.rect for each
+        var cgRects: [CGRect] = []
+
+        for line in layout {
+            for run in line {
+                // Does this run carry our custom attribute?
+                if let number = run[VerseNumberAttribute.self]?.number,
+                   selectedVerses?.contains(number) == true {
+                    cgRects.append(run.typographicBounds.rect)
+                }
+            }
+        }
+
+        // calculate circle path
+        var circlePath: Path = .init()
+
+        // if we don't have a selection, need to still allow rendering everything else
+        if let firstRect = cgRects.first {
+            // the very first selected rect
+            let origin = CGPoint(x: firstRect.minX, y: firstRect.midY)
+
+            var maxRadius: CGFloat = .init()
+
+            // get maxRadius w/ context of every selected rect
+            for cgRect in cgRects {
+                let corners = [CGPoint(x: cgRect.minX, y: cgRect.minY),
+                               CGPoint(x: cgRect.maxX, y: cgRect.minY),
+                               CGPoint(x: cgRect.minX, y: cgRect.maxY),
+                               CGPoint(x: cgRect.maxX, y: cgRect.maxY)]
+
+                for corner in corners {
+                    let thisMaxRadius = hypot(corner.x - origin.x, corner.y - origin.y)
+                    maxRadius = max(maxRadius, thisMaxRadius)
+                }
+            }
+
+            // calculate circlePath from all above info
+            let r: CGFloat = progress * maxRadius
+            circlePath = Path(ellipseIn: CGRect(x: origin.x - r,
+                                                y: origin.y - r,
+                                                width: 2*r,
+                                                height: 2*r))
+        }
+
         // Text.Layout is a collection of lines; each line is a collection of runs
         for line in layout {
             for run in line {
@@ -35,8 +79,10 @@ struct VerseHighlightRenderer: TextRenderer {
                     let shape = RoundedRectangle(cornerRadius: 4, style: .continuous)
                         .path(in: run.typographicBounds.rect)
 
-                    // ...and fill it FIRST, so it sits behind the glyphs we draw next
-                    ctx.fill(shape, with: .color(.readerVerseSelection.opacity(progress)))
+                    // ... masked to the calculated circlePath
+                    var masked = ctx
+                    masked.clip(to: circlePath)
+                    masked.fill(shape, with: .color(.readerVerseSelection))
                 }
 
                 // Always draw the run's glyphs (skip this and the text disappears)

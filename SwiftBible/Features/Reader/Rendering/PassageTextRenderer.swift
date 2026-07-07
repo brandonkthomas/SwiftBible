@@ -24,6 +24,9 @@ struct PassageTextRenderer {
     /// - Collapsed mode renders a single footnote marker at the end of the verse range
     /// - Inline mode renders footnote markers at their exact locations inside the verse
     /// - Hidden mode does not render footnote markers
+    ///
+    /// Each verse is rendered w/ customAttribute for use in highlight rendering later...
+    /// see https://alexanderweiss.dev/blog/2024-06-24-using-textrenderer-to-create-highlighted-text
     static func text(for runs: [RenderedPassageRun],
                      mode: MarkerMode) -> Text {
         var result = Text("")

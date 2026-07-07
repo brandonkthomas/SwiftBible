@@ -44,10 +44,12 @@ struct ReaderPassageView: View {
                     let paragraphs = renderedPassage.paragraphs
 
                     // all integer indexes (0-based); stop before paragraphs.count
+                    //
+                    // TODO: .verseLabel and .footnoteMarker runs increase line height
+                    // (should stay consistent across all lines regardless of content)
                     ForEach(0..<paragraphs.count, id: \.self) { paragraphIndex in
                         PassageTextRenderer.text(for: paragraphs[paragraphIndex].runs,
                                                  mode: .collapsed)
-//                            .frame(maxWidth: .infinity, alignment: .leading)
                             // custom TextRenderer to support verse highlights w/ animations
                             .textRenderer(VerseHighlightRenderer(selectedVerses: readerStore.selectedVerses,
                                                                  progress: revealProgress))
@@ -59,8 +61,8 @@ struct ReaderPassageView: View {
                 .padding(EdgeInsets(top: 2, leading: 24, bottom: 2, trailing: 24))
             }
             .scrollTargetLayout()
-            // prevent tab bar from covering up bottom few lines
-            // TODO: resolve properly?
+            // prevent tab bar from covering up bottom few lines (HACK)
+            // TODO: resolve properly? currently buggy when scrolling down hard to force-reveal tabbar
             .padding(EdgeInsets(top: 24, leading: 0, bottom: 75, trailing: 0))
         }
         // Bind footnote tap to set selectedVerse
