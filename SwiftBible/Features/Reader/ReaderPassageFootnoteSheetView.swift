@@ -64,6 +64,7 @@ struct ReaderPassageFootnoteSheetView: View {
                             .font(.system(.footnote, design: .serif))
                     }
                 }
+                .scrollTargetLayout()
                 // inset on top/bottom
                 .padding(EdgeInsets(top: 4, leading: 24, bottom: 0, trailing: 24))
                 // sheet title
