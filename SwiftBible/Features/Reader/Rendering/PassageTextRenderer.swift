@@ -17,17 +17,16 @@ struct PassageTextRenderer {
 
     // MARK: Functions (Public)
 
-    /// Build an AttributedString for a given set of RenderedPassageRuns
+    /// Build a Text view for a given set of RenderedPassageRuns
     ///
     /// Used by various application views for uniform passage rendering
     ///
     /// - Collapsed mode renders a single footnote marker at the end of the verse range
     /// - Inline mode renders footnote markers at their exact locations inside the verse
     /// - Hidden mode does not render footnote markers
-    static func attributedString(for runs: [RenderedPassageRun],
-                                 mode: MarkerMode,
-                                 selectedVerses: ClosedRange<Int>? = nil) -> AttributedString {
-        var result = AttributedString()
+    static func text(for runs: [RenderedPassageRun],
+                     mode: MarkerMode) -> Text {
+        var result = Text("")
 
         // If mode.collapsed:
         // Track verse progress so we can append a single footnote marker at the end
@@ -45,10 +44,11 @@ struct PassageTextRenderer {
                   verseHasFootnote,
                   let verseRange = accumulatingVerseRange else { return }
 
-            let marker = styledVerseEndMarker(for: verseRange,
-                                              useSelectedEffect: isSelected(verseRange,
-                                                                            in: selectedVerses))
-            result.append(marker)
+            let marker = styledVerseEndMarker(for: verseRange)
+
+            // '+' was deprecated in iOS 26.0:
+            // Use string interpolation on `Text` instead: `Text("Hello \(name)")`
+            result = Text("\(result)\(marker)")
 
             verseHasFootnote = false
         }
@@ -77,10 +77,16 @@ struct PassageTextRenderer {
                 // append verse text immediately
                 let text = styledText(runText,
                                       verseRange: currentVerseRange,
-                                      useLinkAttribute: true,
-                                      useSelectedEffect: isSelected(currentVerseRange,
-                                                                    in: selectedVerses))
-                result.append(text)
+                                      useLinkAttribute: true)
+
+                var segment = Text(text)
+
+                if let currentVerseRange {
+                    segment = segment
+                        .customAttribute(VerseNumberAttribute(number: currentVerseRange.startVerse))
+                }
+
+                result = Text("\(result)\(segment)")
 
             case .verseLabel(displayText: let displayText,
                              verseRange: let currentVerseRange):
@@ -90,10 +96,16 @@ struct PassageTextRenderer {
 
                 // append verse label immediately
                 let label = styledVerseLabel(displayText: displayText,
-                                             verseRange: currentVerseRange,
-                                             useSelectedEffect: isSelected(currentVerseRange,
-                                                                           in: selectedVerses))
-                result.append(label)
+                                             verseRange: currentVerseRange)
+
+                let segment = Text(label)
+
+//                if let currentVerseRange {
+//                    segment = segment
+//                        .customAttribute(VerseNumberAttribute(number: currentVerseRange.startVerse))
+//                }
+
+                result = Text("\(result)\(segment)")
 
             case .footnoteMarker(_,
                                  verseRange: let currentVerseRange):
@@ -109,7 +121,8 @@ struct PassageTextRenderer {
                     // append a lettered footnote marker (a, b, c...) at this exact spot
                     let marker = styledInlineMarker(index: inlineFootnoteIndex)
                     inlineFootnoteIndex += 1
-                    result.append(marker)
+
+                    result = Text("\(result)\(marker)")
                 case .hidden:
                     break
                 }
@@ -135,8 +148,7 @@ struct PassageTextRenderer {
 
     private static func styledText(_ text: String,
                                    verseRange: RenderedVerseRange?,
-                                   useLinkAttribute: Bool = false,
-                                   useSelectedEffect: Bool = false) -> AttributedString {
+                                   useLinkAttribute: Bool = false) -> AttributedString {
         var result = AttributedString("\(text) ")
 
         // Tap link (adds support for verse selection via tap action)
@@ -150,24 +162,15 @@ struct PassageTextRenderer {
             result.foregroundColor = .primary
         }
 
-        if useSelectedEffect {
-            result.backgroundColor = Color(.systemGray3)
-        }
-
         return result
     }
 
     private static func styledVerseLabel(displayText: String,
-                                         verseRange: RenderedVerseRange?,
-                                         useSelectedEffect: Bool = false) -> AttributedString {
+                                         verseRange: RenderedVerseRange?) -> AttributedString {
         var result = AttributedString("\(displayText) ")
         result.baselineOffset = 6
         result.font = .system(.caption2, design: .serif)
         result.foregroundColor = .secondary
-
-        if useSelectedEffect {
-            result.backgroundColor = Color(.systemGray3)
-        }
 
         return result
     }
@@ -181,8 +184,7 @@ struct PassageTextRenderer {
         return result
     }
 
-    private static func styledVerseEndMarker(for verseRange: RenderedVerseRange,
-                                             useSelectedEffect: Bool = false) -> AttributedString {
+    private static func styledVerseEndMarker(for verseRange: RenderedVerseRange) -> AttributedString {
         var result = AttributedString("† ")
         result.baselineOffset = 6
         result.font = .system(.caption2, design: .serif, weight: .bold)
@@ -195,19 +197,15 @@ struct PassageTextRenderer {
         }
         result.link = URL(string: url)
 
-        if useSelectedEffect {
-            result.backgroundColor = Color(.systemGray3)
-        }
-
         return result
     }
 
-    private static func isSelected(_ verseRange: RenderedVerseRange?,
-                    in selection: ClosedRange<Int>?) -> Bool {
-        guard let verseRange,
-              let selection else {
-            return false
-        }
-        return selection.contains(verseRange.startVerse)
-    }
+//    private static func isSelected(_ verseRange: RenderedVerseRange?,
+//                    in selection: ClosedRange<Int>?) -> Bool {
+//        guard let verseRange,
+//              let selection else {
+//            return false
+//        }
+//        return selection.contains(verseRange.startVerse)
+//    }
 }

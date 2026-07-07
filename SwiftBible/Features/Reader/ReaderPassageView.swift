@@ -18,6 +18,9 @@ struct ReaderPassageView: View {
 
     // MARK: Properties (Private)
 
+    /// Is the tab bar accessory currently collapsed or expanded?
+    @Environment(\.tabViewBottomAccessoryPlacement) private var placement
+
     /// Read appEnvironment.readerStore environment value from current view environment
     ///
     /// Don't need "\." here because this is a type-based lookup for an observable instance
@@ -40,13 +43,9 @@ struct ReaderPassageView: View {
                     // all integer indexes (0-based); stop before paragraphs.count
                     ForEach(0..<paragraphs.count, id: \.self) { paragraphIndex in
                         let paragraph = paragraphs[paragraphIndex]
-                        Text(PassageTextRenderer.attributedString(for: paragraph.runs,
-                                                                  mode: .collapsed,
-                                                                  selectedVerses: readerStore.selectedVerses))
-                            // SPIKE: tag the whole paragraph so every run carries the attribute,
-                            // then hand drawing to SpikeRenderer. Remove both lines after validating.
-                            .customAttribute(VerseNumberAttribute(number: 1))
-                            .textRenderer(SpikeRenderer())
+                        PassageTextRenderer.text(for: paragraph.runs,
+                                                 mode: .collapsed)
+                            .textRenderer(VerseHighlightRenderer(selectedVerses: readerStore.selectedVerses))
                             .frame(maxWidth: .infinity, alignment: .leading)
                     }
                 }

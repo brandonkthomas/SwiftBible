@@ -49,8 +49,8 @@ struct ReaderPassageFootnoteSheetView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
                     // Verse content
-                    Text(PassageTextRenderer.attributedString(for: passage.runs(for: verseRange),
-                                                              mode: .inline))
+                    PassageTextRenderer.text(for: passage.runs(for: verseRange),
+                                                  mode: .inline)
 
                     Divider()
 
