@@ -125,7 +125,7 @@ struct ReaderPassageView: View {
             // Verse branch
             } else if url.host == "verse" {
                 // calculate selection delta, update store selection state, do animation
-                handleVerseSelectionUI(components: components,
+                handleVerseSelection(components: components,
                                        queryItems: queryItems,
                                        startVerse: startVerse)
 
@@ -143,20 +143,31 @@ struct ReaderPassageView: View {
                 .presentationDetents([.medium, .large])
                 .presentationContentInteraction(.scrolls)
         }
+        .onChange(of: readerStore.selectedVerses) {
+            if readerStore.selectedVerses == nil {
+                deselectAllVerses()
+            }
+        }
         // trigger slight tap on selection change
         .sensoryFeedback(.selection, trigger: readerStore.selectedVerses)
     }
 
+    // MARK: Functions (Private)
+
     /// Handle updating verse tap selection in store + calculating delta + animating text
-    private func handleVerseSelectionUI(components: URLComponents,
-                                        queryItems: [URLQueryItem],
-                                        startVerse: Int) {
+    private func handleVerseSelection(components: URLComponents,
+                                      queryItems: [URLQueryItem],
+                                      startVerse: Int) {
         // start verse / end verse ...
         // tapped verse's upper bound can be defined as "ev ?? sv"
         let endVerse = Int(queryItems.first(where: { $0.name == "ev" })?.value ?? "")
 
         // Snapshot what's already fully highlighted BEFORE we change anything.
-        let old = settledVerses
+        // Anything that may be mid-reveal becomes settled (fully animated) instantly so that
+        //   it stays put and progress = 0 can't hide/flash it mid-animation
+        //   (progress only affects revealing set)
+        let previous = readerStore.selectedVerses
+        settledVerses = previous
 
         // #1: update logical selection FIRST so we can read the result
         // Animated on its own so the tab bar accessory reacts
@@ -171,8 +182,12 @@ struct ReaderPassageView: View {
         if let new {
             // Extend/fresh = the new range fully contains the old one (or there was none).
             let isExtend: Bool
-            if let old {
-                isExtend = new.lowerBound <= old.lowerBound && new.upperBound >= old.upperBound
+
+            // require new to be strictly bigger than old
+            if let previous {
+                isExtend = new != previous
+                    && new.lowerBound <= previous.lowerBound
+                    && new.upperBound >= previous.upperBound
             } else {
                 isExtend = true
             }
@@ -180,11 +195,11 @@ struct ReaderPassageView: View {
             if isExtend {
                 // delta is only the newly grown side
                 let delta: ClosedRange<Int>
-                if let old {
-                    if new.lowerBound < old.lowerBound {
-                        delta = new.lowerBound...(old.lowerBound - 1)
+                if let previous {
+                    if new.lowerBound < previous.lowerBound {
+                        delta = new.lowerBound...(previous.lowerBound - 1)
                     } else {
-                        delta = (old.upperBound + 1)...new.upperBound
+                        delta = (previous.upperBound + 1)...new.upperBound
                     }
                 } else {
                     delta = new
@@ -196,10 +211,6 @@ struct ReaderPassageView: View {
                 revealProgress = 0
                 withAnimation(.snappy(duration: 0.35)) {
                     revealProgress = 1
-                } completion: {
-                    // Reveal finished: fold delta into settled set
-                    settledVerses = new
-                    revealingVerses = nil
                 }
             } else {
                 // Shrink/isolate: no reveal, just settle smaller range
@@ -208,9 +219,14 @@ struct ReaderPassageView: View {
             }
         } else {
             // Deselection: clear everything
-            settledVerses = nil
-            revealingVerses = nil
+            deselectAllVerses()
         }
+    }
+
+    /// handles deselection of all current/animating/animated verse selections
+    private func deselectAllVerses() {
+        settledVerses = nil
+        revealingVerses = nil
     }
 }
 
