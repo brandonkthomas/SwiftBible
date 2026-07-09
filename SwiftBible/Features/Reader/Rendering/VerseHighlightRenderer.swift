@@ -20,11 +20,19 @@ struct VerseHighlightRenderer: TextRenderer {
     @AnimatableIgnored // can't interpolate Animatable; ignore
     let revealingVerses: ClosedRange<Int>?
 
+    /// Which verses do we need to fade out?
+    @AnimatableIgnored
+    let fadingVerses: ClosedRange<Int>?
+
+    /// Where on the screen was this tap positioned?
     @AnimatableIgnored // this is not animated
     let tapOrigin: CGPoint?
 
     // CGFloat is basic type for floating-point scalars in Core Graphics
     var progress: CGFloat
+
+    /// Progress for fading-out highlights on deselection
+    var fadeProgress: CGFloat
 
     // MARK: Functions
 
@@ -99,6 +107,12 @@ struct VerseHighlightRenderer: TextRenderer {
                         let shape = RoundedRectangle(cornerRadius: 4, style: .continuous)
                             .path(in: run.typographicBounds.rect)
                         ctx.fill(shape, with: .color(.readerVerseSelection))
+                    }
+
+                    if fadingVerses?.contains(number) == true {
+                        let shape = RoundedRectangle(cornerRadius: 4, style: .continuous)
+                            .path(in: run.typographicBounds.rect)
+                        ctx.fill(shape, with: .color(.readerVerseSelection.opacity(fadeProgress)))
                     }
                 }
 

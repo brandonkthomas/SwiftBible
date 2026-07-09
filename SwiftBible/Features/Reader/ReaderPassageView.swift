@@ -39,17 +39,23 @@ struct ReaderPassageView: View {
     /// Used for reveal effects on verse highlight renders
     @State private var revealProgress: CGFloat = 0
 
+    /// Used for fade-out effects on verse highlight renders
+    @State private var fadeProgress: CGFloat = 1
+
     /// Used for tap animation calculation effects on verse highlight renders
     @State private var tapLocation: CGPoint?
 
     /// Used for tap animation calculation effects on verse highlight renders
     @State private var tappedParagraphIndex: Int?
 
-    /// Keep track of which verses are already selected (so highlight renderer can paint deltas)
+    /// Keep track of which verses are already selected (so highlight add renderer can paint deltas)
     @State private var settledVerses: ClosedRange<Int>?
 
-    /// Keep track of which verses are being actively selected (so highlight renderer can paint deltas)
+    /// Keep track of which verses are being actively selected (so highlight add renderer can paint deltas)
     @State private var revealingVerses: ClosedRange<Int>?
+
+    /// Keep track of which verses are being deselected (so highlight remove renderer can paint deltas)
+    @State private var fadingVerses: ClosedRange<Int>?
 
     // MARK: Views
 
@@ -76,8 +82,10 @@ struct ReaderPassageView: View {
                             // custom TextRenderer to support verse highlights w/ animations
                             .textRenderer(VerseHighlightRenderer(settledVerses: settledVerses,
                                                                  revealingVerses: revealingVerses,
+                                                                 fadingVerses: fadingVerses,
                                                                  tapOrigin: origin,
-                                                                 progress: revealProgress))
+                                                                 progress: revealProgress,
+                                                                 fadeProgress: fadeProgress))
                             // record tap gestures for use with VerseHighlightRenderer
                             .simultaneousGesture(SpatialTapGesture(coordinateSpace: .local)
                                 .onEnded {
@@ -143,9 +151,10 @@ struct ReaderPassageView: View {
                 .presentationDetents([.medium, .large])
                 .presentationContentInteraction(.scrolls)
         }
+        // Handle deselection animations/etc ONCE (applies to all callers across all views)
         .onChange(of: readerStore.selectedVerses) {
             if readerStore.selectedVerses == nil {
-                deselectAllVerses()
+                fadeOutVerses(currentlyHighlightedVerses)
             }
         }
         // trigger slight tap on selection change
@@ -214,19 +223,45 @@ struct ReaderPassageView: View {
                 }
             } else {
                 // Shrink/isolate: no reveal, just settle smaller range
-                settledVerses = new
-                revealingVerses = nil
+                fadeOutVerses(previous,
+                              keeping: new)
             }
         } else {
             // Deselection: clear everything
-            deselectAllVerses()
+            fadeOutVerses(previous)
+        }
+    }
+
+    /// what range is currently visible as highlighted?
+    private var currentlyHighlightedVerses: ClosedRange<Int>? {
+        let settledVerses = self.settledVerses
+        let revealingVerses = self.revealingVerses
+
+        if let settledVerses, let revealingVerses {
+            let lowerBound = min(settledVerses.lowerBound, revealingVerses.lowerBound)
+            let upperBound = max(settledVerses.upperBound, revealingVerses.upperBound)
+            return lowerBound...upperBound
+        } else {
+            return settledVerses ?? revealingVerses
         }
     }
 
     /// handles deselection of all current/animating/animated verse selections
-    private func deselectAllVerses() {
-        settledVerses = nil
+    private func fadeOutVerses(_ verses: ClosedRange<Int>?,
+                               keeping remainingVerses: ClosedRange<Int>? = nil) {
+        guard let verses else { return }
+
+        fadingVerses = verses
+        settledVerses = remainingVerses
         revealingVerses = nil
+
+        fadeProgress = 1
+
+        withAnimation(.snappy(duration: 0.35)) {
+            fadeProgress = 0
+        } completion: {
+            fadingVerses = nil
+        }
     }
 }
 
