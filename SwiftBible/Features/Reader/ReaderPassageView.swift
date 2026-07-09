@@ -249,7 +249,9 @@ struct ReaderPassageView: View {
     /// handles deselection of all current/animating/animated verse selections
     private func fadeOutVerses(_ verses: ClosedRange<Int>?,
                                keeping remainingVerses: ClosedRange<Int>? = nil) {
-        guard let verses else { return }
+        guard let verses else {
+            return
+        }
 
         fadingVerses = verses
         settledVerses = remainingVerses

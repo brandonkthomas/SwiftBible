@@ -23,6 +23,15 @@ nonisolated struct ScriptureReference: Equatable {
         return "\(bookCode).\(chapter)"
     }
 
+    var verseRange: ClosedRange<Int>? {
+        guard let startVerse else { return nil }
+        if let endVerse {
+            return startVerse...endVerse
+        } else {
+            return startVerse...startVerse
+        }
+    }
+
     // MARK: Init
 
     // Failable (init?): allow for validation
