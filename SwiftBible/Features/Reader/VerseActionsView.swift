@@ -37,6 +37,7 @@ struct VerseActionsView: View {
             Button(action: {
                 // applies to all views observing this property;
                 // so verse highlights, tabBarAccessory, etc
+                // TODO: animation no longer works since we changed highlight engine; see ReaderPassageView
                 withAnimation(.snappy(duration: 0.35)) {
                     readerStore.selectedVerses = nil
                 }

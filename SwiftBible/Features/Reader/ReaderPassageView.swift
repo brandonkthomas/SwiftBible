@@ -16,10 +16,12 @@ struct ReaderPassageView: View {
     /// Contains all paragraphs (text/labels/footnote markers) & actual footnote content
     var renderedPassage: RenderedPassage
 
-    // MARK: Properties (Private)
+    // MARK: Properties (System Env, Private)
 
     /// Is the tab bar accessory currently collapsed or expanded?
     @Environment(\.tabViewBottomAccessoryPlacement) private var placement
+
+    // MARK: Properties (Proj Env, Private)
 
     /// Read appEnvironment.readerStore environment value from current view environment
     ///
@@ -27,11 +29,27 @@ struct ReaderPassageView: View {
     /// placed into the environment: .environment(readerStore))
     @Environment(ReaderStore.self) private var readerStore: ReaderStore
 
+    // MARK: Properties (Footnotes, Private)
+
     /// When set, ReaderPassageFootnoteSheetView will open
     @State private var selectedVerseRangeForFootnote: RenderedVerseRange?
 
+    // MARK: Properties (Verse Selection, Private)
+
     /// Used for reveal effects on verse highlight renders
     @State private var revealProgress: CGFloat = 0
+
+    /// Used for tap animation calculation effects on verse highlight renders
+    @State private var tapLocation: CGPoint?
+
+    /// Used for tap animation calculation effects on verse highlight renders
+    @State private var tappedParagraphIndex: Int?
+
+    /// Keep track of which verses are already selected (so highlight renderer can paint deltas)
+    @State private var settledVerses: ClosedRange<Int>?
+
+    /// Keep track of which verses are being actively selected (so highlight renderer can paint deltas)
+    @State private var revealingVerses: ClosedRange<Int>?
 
     // MARK: Views
 
@@ -48,11 +66,25 @@ struct ReaderPassageView: View {
                     // TODO: .verseLabel and .footnoteMarker runs increase line height
                     // (should stay consistent across all lines regardless of content)
                     ForEach(0..<paragraphs.count, id: \.self) { paragraphIndex in
+                        // where did we last tap?
+                        // only the tapped paragraph gets index; others get fallback origin rect calculation
+                        let origin = tappedParagraphIndex == paragraphIndex ? tapLocation : nil
+
+                        // build this paragraph into a Text view
                         PassageTextRenderer.text(for: paragraphs[paragraphIndex].runs,
                                                  mode: .collapsed)
                             // custom TextRenderer to support verse highlights w/ animations
-                            .textRenderer(VerseHighlightRenderer(selectedVerses: readerStore.selectedVerses,
+                            .textRenderer(VerseHighlightRenderer(settledVerses: settledVerses,
+                                                                 revealingVerses: revealingVerses,
+                                                                 tapOrigin: origin,
                                                                  progress: revealProgress))
+                            // record tap gestures for use with VerseHighlightRenderer
+                            .simultaneousGesture(SpatialTapGesture(coordinateSpace: .local)
+                                .onEnded {
+                                    value in tapLocation = value.location
+                                    tappedParagraphIndex = paragraphIndex
+                                }
+                            )
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -66,19 +98,21 @@ struct ReaderPassageView: View {
             .padding(EdgeInsets(top: 24, leading: 0, bottom: 75, trailing: 0))
         }
         // Bind footnote tap to set selectedVerse
+        // Bind verse tap to selection/store/animations
         .environment(\.openURL, OpenURLAction { url in
             guard url.scheme == "swiftbible" else {
                 return .systemAction // we dont want to handle anything else
             }
 
+            // validation
+            guard let components = URLComponents(string: url.absoluteString),
+                  let queryItems = components.queryItems,
+                  let startVerse = Int(queryItems.first(where: { $0.name == "sv" })?.value ?? "") else {
+                return .discarded
+            }
+
             // Footnote branch
             if url.host == "footnote" {
-                // validation
-                guard let components = URLComponents(string: url.absoluteString),
-                      let queryItems = components.queryItems,
-                      let startVerse = Int(queryItems.first(where: { $0.name == "sv" })?.value ?? "") else {
-                    return .discarded
-                }
                 let endVerse = Int(queryItems.first(where: { $0.name == "ev" })?.value ?? "")
 
                 // setting this will open ReaderPassageFootnoteSheetView using the .sheet
@@ -90,28 +124,10 @@ struct ReaderPassageView: View {
 
             // Verse branch
             } else if url.host == "verse" {
-                // validation
-                guard let components = URLComponents(string: url.absoluteString),
-                      let queryItems = components.queryItems,
-                      let startVerse = Int(queryItems.first(where: { $0.name == "sv" })?.value ?? "") else {
-                    return .discarded
-                }
-                // start verse / end verse ...
-                // tapped verse's upper bound can be defined as "ev ?? sv"
-                let endVerse = Int(queryItems.first(where: { $0.name == "ev" })?.value ?? "")
-
-                // reset reveal animation
-                revealProgress = 0
-
-                // applies to all views observing this property;
-                // so verse highlights, tabBarAccessory, etc
-                withAnimation(.snappy(duration: 0.35)) {
-                    readerStore.handleVerseSelection(startVerse: startVerse,
-                                                     endVerse: endVerse)
-
-                    // trigger reveal animation
-                    revealProgress = 1
-                }
+                // calculate selection delta, update store selection state, do animation
+                handleVerseSelectionUI(components: components,
+                                       queryItems: queryItems,
+                                       startVerse: startVerse)
 
                 return .handled // we dealt with it; don't open a browser
 
@@ -129,6 +145,72 @@ struct ReaderPassageView: View {
         }
         // trigger slight tap on selection change
         .sensoryFeedback(.selection, trigger: readerStore.selectedVerses)
+    }
+
+    /// Handle updating verse tap selection in store + calculating delta + animating text
+    private func handleVerseSelectionUI(components: URLComponents,
+                                        queryItems: [URLQueryItem],
+                                        startVerse: Int) {
+        // start verse / end verse ...
+        // tapped verse's upper bound can be defined as "ev ?? sv"
+        let endVerse = Int(queryItems.first(where: { $0.name == "ev" })?.value ?? "")
+
+        // Snapshot what's already fully highlighted BEFORE we change anything.
+        let old = settledVerses
+
+        // #1: update logical selection FIRST so we can read the result
+        // Animated on its own so the tab bar accessory reacts
+        withAnimation(.snappy(duration: 0.35)) {
+            readerStore.handleVerseSelection(startVerse: startVerse,
+                                             endVerse: endVerse)
+        }
+
+        // #2: now "new" is the post-change selection
+        let new = readerStore.selectedVerses
+
+        if let new {
+            // Extend/fresh = the new range fully contains the old one (or there was none).
+            let isExtend: Bool
+            if let old {
+                isExtend = new.lowerBound <= old.lowerBound && new.upperBound >= old.upperBound
+            } else {
+                isExtend = true
+            }
+
+            if isExtend {
+                // delta is only the newly grown side
+                let delta: ClosedRange<Int>
+                if let old {
+                    if new.lowerBound < old.lowerBound {
+                        delta = new.lowerBound...(old.lowerBound - 1)
+                    } else {
+                        delta = (old.upperBound + 1)...new.upperBound
+                    }
+                } else {
+                    delta = new
+                }
+
+                // #3: tell the renderer WHAT to reveal, reset progress, THEN animate it
+                // Renderer's draw() runs every frame while progress moves 0 to 1
+                revealingVerses = delta
+                revealProgress = 0
+                withAnimation(.snappy(duration: 0.35)) {
+                    revealProgress = 1
+                } completion: {
+                    // Reveal finished: fold delta into settled set
+                    settledVerses = new
+                    revealingVerses = nil
+                }
+            } else {
+                // Shrink/isolate: no reveal, just settle smaller range
+                settledVerses = new
+                revealingVerses = nil
+            }
+        } else {
+            // Deselection: clear everything
+            settledVerses = nil
+            revealingVerses = nil
+        }
     }
 }
 

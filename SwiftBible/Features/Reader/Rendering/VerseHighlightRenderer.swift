@@ -12,8 +12,16 @@ struct VerseHighlightRenderer: TextRenderer {
 
     // MARK: Properties
 
+    /// Which verses have already been highlighted + can skip re-animation?
     @AnimatableIgnored // can't interpolate Animatable; ignore
-    let selectedVerses: ClosedRange<Int>?
+    let settledVerses: ClosedRange<Int>?
+
+    /// Which verses do we need to highlight?
+    @AnimatableIgnored // can't interpolate Animatable; ignore
+    let revealingVerses: ClosedRange<Int>?
+
+    @AnimatableIgnored // this is not animated
+    let tapOrigin: CGPoint?
 
     // CGFloat is basic type for floating-point scalars in Core Graphics
     var progress: CGFloat
@@ -32,7 +40,7 @@ struct VerseHighlightRenderer: TextRenderer {
             for run in line {
                 // Does this run carry our custom attribute?
                 if let number = run[VerseNumberAttribute.self]?.number,
-                   selectedVerses?.contains(number) == true {
+                   revealingVerses?.contains(number) == true {
                     cgRects.append(run.typographicBounds.rect)
                 }
             }
@@ -43,8 +51,8 @@ struct VerseHighlightRenderer: TextRenderer {
 
         // if we don't have a selection, need to still allow rendering everything else
         if let firstRect = cgRects.first {
-            // the very first selected rect
-            let origin = CGPoint(x: firstRect.minX, y: firstRect.midY)
+            // our provided tapOrigin OR the very first selected rect (fallback)
+            let origin = tapOrigin ?? CGPoint(x: firstRect.minX, y: firstRect.midY)
 
             var maxRadius: CGFloat = .init()
 
@@ -73,16 +81,25 @@ struct VerseHighlightRenderer: TextRenderer {
         for line in layout {
             for run in line {
                 // Does this run carry our custom attribute?
-                if let number = run[VerseNumberAttribute.self]?.number,
-                   selectedVerses?.contains(number) == true {
-                    // Build a rounded rect matching the run's on-screen frame...
-                    let shape = RoundedRectangle(cornerRadius: 4, style: .continuous)
-                        .path(in: run.typographicBounds.rect)
+                if let number = run[VerseNumberAttribute.self]?.number {
+                    // Clip revealing verses to a mask
+                    if revealingVerses?.contains(number) == true {
+                        // Build a rounded rect matching the run's on-screen frame...
+                        let shape = RoundedRectangle(cornerRadius: 4, style: .continuous)
+                            .path(in: run.typographicBounds.rect)
 
-                    // ... masked to the calculated circlePath
-                    var masked = ctx
-                    masked.clip(to: circlePath)
-                    masked.fill(shape, with: .color(.readerVerseSelection))
+                        // ... masked to the calculated circlePath
+                        var masked = ctx
+                        masked.clip(to: circlePath)
+                        masked.fill(shape, with: .color(.readerVerseSelection))
+                    }
+
+                    // Keep settled verses filled (no clip)
+                    if settledVerses?.contains(number) == true {
+                        let shape = RoundedRectangle(cornerRadius: 4, style: .continuous)
+                            .path(in: run.typographicBounds.rect)
+                        ctx.fill(shape, with: .color(.readerVerseSelection))
+                    }
                 }
 
                 // Always draw the run's glyphs (skip this and the text disappears)
