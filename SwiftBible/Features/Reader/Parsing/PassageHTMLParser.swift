@@ -73,7 +73,7 @@ private nonisolated final class PassageHTMLParserDelegate: NSObject, XMLParserDe
 
     // MARK: Functions (Delegate)
 
-    /// Sent by parser when it encounters a start tag for a given element
+    /// Sent by parser when it encounters a start tags for a given element
     ///
     /// Inherited from XMLParserDelegate
     func parser(
@@ -180,7 +180,7 @@ private nonisolated final class PassageHTMLParserDelegate: NSObject, XMLParserDe
         self.currentParagraph = currentParagraph
     }
 
-    /// Sent by parser when it encounters an end tag for a given element
+    /// Sent by parser when it encounters an end tags for a given element
     ///
     /// Inherited from XMLParserDelegate
     func parser(

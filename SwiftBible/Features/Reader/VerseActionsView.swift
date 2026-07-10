@@ -79,9 +79,9 @@ struct VerseActionsView: View {
 
             // Tag
             Button(action: {
-                // TODO: open tag sheet
+                // TODO: open tags sheet
             }) {
-                Image(systemName: "tag.fill")
+                Image(systemName: "tags.fill")
                     .font(.system(size: UIFontMetrics(forTextStyle: .body).scaledValue(for: 20)))
             }
 
