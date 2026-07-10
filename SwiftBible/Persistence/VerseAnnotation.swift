@@ -8,7 +8,7 @@
 import Foundation
 
 /// User saved something (highlight, note, etc) for this exact verse range
-struct VerseAnnotation: Identifiable {
+nonisolated struct VerseAnnotation: Identifiable, Equatable {
 
     // MARK: Properties
 
