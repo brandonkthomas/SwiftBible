@@ -263,6 +263,51 @@ struct PassageHTMLParserTests {
         #expect(passage.footnotes[0].text == "The Greek is logos; see John 1:1 and Yahweh.")
     }
 
+    @Test func parserSplitsLeadingPunctuationFromRemainder() async throws {
+        let html = """
+            <div class="p">
+            <span class="yv-v" v="1"></span>
+            <span class="yv-vlbl">1</span>
+            <span class="it">Christ has</span>, and we possess Christ's perceptions.
+            </div>
+            """
+
+        let parser = PassageHTMLParser()
+        let passage = try parser.parse(html: html)
+
+        let verseRange = RenderedVerseRange(startVerse: 1)
+
+        #expect(passage.paragraphs[0].runs.count == 3)
+        #expect(passage.paragraphs[0].runs[0] == .verseLabel(displayText: "1",
+                                                             verseRange: verseRange))
+        #expect(passage.paragraphs[0].runs[1] == .styledText("Christ has,",
+                                                             style: .italic,
+                                                             verseRange: verseRange))
+        #expect(passage.paragraphs[0].runs[2] == .text("and we possess Christ's perceptions.",
+                                                       verseRange: verseRange))
+    }
+
+    @Test func parserKeepsLeadingPunctuationWhenPreviousRunCannotMerge() async throws {
+        let html = """
+            <div class="p">
+            <span class="yv-v" v="1"></span>
+            <span class="yv-vlbl">1</span>
+            . Opening punctuation stays visible.
+            </div>
+            """
+
+        let parser = PassageHTMLParser()
+        let passage = try parser.parse(html: html)
+
+        let verseRange = RenderedVerseRange(startVerse: 1)
+
+        #expect(passage.paragraphs[0].runs.count == 2)
+        #expect(passage.paragraphs[0].runs[0] == .verseLabel(displayText: "1",
+                                                             verseRange: verseRange))
+        #expect(passage.paragraphs[0].runs[1] == .text(". Opening punctuation stays visible.",
+                                                       verseRange: verseRange))
+    }
+
     @Test func parserHandlesMultiVerseLabels() async throws {
         let html = """
             <div class="p">

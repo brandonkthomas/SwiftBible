@@ -313,30 +313,43 @@ private nonisolated final class PassageHTMLParserDelegate: NSObject, XMLParserDe
     private func appendPassageText(_ text: String,
                                    style: RenderedPassageTextStyle,
                                    to paragraph: inout RenderedParagraph) {
-        if shouldAttachToPreviousRun(text),
-           let lastIndex = paragraph.runs.indices.last {
+        var textToAppend = text
+
+        if shouldAttachToPreviousRun(textToAppend),
+           let lastIndex = paragraph.runs.indices.last,
+           let splitText = splitLeadingPunctuation(from: textToAppend) {
+            var didAttachLeadingPunctuation = false
+
             switch paragraph.runs[lastIndex] {
             case .text(let previousText, verseRange: let verseRange):
-                paragraph.runs[lastIndex] = .text(previousText + text,
+                paragraph.runs[lastIndex] = .text(previousText + splitText.leadingPunctuation,
                                                   verseRange: verseRange)
-                return
+                didAttachLeadingPunctuation = true
             case .styledText(let previousText,
                              style: let previousStyle,
                              verseRange: let verseRange):
-                paragraph.runs[lastIndex] = .styledText(previousText + text,
+                paragraph.runs[lastIndex] = .styledText(previousText + splitText.leadingPunctuation,
                                                         style: previousStyle,
                                                         verseRange: verseRange)
-                return
+                didAttachLeadingPunctuation = true
             case .verseLabel, .footnoteMarker:
                 break
             }
+
+            if didAttachLeadingPunctuation {
+                textToAppend = splitText.remainder
+            }
+        }
+
+        guard !textToAppend.isEmpty else {
+            return
         }
 
         if style.isEmpty {
-            paragraph.runs.append(.text(text,
+            paragraph.runs.append(.text(textToAppend,
                                         verseRange: currentVerseRange))
         } else {
-            paragraph.runs.append(.styledText(text,
+            paragraph.runs.append(.styledText(textToAppend,
                                               style: style,
                                               verseRange: currentVerseRange))
         }
@@ -362,13 +375,31 @@ private nonisolated final class PassageHTMLParserDelegate: NSObject, XMLParserDe
         }
     }
 
-    /// Should this attach to the previous run?
+    /// Should this attach to the previous run (i.e. does this start w/ punctuation)?
     private func shouldAttachToPreviousRun(_ text: String) -> Bool {
         guard let firstCharacter = text.first else {
             return false
         }
 
         return ",.;:!?)”’".contains(firstCharacter)
+    }
+
+    private func splitLeadingPunctuation(from text: String) -> (leadingPunctuation: String, remainder: String)? {
+        let punctuationCharacters = CharacterSet(charactersIn: ",.;:!?)”’")
+        let leadingPunctuation = text.prefix { character in
+            String(character).rangeOfCharacter(from: punctuationCharacters.inverted) == nil
+        }
+
+        guard !leadingPunctuation.isEmpty else {
+            return nil
+        }
+
+        let remainderStartIndex = text.index(text.startIndex,
+                                             offsetBy: leadingPunctuation.count)
+        let remainder = text[remainderStartIndex...]
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+
+        return (String(leadingPunctuation), remainder)
     }
 }
 /// PassageHTMLParser error definitions
