@@ -20,6 +20,12 @@ struct VerseActionsView: View {
     /// placed into the environment: .environment(readerStore))
     @Environment(ReaderStore.self) private var readerStore: ReaderStore
 
+    /// Read appEnvironment.libraryRepository environment value from current view environment
+    ///
+    /// Don't need "\." here because this is a type-based lookup for an observable instance
+    /// placed into the environment: .environment(readerStore))
+    @Environment(InMemoryLibraryRepository.self) private var libraryRepository: InMemoryLibraryRepository
+
     private var selectedLabel: String {
         guard let selectedVerses = readerStore.selectedVerses else {
             return ""
@@ -81,7 +87,7 @@ struct VerseActionsView: View {
             Button(action: {
                 // TODO: open tags sheet
             }) {
-                Image(systemName: "tags.fill")
+                Image(systemName: "tag.fill")
                     .font(.system(size: UIFontMetrics(forTextStyle: .body).scaledValue(for: 20)))
             }
 

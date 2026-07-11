@@ -22,6 +22,7 @@ final class AppEnvironment {
 
     let readerStore: ReaderStore
     let appConfiguration: AppConfiguration
+    let libraryRepository: LibraryRepository // store protocol itself
 
     // MARK: Init
 
@@ -37,5 +38,7 @@ final class AppEnvironment {
                                                    baseURL: appConfiguration.youVersionBaseURL,
                                                    urlSession: .shared)
         self.readerStore = ReaderStore(repository: repository)
+
+        self.libraryRepository = InMemoryLibraryRepository()
     }
 }

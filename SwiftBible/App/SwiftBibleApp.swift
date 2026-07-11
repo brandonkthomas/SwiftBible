@@ -33,11 +33,16 @@ struct SwiftBibleApp: App {
     /// "some Scene": this is some other type which conforms to the Scene protocol.
     /// WindowGroup is a Scene that presents a group of identically structured windows.
     ///
-    /// appEnvironment.readerStore is @Observable ReaderStore instance.
+    /// appEnvironment.readerStore must be an @Observable instance.
     var body: some Scene {
         WindowGroup {
             ContentView()
-                .environment(appEnvironment.readerStore) // inject @Observable ReaderStore instance
+                // inject @Observable ReaderStore instance
+                // this has @Observable state, so we need type-based environment
+                .environment(appEnvironment.readerStore)
+                // inject custom env/key value for LibraryRepository protocol
+                // this is a service/dependency, so we need key-path environment
+                .environment(\.libraryRepository, appEnvironment.libraryRepository)
         }
     }
 }
