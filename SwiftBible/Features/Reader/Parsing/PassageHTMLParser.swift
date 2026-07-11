@@ -65,11 +65,14 @@ private nonisolated final class PassageHTMLParserDelegate: NSObject, XMLParserDe
     /// true after <span class="yv-vlbl">
     private var isInsideVerseLabel: Bool = false
 
-    /// true after <span class="ft">
-    private var isInsideFootnoteText: Bool = false
-
     /// increments after <span class="yv-n f">
     private var footnoteDepth: Int = 0
+
+    /// increments after <span class="fr"> inside a footnote
+    private var ignoredFootnoteReferenceDepth: Int = 0
+
+    /// Tracks inline span styles that apply to passage text.
+    private var spanStyleStack: [RenderedPassageTextStyle?] = []
 
     // MARK: Functions (Delegate)
 
@@ -86,10 +89,13 @@ private nonisolated final class PassageHTMLParserDelegate: NSObject, XMLParserDe
         if footnoteDepth > 0 {
             // we're already inside a footnote; keep tracking depth + short-circuit
             footnoteDepth += 1
-            
-            if elementName == "span",
-               attributeDict["class"] == "ft" {
-                isInsideFootnoteText = true
+
+            // footnote tracking logic
+            if ignoredFootnoteReferenceDepth > 0 {
+                ignoredFootnoteReferenceDepth += 1
+            } else if elementName == "span",
+                      hasClass("fr", in: attributeDict) {
+                ignoredFootnoteReferenceDepth = 1
             }
 
             return
@@ -99,6 +105,7 @@ private nonisolated final class PassageHTMLParserDelegate: NSObject, XMLParserDe
                   var paragraph = self.currentParagraph {
             // we're opening a new footnote; start tracking depth + short-circuit
             footnoteDepth = 1
+            ignoredFootnoteReferenceDepth = 0
             currentFootnoteText = ""
 
             let footnoteID = nextFootnoteID
@@ -115,15 +122,16 @@ private nonisolated final class PassageHTMLParserDelegate: NSObject, XMLParserDe
             return
         }
 
-        // New paragraph: <div class="p">
+        // New paragraph: <div class="p">, <div class="q1">, etc.
         if elementName == "div",
-           (attributeDict["class"] == "p" || attributeDict["class"] == "q1") {
-            currentParagraph = .init(runs: [])
+           let paragraphStyle = paragraphStyle(for: attributeDict) {
+            currentParagraph = .init(style: paragraphStyle,
+                                     runs: [])
         }
 
         // Verse metadata: <span class="yv-v" v="26" ev="27">
         if elementName == "span",
-           attributeDict["class"] == "yv-v" {
+           hasClass("yv-v", in: attributeDict) {
             if let startVerseText = attributeDict["v"],
                let startVerse = Int(startVerseText) {
                 let endVerse = attributeDict["ev"].flatMap { Int($0) }
@@ -136,9 +144,13 @@ private nonisolated final class PassageHTMLParserDelegate: NSObject, XMLParserDe
 
         // Verse: <span class="yv-vlbl">
         if elementName == "span",
-           attributeDict["class"] == "yv-vlbl" {
+           hasClass("yv-vlbl", in: attributeDict) {
             isInsideVerseLabel = true
             currentVerseLabelText = ""
+        }
+
+        if elementName == "span" {
+            spanStyleStack.append(textStyle(for: attributeDict))
         }
     }
 
@@ -149,6 +161,15 @@ private nonisolated final class PassageHTMLParserDelegate: NSObject, XMLParserDe
         _ parser: XMLParser,
         foundCharacters string: String
     ) {
+        if footnoteDepth > 0 {
+            guard ignoredFootnoteReferenceDepth == 0 else {
+                return
+            }
+
+            appendFootnoteText(string)
+            return
+        }
+
         // Clean up input
         let trimmedCharacters = string.trimmingCharacters(in: .whitespacesAndNewlines)
 
@@ -162,18 +183,11 @@ private nonisolated final class PassageHTMLParserDelegate: NSObject, XMLParserDe
         if isInsideVerseLabel {
             // Verse Label
             currentVerseLabelText.append(trimmedCharacters)
-        } else if footnoteDepth > 0 {
-            // Footnote
-            // Ignore non-text footnote items (i.e. "1:1")
-            if isInsideFootnoteText {
-                currentFootnoteText.append(trimmedCharacters)
-            } else {
-                return
-            }
         } else {
             // Text (Verse Content)
-            currentParagraph.runs.append(.text(trimmedCharacters,
-                                               verseRange: currentVerseRange))
+            appendPassageText(trimmedCharacters,
+                              style: currentTextStyle,
+                              to: &currentParagraph)
         }
 
         // Assign locally-unwrapped copy back to parent
@@ -193,9 +207,8 @@ private nonisolated final class PassageHTMLParserDelegate: NSObject, XMLParserDe
         if footnoteDepth > 0 {
             footnoteDepth -= 1
 
-            if elementName == "span",
-               isInsideFootnoteText {
-                isInsideFootnoteText = false
+            if ignoredFootnoteReferenceDepth > 0 {
+                ignoredFootnoteReferenceDepth -= 1
             }
 
             // we just closed a footnote; wrap up our tracking
@@ -204,7 +217,7 @@ private nonisolated final class PassageHTMLParserDelegate: NSObject, XMLParserDe
                let currentVerseRange {
                 let footnote = Footnote(id: currentFootnoteID,
                                         verseRange: currentVerseRange,
-                                        text: currentFootnoteText)
+                                        text: currentFootnoteText.trimmingCharacters(in: .whitespacesAndNewlines))
 
                 footnotes.append(footnote)
 
@@ -229,12 +242,133 @@ private nonisolated final class PassageHTMLParserDelegate: NSObject, XMLParserDe
             self.currentVerseLabelText = ""
         }
 
+        if elementName == "span",
+           !spanStyleStack.isEmpty {
+            _ = spanStyleStack.removeLast()
+        }
+
         // Paragraph ended: </div>
         if elementName == "div",
            let finishedParagraph = self.currentParagraph {
             paragraphs.append(finishedParagraph)
             self.currentParagraph = nil
         }
+    }
+
+    // MARK: Functions (Private)
+
+    private var currentTextStyle: RenderedPassageTextStyle {
+        spanStyleStack.reduce(into: []) { style, activeStyle in
+            if let activeStyle {
+                style.formUnion(activeStyle)
+            }
+        }
+    }
+
+    /// Parse YouVersion HTML classes into corresponding paragraph styles (indented line, quote line, paragraph)
+    private func paragraphStyle(for attributes: [String: String]) -> RenderedParagraphStyle? {
+        if hasClass("mi", in: attributes) {
+            return .indentedLine
+        } else if hasClass("q1", in: attributes) {
+            return .quoteLine
+        } else if hasClass("p", in: attributes) || hasClass("m", in: attributes) {
+            return .paragraph
+        } else {
+            return nil
+        }
+    }
+
+    /// Parse YouVersion HTML classes into corresponding text styles (italic, words of Jesus, divine name)
+    private func textStyle(for attributes: [String: String]) -> RenderedPassageTextStyle? {
+        var style: RenderedPassageTextStyle = []
+
+        if hasClass("it", in: attributes) {
+            style.insert(.italic)
+        }
+
+        if hasClass("wj", in: attributes) {
+            style.insert(.wordsOfJesus)
+        }
+
+        if hasClass("nd", in: attributes) {
+            style.insert(.divineName)
+        }
+
+        return style.isEmpty ? nil : style
+    }
+
+    /// Check an attribute dict for an expected class
+    private func hasClass(_ expectedClass: String,
+                          in attributes: [String: String]) -> Bool {
+        guard let classValue = attributes["class"] else {
+            return false
+        }
+
+        return classValue
+            .split(separator: " ")
+            .contains(Substring(expectedClass))
+    }
+
+    /// Append passage text
+    private func appendPassageText(_ text: String,
+                                   style: RenderedPassageTextStyle,
+                                   to paragraph: inout RenderedParagraph) {
+        if shouldAttachToPreviousRun(text),
+           let lastIndex = paragraph.runs.indices.last {
+            switch paragraph.runs[lastIndex] {
+            case .text(let previousText, verseRange: let verseRange):
+                paragraph.runs[lastIndex] = .text(previousText + text,
+                                                  verseRange: verseRange)
+                return
+            case .styledText(let previousText,
+                             style: let previousStyle,
+                             verseRange: let verseRange):
+                paragraph.runs[lastIndex] = .styledText(previousText + text,
+                                                        style: previousStyle,
+                                                        verseRange: verseRange)
+                return
+            case .verseLabel, .footnoteMarker:
+                break
+            }
+        }
+
+        if style.isEmpty {
+            paragraph.runs.append(.text(text,
+                                        verseRange: currentVerseRange))
+        } else {
+            paragraph.runs.append(.styledText(text,
+                                              style: style,
+                                              verseRange: currentVerseRange))
+        }
+    }
+
+    /// Append footnote text
+    private func appendFootnoteText(_ text: String) {
+        let collapsedText = text.replacingOccurrences(of: "\\s+",
+                                                      with: " ",
+                                                      options: .regularExpression)
+
+        guard !collapsedText.isEmpty else {
+            return
+        }
+
+        if collapsedText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            if !currentFootnoteText.isEmpty,
+               !currentFootnoteText.hasSuffix(" ") {
+                currentFootnoteText.append(" ")
+            }
+        } else {
+            currentFootnoteText.append(collapsedText)
+        }
+    }
+
+    /// Should this attach to the previous run?
+    private func shouldAttachToPreviousRun(_ text: String) -> Bool {
+        guard let firstCharacter = text.first else {
+            return false
+        }
+
+        return ",.;:!?)”’".contains(firstCharacter)
     }
 }
 /// PassageHTMLParser error definitions

@@ -79,6 +79,29 @@ struct PassageTextRenderer {
 
                 // append verse text immediately
                 let text = styledText(runText,
+                                      style: [],
+                                      verseRange: currentVerseRange,
+                                      useLinkAttribute: true)
+
+                var segment = Text(text)
+
+                if let currentVerseRange {
+                    segment = segment
+                        .customAttribute(VerseNumberAttribute(number: currentVerseRange.startVerse))
+                }
+
+                result = Text("\(result)\(segment)")
+
+            case .styledText(let runText,
+                             style: let style,
+                             verseRange: let currentVerseRange):
+                // If prev verse just ended, swap to new verse
+                // + append marker to end of old verse
+                beginVerseIfChanged(currentVerseRange)
+
+                // append styled verse text immediately
+                let text = styledText(runText,
+                                      style: style,
                                       verseRange: currentVerseRange,
                                       useLinkAttribute: true)
 
@@ -102,11 +125,6 @@ struct PassageTextRenderer {
                                              verseRange: currentVerseRange)
 
                 let segment = Text(label)
-
-//                if let currentVerseRange {
-//                    segment = segment
-//                        .customAttribute(VerseNumberAttribute(number: currentVerseRange.startVerse))
-//                }
 
                 result = Text("\(result)\(segment)")
 
@@ -150,9 +168,10 @@ struct PassageTextRenderer {
     // MARK: Functions (Private)
 
     private static func styledText(_ text: String,
+                                   style: RenderedPassageTextStyle,
                                    verseRange: RenderedVerseRange?,
                                    useLinkAttribute: Bool = false) -> AttributedString {
-        var result = AttributedString("\(text) ")
+        var result = AttributedString("\(text)\(trailingSeparator(after: text))")
 
         // Tap link (adds support for verse selection via tap action)
         if useLinkAttribute,
@@ -165,9 +184,32 @@ struct PassageTextRenderer {
             result.foregroundColor = .primary
         }
 
+        // Support for italic, words of Jesus, divine name styling from YouVersion API
+        if style.contains(.italic) {
+            result.inlinePresentationIntent = .emphasized
+        }
+
+        if style.contains(.wordsOfJesus) {
+            result.foregroundColor = .red
+        }
+
+        if style.contains(.divineName) {
+            result.font = .system(.body, design: .serif, weight: .semibold)
+        }
+
         return result
     }
 
+    /// Append space if previous character was a hyphen or curled endquote
+    private static func trailingSeparator(after text: String) -> String {
+        guard let lastCharacter = text.last else {
+            return ""
+        }
+
+        return "—“‘".contains(lastCharacter) ? "" : " "
+    }
+
+    /// Generate a verse label
     private static func styledVerseLabel(displayText: String,
                                          verseRange: RenderedVerseRange?) -> AttributedString {
         var result = AttributedString("\(displayText) ")
@@ -178,6 +220,7 @@ struct PassageTextRenderer {
         return result
     }
 
+    /// Generate an inline footnote marker for a given verseRange
     private static func styledInlineMarker(index: Int) -> AttributedString {
         var result = AttributedString("\(footnoteSymbol(for: index)) ")
         result.baselineOffset = 6
@@ -187,6 +230,7 @@ struct PassageTextRenderer {
         return result
     }
 
+    /// Generate an end footnote marker for a given verseRange
     private static func styledVerseEndMarker(for verseRange: RenderedVerseRange) -> AttributedString {
         var result = AttributedString("† ")
         result.baselineOffset = 6
@@ -202,13 +246,4 @@ struct PassageTextRenderer {
 
         return result
     }
-
-//    private static func isSelected(_ verseRange: RenderedVerseRange?,
-//                    in selection: ClosedRange<Int>?) -> Bool {
-//        guard let verseRange,
-//              let selection else {
-//            return false
-//        }
-//        return selection.contains(verseRange.startVerse)
-//    }
 }

@@ -79,6 +79,9 @@ struct ReaderPassageView: View {
                         // build this paragraph into a Text view
                         PassageTextRenderer.text(for: paragraphs[paragraphIndex].runs,
                                                  mode: .collapsed)
+                            // custom leading padding for inline/block quote styles
+                            .padding(.leading,
+                                     leadingPadding(for: paragraphs[paragraphIndex].style))
                             // custom TextRenderer to support verse highlights w/ animations
                             .textRenderer(VerseHighlightRenderer(settledVerses: settledVerses,
                                                                  revealingVerses: revealingVerses,
@@ -243,6 +246,18 @@ struct ReaderPassageView: View {
             return lowerBound...upperBound
         } else {
             return settledVerses ?? revealingVerses
+        }
+    }
+
+    /// Does this paragraph style require leading padding?
+    private func leadingPadding(for style: RenderedParagraphStyle) -> CGFloat {
+        switch style {
+        case .paragraph:
+            return 0
+        case .quoteLine:
+            return 18
+        case .indentedLine:
+            return 36
         }
     }
 

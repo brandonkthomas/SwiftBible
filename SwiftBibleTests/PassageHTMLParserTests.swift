@@ -44,6 +44,7 @@ struct PassageHTMLParserTests {
         let passage = try parser.parse(html: html)
 
         #expect(passage.paragraphs.count == 1)
+        #expect(passage.paragraphs[0].style == .quoteLine)
 
         #expect(passage.paragraphs[0].runs.count == 2)
         #expect(passage.paragraphs[0].runs[0] == .verseLabel(displayText: "1",
@@ -171,6 +172,95 @@ struct PassageHTMLParserTests {
         #expect(passage.footnotes[0].text == "Footnote body should not render inline.")
         #expect(passage.footnotes[1].id == 1)
         #expect(passage.footnotes[1].text == "Second footnote.")
+    }
+
+    @Test func parserPreservesStyledPassageRuns() async throws {
+        let html = """
+            <div class="p">
+            <span class="yv-v" v="1"></span>
+            <span class="yv-vlbl">1</span>
+            Jesus said, <span class="wj">follow <span class="it">me</span></span> and worship <span class="nd">Yahweh</span>.
+            </div>
+            """
+
+        let parser = PassageHTMLParser()
+        let passage = try parser.parse(html: html)
+
+        #expect(passage.paragraphs.count == 1)
+        #expect(passage.paragraphs[0].runs.count == 6)
+        #expect(passage.paragraphs[0].runs[0] == .verseLabel(displayText: "1",
+                                                             verseRange: .init(startVerse: 1)))
+        #expect(passage.paragraphs[0].runs[1] == .text("Jesus said,",
+                                                       verseRange: .init(startVerse: 1)))
+        #expect(passage.paragraphs[0].runs[2] == .styledText("follow",
+                                                             style: .wordsOfJesus,
+                                                             verseRange: .init(startVerse: 1)))
+        #expect(passage.paragraphs[0].runs[3] == .styledText("me",
+                                                             style: [.italic, .wordsOfJesus],
+                                                             verseRange: .init(startVerse: 1)))
+        #expect(passage.paragraphs[0].runs[4] == .text("and worship",
+                                                       verseRange: .init(startVerse: 1)))
+        #expect(passage.paragraphs[0].runs[5] == .styledText("Yahweh.",
+                                                             style: .divineName,
+                                                             verseRange: .init(startVerse: 1)))
+    }
+
+    @Test func parserPreservesIndentedPoetryBlocksAfterVerseLabel() async throws {
+        let html = """
+            <div class="p">
+            <span class="yv-v" v="16"></span>
+            <span class="yv-vlbl">16</span>
+            For
+            </div>
+            <div class="mi">Who has ever known the mind of the Lord <span class="nd">Yahweh</span>?</div>
+            <div class="m"><span class="it">Christ has</span>, and we possess Christ's perceptions.</div>
+            """
+
+        let parser = PassageHTMLParser()
+        let passage = try parser.parse(html: html)
+
+        let verseRange = RenderedVerseRange(startVerse: 16)
+
+        #expect(passage.paragraphs.count == 3)
+        #expect(passage.paragraphs[0].style == .paragraph)
+        #expect(passage.paragraphs[1].style == .indentedLine)
+        #expect(passage.paragraphs[2].style == .paragraph)
+
+        #expect(passage.paragraphs[0].runs[0] == .verseLabel(displayText: "16",
+                                                             verseRange: verseRange))
+        #expect(passage.paragraphs[0].runs[1] == .text("For",
+                                                       verseRange: verseRange))
+        #expect(passage.paragraphs[1].runs[0] == .text("Who has ever known the mind of the Lord",
+                                                       verseRange: verseRange))
+        #expect(passage.paragraphs[1].runs[1] == .styledText("Yahweh?",
+                                                             style: .divineName,
+                                                             verseRange: verseRange))
+        #expect(passage.paragraphs[2].runs[0] == .styledText("Christ has,",
+                                                             style: .italic,
+                                                             verseRange: verseRange))
+        #expect(passage.paragraphs[2].runs[1] == .text("and we possess Christ's perceptions.",
+                                                       verseRange: verseRange))
+    }
+
+    @Test func parserPreservesMixedFootnoteBodyRuns() async throws {
+        let html = """
+            <div class="p">
+            <span class="yv-v" v="1"></span>
+            <span class="yv-vlbl">1</span>
+            In the beginning
+            <span class="yv-n f">
+                <span class="fr">1:1</span>
+                <span class="ft">The Greek is</span><span class="ft"> </span><span class="it">logos</span><span class="ft">; see</span><span class="ft"> </span><span class="ref" usfm="JHN.1.1">John 1:1</span><span class="ft"> and </span><span class="nd">Yahweh</span><span class="ft">.</span>
+            </span>
+            was already there.
+            </div>
+            """
+
+        let parser = PassageHTMLParser()
+        let passage = try parser.parse(html: html)
+
+        #expect(passage.footnotes.count == 1)
+        #expect(passage.footnotes[0].text == "The Greek is logos; see John 1:1 and Yahweh.")
     }
 
     @Test func parserHandlesMultiVerseLabels() async throws {
