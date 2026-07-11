@@ -50,12 +50,12 @@ struct LibraryRepositoryTests {
         let annotation1 = VerseAnnotation(reference: reference1,
                                           selectedVerses: reference1.verseRange!,
                                           highlightColor: nil,
-                                          note: "Note content",
+                                          note: "Note content 1",
                                           tags: nil)
         let annotation2 = VerseAnnotation(reference: reference2,
                                           selectedVerses: reference2.verseRange!,
                                           highlightColor: nil,
-                                          note: "Note content",
+                                          note: "Note content 2",
                                           tags: nil)
 
         guard let annotation1,
@@ -86,12 +86,12 @@ struct LibraryRepositoryTests {
         let annotation1 = VerseAnnotation(reference: reference1,
                                           selectedVerses: reference1.verseRange!,
                                           highlightColor: nil,
-                                          note: "Note content",
+                                          note: "Note content 1",
                                           tags: nil)
         let annotation2 = VerseAnnotation(reference: reference2,
                                           selectedVerses: reference2.verseRange!,
                                           highlightColor: nil,
-                                          note: "Note content",
+                                          note: "Note content 2",
                                           tags: nil)
 
         guard let annotation1,
@@ -136,5 +136,4 @@ struct LibraryRepositoryTests {
 
         #expect(results == [])
     }
-
 }
