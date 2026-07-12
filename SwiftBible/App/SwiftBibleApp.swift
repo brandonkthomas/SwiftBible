@@ -12,13 +12,16 @@ struct SwiftBibleApp: App {
 
     // MARK: Properties (Private)
 
-    /// Single app-wide instance of AppEnvironment;
+    /// Single SwiftBibleApp-wide instance of AppEnvironment (persists view refreshes);
     /// which in turn handles one instance of ReaderStore.
     ///
-    /// @State: SwiftUI owns/preserves this value across view/app refreshes;
-    /// its changes can trigger UI updates.
+    /// @State: SwiftUI owns/preserves this value across the ownership site (App);
+    /// its changes can trigger UI updates. .environment below will distribute this once
+    /// persistent instance across SwiftBible.
+    ///
     /// SwiftUI can recreate value structs during render lifecycle. @State allows for
     /// "storage" outside the transient struct values.
+    ///
     /// AppEnvironment is a class (ref obj) so @State preserves ref to this specific instance.
     ///
     /// This is a "var" because @State is a property wrapper which requires "var".

@@ -10,6 +10,11 @@ import OSLog
 
 /// Flow: BibleRepository -> ReaderStore -> ReaderView / picker UI
 ///
+/// final: cannot be subclassed; buys us shared, mutable, observable state
+///  (when compared to a struct)
+/// \@Observable: one source of truth that many views read & mutations are seen
+///  immediately by all observers.
+///
 /// Owns:
 /// - available translations
 /// - selected translation

@@ -12,108 +12,114 @@ import Testing
 struct VerseAnnotationTests {
 
     /// single selected verse 16...16 stores startVerse == 16 and endVerse == nil
-    @Test func singleVerseStoresProperly() {
-        let reference = ScriptureReference(translationID: 123,
-                                           bookCode: "GEN",
-                                           chapter: 1,
-                                           startVerse: 16,
-                                           endVerse: nil)!
-        let annotation = VerseAnnotation(reference: reference,
-                                         selectedVerses: reference.verseRange!,
-                                         highlightColor: nil,
-                                         note: "Note content",
-                                         tags: nil)
+    @Test func singleVerseStoresProperly() throws {
+        let reference = try #require(ScriptureReference(translationID: 123,
+                                                    bookCode: "GEN",
+                                                    chapter: 1,
+                                                    startVerse: 16,
+                                                    endVerse: nil))
+        let verseRange = try #require(reference.verseRange)
+        let annotation = try #require(VerseAnnotation(reference: reference,
+                                                  selectedVerses: verseRange,
+                                                  highlightColor: nil,
+                                                  note: "Note content",
+                                                  tags: nil))
 
-        #expect(annotation?.startVerse == 16)
-        #expect(annotation?.endVerse == nil)
+        #expect(annotation.startVerse == 16)
+        #expect(annotation.endVerse == nil)
     }
 
     /// range 16...17 stores startVerse == 16 and endVerse == 17
-    @Test func twoVersesStoreProperly() {
-        let reference = ScriptureReference(translationID: 123,
-                                           bookCode: "GEN",
-                                           chapter: 1,
-                                           startVerse: 16,
-                                           endVerse: 17)!
-        let annotation = VerseAnnotation(reference: reference,
-                                         selectedVerses: reference.verseRange!,
-                                         highlightColor: nil,
-                                         note: "Note content",
-                                         tags: nil)
+    @Test func twoVersesStoreProperly() throws {
+        let reference = try #require(ScriptureReference(translationID: 123,
+                                                    bookCode: "GEN",
+                                                    chapter: 1,
+                                                    startVerse: 16,
+                                                    endVerse: 17))
+        let verseRange = try #require(reference.verseRange)
+        let annotation = try #require(VerseAnnotation(reference: reference,
+                                                  selectedVerses: verseRange,
+                                                  highlightColor: nil,
+                                                  note: "Note content",
+                                                  tags: nil))
 
-        #expect(annotation?.startVerse == 16)
-        #expect(annotation?.endVerse == 17)
+        #expect(annotation.startVerse == 16)
+        #expect(annotation.endVerse == 17)
     }
 
     /// reference fields copy through from ScriptureReference
-    @Test func referenceFieldsStoreProperly() {
-        let reference = ScriptureReference(translationID: 123,
-                                           bookCode: "GEN",
-                                           chapter: 1,
-                                           startVerse: 16,
-                                           endVerse: 17)!
-        let annotation = VerseAnnotation(reference: reference,
-                                         selectedVerses: reference.verseRange!,
-                                         highlightColor: nil,
-                                         note: "Note content",
-                                         tags: nil)
+    @Test func referenceFieldsStoreProperly() throws {
+        let reference = try #require(ScriptureReference(translationID: 123,
+                                                    bookCode: "GEN",
+                                                    chapter: 1,
+                                                    startVerse: 16,
+                                                    endVerse: 17))
+        let verseRange = try #require(reference.verseRange)
+        let annotation = try #require(VerseAnnotation(reference: reference,
+                                                  selectedVerses: verseRange,
+                                                  highlightColor: nil,
+                                                  note: "Note content",
+                                                  tags: nil))
 
-        #expect(annotation?.translationID == 123)
-        #expect(annotation?.bookCode == "GEN")
-        #expect(annotation?.chapter == 1)
+        #expect(annotation.translationID == 123)
+        #expect(annotation.bookCode == "GEN")
+        #expect(annotation.chapter == 1)
     }
 
     /// updatedAt starts as nil
-    @Test func updatedAtDefaultsToNil() {
-        let reference = ScriptureReference(translationID: 123,
-                                           bookCode: "GEN",
-                                           chapter: 1,
-                                           startVerse: 16,
-                                           endVerse: 17)!
-        let annotation = VerseAnnotation(reference: reference,
-                                         selectedVerses: reference.verseRange!,
-                                         highlightColor: nil,
-                                         note: "Note content",
-                                         tags: nil)
+    @Test func updatedAtDefaultsToNil() throws {
+        let reference = try #require(ScriptureReference(translationID: 123,
+                                                    bookCode: "GEN",
+                                                    chapter: 1,
+                                                    startVerse: 16,
+                                                    endVerse: 17))
+        let verseRange = try #require(reference.verseRange)
+        let annotation = try #require(VerseAnnotation(reference: reference,
+                                                  selectedVerses: verseRange,
+                                                  highlightColor: nil,
+                                                  note: "Note content",
+                                                  tags: nil))
 
-        #expect(annotation?.updatedAt == nil)
+        #expect(annotation.updatedAt == nil)
     }
 
-    /// injected id and createdAt are retained, so tests don’t depend on random UUID/time
-    @Test func idAndDatePersist() {
+    /// injected id and createdAt are retained, so tests don't depend on random UUID/time
+    @Test func idAndDatePersist() throws {
         let id = UUID()
         let createdAt = Date()
 
-        let reference = ScriptureReference(translationID: 123,
-                                           bookCode: "GEN",
-                                           chapter: 1,
-                                           startVerse: 16,
-                                           endVerse: 17)!
-        let annotation = VerseAnnotation(id: id,
-                                         reference: reference,
-                                         selectedVerses: reference.verseRange!,
-                                         highlightColor: nil,
-                                         note: "Note content",
-                                         tags: nil,
-                                         createdAt: createdAt)
+        let reference = try #require(ScriptureReference(translationID: 123,
+                                                    bookCode: "GEN",
+                                                    chapter: 1,
+                                                    startVerse: 16,
+                                                    endVerse: 17))
+        let verseRange = try #require(reference.verseRange)
+        let annotation = try #require(VerseAnnotation(id: id,
+                                                  reference: reference,
+                                                  selectedVerses: verseRange,
+                                                  highlightColor: nil,
+                                                  note: "Note content",
+                                                  tags: nil,
+                                                  createdAt: createdAt))
 
-        #expect(annotation?.id == id)
-        #expect(annotation?.createdAt == createdAt)
+        #expect(annotation.id == id)
+        #expect(annotation.createdAt == createdAt)
     }
 
     /// if none of highlight/tags/note are provided, init should fail + return nil
-    @Test func noProvidedDataIsRejected() {
+    @Test func noProvidedDataIsRejected() throws {
         let id = UUID()
         let createdAt = Date()
 
-        let reference = ScriptureReference(translationID: 123,
-                                           bookCode: "GEN",
-                                           chapter: 1,
-                                           startVerse: 16,
-                                           endVerse: 17)!
+        let reference = try #require(ScriptureReference(translationID: 123,
+                                                    bookCode: "GEN",
+                                                    chapter: 1,
+                                                    startVerse: 16,
+                                                    endVerse: 17))
+        let verseRange = try #require(reference.verseRange)
         let annotation = VerseAnnotation(id: id,
                                          reference: reference,
-                                         selectedVerses: reference.verseRange!,
+                                         selectedVerses: verseRange,
                                          highlightColor: nil,
                                          note: nil,
                                          tags: nil,
@@ -123,15 +129,16 @@ struct VerseAnnotationTests {
     }
 
     /// whitespace-only highlight/note/tag values are treated as missing data
-    @Test func whitespaceOnlyDataIsRejected() {
-        let reference = ScriptureReference(translationID: 123,
-                                           bookCode: "GEN",
-                                           chapter: 1,
-                                           startVerse: 16,
-                                           endVerse: 17)!
+    @Test func whitespaceOnlyDataIsRejected() throws {
+        let reference = try #require(ScriptureReference(translationID: 123,
+                                                    bookCode: "GEN",
+                                                    chapter: 1,
+                                                    startVerse: 16,
+                                                    endVerse: 17))
+        let verseRange = try #require(reference.verseRange)
 
         let annotation = VerseAnnotation(reference: reference,
-                                         selectedVerses: reference.verseRange!,
+                                         selectedVerses: verseRange,
                                          highlightColor: nil,
                                          note: "\n\t",
                                          tags: ["", "   "])
@@ -140,19 +147,20 @@ struct VerseAnnotationTests {
     }
 
     /// at least one meaningful tag is enough to create an annotation
-    @Test func meaningfulTagIsAccepted() {
-        let reference = ScriptureReference(translationID: 123,
-                                           bookCode: "GEN",
-                                           chapter: 1,
-                                           startVerse: 16,
-                                           endVerse: 17)!
+    @Test func meaningfulTagIsAccepted() throws {
+        let reference = try #require(ScriptureReference(translationID: 123,
+                                                    bookCode: "GEN",
+                                                    chapter: 1,
+                                                    startVerse: 16,
+                                                    endVerse: 17))
+        let verseRange = try #require(reference.verseRange)
 
-        let annotation = VerseAnnotation(reference: reference,
-                                         selectedVerses: reference.verseRange!,
-                                         highlightColor: nil,
-                                         note: nil,
-                                         tags: ["", "memory"])
+        let annotation = try #require(VerseAnnotation(reference: reference,
+                                                  selectedVerses: verseRange,
+                                                  highlightColor: nil,
+                                                  note: nil,
+                                                  tags: ["", "memory"]))
 
-        #expect(annotation?.tags == ["", "memory"])
+        #expect(annotation.tags == ["", "memory"])
     }
 }

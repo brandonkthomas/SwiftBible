@@ -36,6 +36,8 @@ struct StoredVerseAnnotationTests {
         //   Swift object is NOT in the store but rather a materialized view of a row... the
         //   class instance is built on-demand. This is why we have to compare ID rather than
         //   our local class itself. Basically C# DbContext.
+        // TLDR: == on @Model objects compares pointers (SwiftData rows) rather than objects
+        //   themselves.
         let fetchResultsForCtx1 = try modelContext1.fetch(storedTagFetchDescriptor)
         #expect(fetchResultsForCtx1.contains { $0.id == tag.id })
         

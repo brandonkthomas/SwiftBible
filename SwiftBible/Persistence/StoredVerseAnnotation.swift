@@ -13,9 +13,17 @@ import SwiftData
 /// `VerseAnnotation` is unaware of this file; only `LibraryRepository` knows of both
 /// (repo to models, never inverse)
 ///
-/// Final class over struct (this needs to be a ref type bound to ModelContext).
-/// \@Model is essentially a C# EF Core table-mapped entity;
-/// it rewrites the class at compiletime to track identity/mutations/accessors/registrations.
+/// Final class over struct (this needs to be a ref type bound to `ModelContext`).
+/// `@Model` is essentially a C# EF Core table-mapped entity;
+///  SwiftData rewrites the class at compiletime to track identity/mutations/accessors/registrations
+///  of a specific object against the store... structs get copied on every assignment so there'd
+///  be no stable object to track. Ref type (class) gives it stability.
+///  (think C# get;set; req't in some cases)
+///
+/// Since `@Model` is bound to a specific `ModelContext` (above), it would be restricted to that lifetime/thread;
+///  unsafe to pass around freely; if context is lost/row deleted/etc, SwiftUI `View`s would hold
+///  an invalid object. This would also weld UI to `SwiftData` layer which is not preferred. Value-type
+///  `VerseAnnotation` is context-free and preferred -- basically acts as a DTO.
 ///
 /// \@Attribute(.unique) macro not needed here (SwiftData) because CloudKit has no field
 /// uniqueness constraint
