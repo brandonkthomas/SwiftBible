@@ -21,17 +21,30 @@ import SwiftData
 /// uniqueness constraint
 ///
 /// final: we dont need this Model to ever be subclassed
+///
+/// Defaults are required by CloudKit for non-optionals; else they're rejected...
+/// id/etc uses a default so that CloudKit can materialize populated records; no optional app-facing
+/// paths are ever exposed (so SwiftBible cannot use defaults)
 @Model
 final class StoredVerseAnnotation {
-    var id: UUID 
-    var translationID: Int
-    var bookCode: String
-    var chapter: Int
-    var startVerse: Int
+    var id: UUID = UUID()
+    
+    var translationID: Int = 0
+    var bookCode: String = ""
+    var chapter: Int = 0
+    var startVerse: Int = 0
     var endVerse: Int?
+    
     var highlightColor: VerseAnnotationHighlightColor?
     var note: String?
-    var createdAt: Date
+    /// 1 annotation:M tags
+    ///
+    /// Inform SwiftData of the linked (inverse) relationship property.
+    /// Annotations do not own their tags; nullify on delete.
+    @Relationship(deleteRule: .nullify, inverse: \StoredTag.annotations)
+    var tags: [StoredTag]?
+    
+    var createdAt: Date = Date.now
     var updatedAt: Date?
     
     init(

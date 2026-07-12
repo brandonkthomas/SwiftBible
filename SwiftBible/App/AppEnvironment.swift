@@ -53,8 +53,13 @@ final class AppEnvironment {
 
         // ModelContainer - app-wide @Model storage
         // Use explicit ModelConfiguration here for easier caller variations in tests/CloudKit)
+        let typesToRegister: [any PersistentModel.Type] = [
+            StoredVerseAnnotation.self,
+            StoredTag.self
+        ]
+        
         do {
-            let schema: Schema = .init(StoredVerseAnnotation.self)
+            let schema: Schema = .init(typesToRegister)
             let modelConfiguration = ModelConfiguration(schema: schema)
             self.modelContainer = try ModelContainer(for: schema,
                                                      configurations: [modelConfiguration])
