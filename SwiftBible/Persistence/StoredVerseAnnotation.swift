@@ -37,6 +37,8 @@ final class StoredVerseAnnotation {
     
     var highlightColor: VerseAnnotationHighlightColor?
     var note: String?
+    /// M:M `StoredTag` w/ inverse/delete rules
+    ///
     /// 1 annotation:M tags
     ///
     /// Inform SwiftData of the linked (inverse) relationship property.

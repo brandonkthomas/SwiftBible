@@ -29,6 +29,8 @@ final class StoredTag {
     var displayName: String = ""
     var normalizedName: String = ""
     
+    /// M:M `StoredVerseAnnotation` w/ inverse/delete rules
+    ///
     /// 1 tag:M annotations
     ///
     /// Tags do not own annotations; nullify on delete.
