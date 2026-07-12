@@ -19,7 +19,7 @@ nonisolated struct VerseAnnotation: Identifiable, Equatable {
     let startVerse: Int
     let endVerse: Int?
 
-    var highlightColor: String? // TODO: convert to enum w/ available colors
+    var highlightColor: VerseAnnotationHighlightColor?
     var note: String?
     var tags: [String]?
 
@@ -34,14 +34,14 @@ nonisolated struct VerseAnnotation: Identifiable, Equatable {
         reference: ScriptureReference,
         selectedVerses: ClosedRange<Int>,
 
-        highlightColor: String?,
+        highlightColor: VerseAnnotationHighlightColor?,
         note: String?,
         tags: [String]?,
 
         createdAt: Date = .now
     ) {
         // Ensure at least 1 non-empty storage value is provided
-        guard Self.hasText(highlightColor)
+        guard highlightColor != nil
                 || Self.hasText(note)
                 || tags?.contains(where: { Self.hasText($0) }) == true
         else {

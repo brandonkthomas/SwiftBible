@@ -7,14 +7,15 @@
 
 import Foundation
 import Observation
+import SwiftData // for ModelContainer/ModelConfiguration
 
-/// App-wide owner of our single repository
+/// App-wide owner of various repositories (AppConfiguration, ReaderStore, LibraryRepository)
 ///
 /// This is our composition root:
 /// - SwiftBibleApp creates one AppEnvironment()
 /// - AppEnvironment creates/reads AppConfiguration
 /// - AppEnvironment uses that config to choose/create repositories
-/// - SwiftBibleApp injects only the view-facing objects, currently readerStore
+/// - SwiftBibleApp injects only the view-facing objects
 @Observable
 final class AppEnvironment {
 
@@ -22,11 +23,18 @@ final class AppEnvironment {
 
     let readerStore: ReaderStore
     let appConfiguration: AppConfiguration
-    let libraryRepository: LibraryRepository // store protocol itself
+    let libraryRepository: LibraryRepository // store the protocol itself
+    
+    /// Built-in: Manages app-wide model storage
+    let modelContainer: ModelContainer
 
     // MARK: Init
 
+    // Failable init is not desirable here;
+    // if we fail, we need to pass along *why* so that we can show the reason in UI.
+    // For now, NOT using "throws"... TODO: convert SwiftBibleApp to proper throwing interceptor
     init() {
+        // AppConfiguration - API keys
         let appConfiguration = AppConfiguration()
         self.appConfiguration = appConfiguration
 
@@ -34,11 +42,24 @@ final class AppEnvironment {
             preconditionFailure("Missing YOUVERSION_APP_KEY in bundled Secrets.plist")
         }
 
+        // ReaderStore - API requests, Reader state, etc
         let repository = YouVersionBibleRepository(apiKey: apiKey,
                                                    baseURL: appConfiguration.youVersionBaseURL,
                                                    urlSession: .shared)
         self.readerStore = ReaderStore(repository: repository)
 
+        // LibraryRepository - storage for annotation
         self.libraryRepository = InMemoryLibraryRepository()
+
+        // ModelContainer - app-wide @Model storage
+        // Use explicit ModelConfiguration here for easier caller variations in tests/CloudKit)
+        do {
+            let schema: Schema = .init(StoredVerseAnnotation.self)
+            let modelConfiguration = ModelConfiguration(schema: schema)
+            self.modelContainer = try ModelContainer(for: schema,
+                                                     configurations: [modelConfiguration])
+        } catch {
+            preconditionFailure("Failed to initialize ModelContainer: \(error.localizedDescription)")
+        }
     }
 }

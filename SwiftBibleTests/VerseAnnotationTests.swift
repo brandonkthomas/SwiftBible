@@ -132,7 +132,7 @@ struct VerseAnnotationTests {
 
         let annotation = VerseAnnotation(reference: reference,
                                          selectedVerses: reference.verseRange!,
-                                         highlightColor: "   ",
+                                         highlightColor: nil,
                                          note: "\n\t",
                                          tags: ["", "   "])
 
