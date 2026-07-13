@@ -7,7 +7,7 @@
 
 import Foundation
 import Observation
-import SwiftData // for ModelContainer/ModelConfiguration
+import SwiftData // for PersistentModel/ModelContainer/ModelConfiguration/Schema
 
 /// App-wide owner of various repositories (AppConfiguration, ReaderStore, LibraryRepository)
 ///
@@ -23,9 +23,10 @@ final class AppEnvironment {
 
     let readerStore: ReaderStore
     let appConfiguration: AppConfiguration
-    let libraryRepository: LibraryRepository // store the protocol itself
+    /// SwiftBible: Store the protocol itself for dependency inversion
+    let libraryRepository: LibraryRepository
     
-    /// Built-in: Manages app-wide model storage
+    /// System: Manages app-wide model storage
     let modelContainer: ModelContainer
 
     // MARK: Init

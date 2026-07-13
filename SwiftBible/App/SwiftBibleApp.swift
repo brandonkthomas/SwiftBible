@@ -42,9 +42,11 @@ struct SwiftBibleApp: App {
             ContentView()
                 // inject @Observable ReaderStore instance
                 // this has @Observable state, so we need type-based environment
+                // Type-keyed is for @Observable (type itself is the key: stored under ReaderStore)
                 .environment(appEnvironment.readerStore)
                 // inject custom env/key value for LibraryRepository protocol
                 // this is a service/dependency, so we need key-path environment
+                // Keypath-keyed is for existential (anything: value types, services, protocols)
                 .environment(\.libraryRepository, appEnvironment.libraryRepository)
         }
     }

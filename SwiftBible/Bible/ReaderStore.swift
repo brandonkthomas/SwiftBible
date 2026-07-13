@@ -204,6 +204,7 @@ final class ReaderStore {
 
         self.passageLoadState = .loading
 
+        // TODO: split into 2 do's (passage load + passage parse)
         do {
             // Try to retrieve passage HTML + parse into SwiftBible.Passage
             // + mark result as selected

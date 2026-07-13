@@ -137,8 +137,8 @@ struct ReaderPassageView: View {
             } else if url.host == "verse" {
                 // calculate selection delta, update store selection state, do animation
                 handleVerseSelection(components: components,
-                                       queryItems: queryItems,
-                                       startVerse: startVerse)
+                                     queryItems: queryItems,
+                                     startVerse: startVerse)
 
                 return .handled // we dealt with it; don't open a browser
 
