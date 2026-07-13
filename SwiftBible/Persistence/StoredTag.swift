@@ -44,4 +44,11 @@ final class StoredTag {
         self.displayName = displayName
         self.normalizedName = normalizedName
     }
+    
+    static func normalize(_ name: String) -> String {
+        let nonEmptyName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        let normalizedName = nonEmptyName.lowercased()
+        
+        return normalizedName
+    }
 }

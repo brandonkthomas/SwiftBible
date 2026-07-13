@@ -49,9 +49,6 @@ final class AppEnvironment {
                                                    urlSession: .shared)
         self.readerStore = ReaderStore(repository: repository)
 
-        // LibraryRepository - storage for annotation
-        self.libraryRepository = InMemoryLibraryRepository()
-
         // ModelContainer - app-wide @Model storage
         // Use explicit ModelConfiguration here for easier caller variations in tests/CloudKit)
         let typesToRegister: [any PersistentModel.Type] = [
@@ -67,5 +64,8 @@ final class AppEnvironment {
         } catch {
             preconditionFailure("Failed to initialize ModelContainer: \(error.localizedDescription)")
         }
+        
+        // LibraryRepository - storage for annotation
+        self.libraryRepository = SwiftDataLibraryRepository(modelContainer: modelContainer)
     }
 }

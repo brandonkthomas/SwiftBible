@@ -10,6 +10,7 @@ import SwiftData
 import Testing
 @testable import SwiftBible
 
+@MainActor
 struct SwiftDataLibraryRepositoryTests {
 
     /// save then annotations(for:) returns it (with tags mapped back to strings)

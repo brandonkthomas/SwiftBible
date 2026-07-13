@@ -27,6 +27,36 @@ nonisolated struct VerseAnnotation: Identifiable, Equatable {
     var updatedAt: Date?
 
     // MARK: Init
+    
+    /// Direct-field-reference non-failable init that bypasses field validation;
+    /// ONLY used by `SwiftDataLibraryRepository`
+    init(id: UUID,
+         translationID: Translation.ID,
+         bookCode: String,
+         chapter: Int,
+         startVerse: Int,
+         endVerse: Int?,
+         
+         highlightColor: VerseAnnotationHighlightColor? = nil,
+         note: String? = nil,
+         tags: [String]? = nil,
+         
+         createdAt: Date,
+         updatedAt: Date? = nil) {
+        self.id = id
+        self.translationID = translationID
+        self.bookCode = bookCode
+        self.chapter = chapter
+        self.startVerse = startVerse
+        self.endVerse = endVerse
+        
+        self.highlightColor = highlightColor
+        self.note = note
+        self.tags = tags
+        
+        self.createdAt = createdAt
+        self.updatedAt = updatedAt
+    }
 
     /// Init will fail + return nil if none of highlight/note/tag are provided.
     init?(
