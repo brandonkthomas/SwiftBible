@@ -21,6 +21,7 @@ struct PassagePickerView: View {
 
     /// Tab bar accessory for Reader view
     var body: some View {
+        // TODO: add L/R buttons for Prev/Next chapter when expanded
         Menu {
             // Books + Chapters nested menus
             Menu {

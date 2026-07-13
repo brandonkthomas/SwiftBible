@@ -61,6 +61,7 @@ struct ReaderPassageView: View {
 
     /// Reader view
     var body: some View {
+        // TODO: add edge swipe custom animation for prev/next chapters
         ScrollView {
             // LazyVStack only renders components when they're visible BUT it makes scrollbar jumpy
             VStack {
