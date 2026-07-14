@@ -175,4 +175,53 @@ struct ReaderStoreTests {
         #expect(store.passageLoadState == .idle)
         #expect(store.selectedPassage == nil)
     }
+
+    /// single verse selection is properly reflected in .selectedVerses
+    @Test func singleVerseSelectionCreatesSingleVerseRange() {
+        let repository = FakeBibleRepository()
+        let store = ReaderStore(repository: repository)
+
+        store.handleVerseSelection(startVerse: 5, endVerse: nil)
+        #expect(store.selectedVerses == 5...5)
+    }
+
+    /// Selecting a verse further forward in the range extends .selectedVerses forward
+    @Test func forwardSelectionExtendsUpperRange() {
+        let repository = FakeBibleRepository()
+        let store = ReaderStore(repository: repository)
+
+        store.selectedVerses = 5...5
+        store.handleVerseSelection(startVerse: 8, endVerse: nil)
+        #expect(store.selectedVerses == 5...8)
+    }
+
+    /// Selecting a verse further backward in the range extends .selectedVerses backward
+    @Test func backwardSelectionExtendsLowerRange() {
+        let repository = FakeBibleRepository()
+        let store = ReaderStore(repository: repository)
+
+        store.selectedVerses = 5...5
+        store.handleVerseSelection(startVerse: 2, endVerse: nil)
+        #expect(store.selectedVerses == 2...5)
+    }
+
+    /// Selecting a verse inside the current range shrinks the current range to only the tapped verse
+    @Test func selectionChangeInsideCurrentRangeCollapsesSelection() {
+        let repository = FakeBibleRepository()
+        let store = ReaderStore(repository: repository)
+
+        store.selectedVerses = 3...8
+        store.handleVerseSelection(startVerse: 5, endVerse: nil)
+        #expect(store.selectedVerses == 5...5)
+    }
+
+    /// Selecting a verse where the current range matches identically sets .selectedVerses to nil
+    @Test func selectingCurrentRangeExactlyDeselects() {
+        let repository = FakeBibleRepository()
+        let store = ReaderStore(repository: repository)
+
+        store.selectedVerses = 5...5
+        store.handleVerseSelection(startVerse: 5, endVerse: nil)
+        #expect(store.selectedVerses == nil)
+    }
 }
