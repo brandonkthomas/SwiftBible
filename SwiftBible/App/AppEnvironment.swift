@@ -39,23 +39,13 @@ final class AppEnvironment {
         let appConfiguration = AppConfiguration()
         self.appConfiguration = appConfiguration
 
-        guard let apiKey = appConfiguration.youVersionApiKey else {
-            preconditionFailure("Missing YOUVERSION_APP_KEY in bundled Secrets.plist")
-        }
-
-        // ReaderStore - API requests, Reader state, etc
-        let repository = YouVersionBibleRepository(apiKey: apiKey,
-                                                   baseURL: appConfiguration.youVersionBaseURL,
-                                                   urlSession: .shared)
-        self.readerStore = ReaderStore(repository: repository)
-
         // ModelContainer - app-wide @Model storage
         // Use explicit ModelConfiguration here for easier caller variations in tests/CloudKit)
         let typesToRegister: [any PersistentModel.Type] = [
             StoredVerseAnnotation.self,
             StoredTag.self
         ]
-        
+
         do {
             let schema: Schema = .init(typesToRegister)
             let modelConfiguration = ModelConfiguration(schema: schema)
@@ -64,8 +54,21 @@ final class AppEnvironment {
         } catch {
             preconditionFailure("Failed to initialize ModelContainer: \(error.localizedDescription)")
         }
-        
+
         // LibraryRepository - storage for annotation
-        self.libraryRepository = SwiftDataLibraryRepository(modelContainer: modelContainer)
+        let libraryRepository = SwiftDataLibraryRepository(modelContainer: modelContainer)
+        self.libraryRepository = libraryRepository
+
+        // ReaderStore - API requests, Reader state, etc
+        guard let apiKey = appConfiguration.youVersionApiKey else {
+            preconditionFailure("Missing YOUVERSION_APP_KEY in bundled Secrets.plist")
+        }
+
+        let repository = YouVersionBibleRepository(apiKey: apiKey,
+                                                   baseURL: appConfiguration.youVersionBaseURL,
+                                                   urlSession: .shared)
+
+        self.readerStore = ReaderStore(repository: repository,
+                                       libraryRepository: libraryRepository)
     }
 }

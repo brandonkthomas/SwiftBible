@@ -127,7 +127,8 @@ struct ReaderView: View {
 
 #Preview("Loaded") {
     let repository = FakeBibleRepository()
-    let readerStore = ReaderStore(repository: repository)
+    let readerStore = ReaderStore(repository: repository,
+                                  libraryRepository: InMemoryLibraryRepository())
 
     ReaderView()
         .environment(readerStore)
@@ -135,7 +136,8 @@ struct ReaderView: View {
 
 #Preview("Failed") {
     let repository = FakeBibleRepository(throwWhenLoadingTranslations: true)
-    let readerStore = ReaderStore(repository: repository)
+    let readerStore = ReaderStore(repository: repository,
+                                  libraryRepository: InMemoryLibraryRepository())
 
     ReaderView()
         .environment(readerStore)
@@ -143,7 +145,8 @@ struct ReaderView: View {
 
 #Preview("No Translations") {
     let repository = FakeBibleRepository(translations: [])
-    let readerStore = ReaderStore(repository: repository)
+    let readerStore = ReaderStore(repository: repository,
+                                  libraryRepository: InMemoryLibraryRepository())
 
     ReaderView()
         .environment(readerStore)
@@ -151,7 +154,8 @@ struct ReaderView: View {
 
 #Preview("No Books") {
     let repository = FakeBibleRepository(books: [])
-    let readerStore = ReaderStore(repository: repository)
+    let readerStore = ReaderStore(repository: repository,
+                                  libraryRepository: InMemoryLibraryRepository())
 
     ReaderView()
         .environment(readerStore)
@@ -159,7 +163,8 @@ struct ReaderView: View {
 
 #Preview("No Chapters") {
     let repository = FakeBibleRepository(books: FakeBibleRepository.booksWithoutChapters)
-    let readerStore = ReaderStore(repository: repository)
+    let readerStore = ReaderStore(repository: repository,
+                                  libraryRepository: InMemoryLibraryRepository())
 
     ReaderView()
         .environment(readerStore)
@@ -167,7 +172,8 @@ struct ReaderView: View {
 
 #Preview("Loading") {
     let repository = FakeBibleRepository(forceLoadingState: true)
-    let readerStore = ReaderStore(repository: repository)
+    let readerStore = ReaderStore(repository: repository,
+                                  libraryRepository: InMemoryLibraryRepository())
 
     ReaderView()
         .environment(readerStore)

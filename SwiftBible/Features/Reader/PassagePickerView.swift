@@ -127,7 +127,8 @@ struct PassagePickerView: View {
 
 #Preview("ContentView: Ready") {
     let repository = FakeBibleRepository()
-    let readerStore = ReaderStore(repository: repository)
+    let readerStore = ReaderStore(repository: repository,
+                                  libraryRepository: InMemoryLibraryRepository())
 
     ContentView()
         .environment(readerStore)

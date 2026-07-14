@@ -287,7 +287,8 @@ struct ReaderPassageView: View {
 
 #Preview {
     let repository = FakeBibleRepository()
-    let readerStore = ReaderStore(repository: repository)
+    let readerStore = ReaderStore(repository: repository,
+                                  libraryRepository: InMemoryLibraryRepository())
     let passage = try! PassageHTMLParser().parse(html: FakeBibleRepository.footnotePassageHTML)
 
     ReaderPassageView(renderedPassage: passage)

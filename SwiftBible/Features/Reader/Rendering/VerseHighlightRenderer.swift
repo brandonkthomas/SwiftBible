@@ -34,7 +34,7 @@ struct VerseHighlightRenderer: TextRenderer {
     /// Progress for fading-out highlights on deselection
     var fadeProgress: CGFloat
 
-    // MARK: Functions
+    // MARK: Functions (Implementations)
 
     /// Custom text drawing behavior for highlights
     ///

@@ -77,16 +77,24 @@ final class ReaderStore {
 
     // MARK: Properties (Private)
 
-    /// Command implementations
+    /// API (Bible passage) command implementations
     private let repository: BibleRepository
+
+    /// User storage command implementations
+    private let libraryRepository: any LibraryRepository
+
+    /// User highlight colors for the currently-selected passage
+    private(set) var passageHighlightColors: [Int: VerseAnnotationHighlightColor] = [:]
 
     /// OS Logging
     private static let logger = Logger(subsystem: "SwiftBible", category: "ReaderStore")
 
     // MARK: Init
 
-    init(repository: BibleRepository) {
+    init(repository: BibleRepository,
+         libraryRepository: LibraryRepository) {
         self.repository = repository
+        self.libraryRepository = libraryRepository
     }
 
     // MARK: Functions
@@ -219,6 +227,10 @@ final class ReaderStore {
 
             self.selectedRenderedPassage = renderedPassage
 
+            // we're done at this point; anything below here is supplementary
+            // + will NOT prevent loading
+            loadPassageHighlights(for: selectedReference)
+
             // we're done
             self.passageLoadState = .loaded
         } catch {
@@ -301,6 +313,23 @@ final class ReaderStore {
         }
     }
 
+    /// retrieve + assign a passage's user stored highlights
+    private func loadPassageHighlights(for reference: ScriptureReference) {
+        Self.logger.debug("ENTRY ReaderStore.loadPassageHighlights(for: \(reference.passageID, privacy: .public))")
+
+        do {
+            let annotations = try libraryRepository.annotations(for: reference)
+
+            passageHighlightColors = VerseAnnotationHelpers.getPassageHighlightColors(
+                for: annotations,
+                reference: reference
+            )
+        } catch {
+            passageHighlightColors = [:]
+            // this is supplementary; no need to fail
+        }
+    }
+
     // MARK: Functions (State; Private)
 
     /// Clear translations, books, selections
@@ -309,6 +338,7 @@ final class ReaderStore {
         Self.logger.debug("ENTRY ReaderStore.clearAllStates()")
         clearTranslationStates()
         clearBookAndChapterStates()
+        clearPassageStates()
     }
 
     /// Clear translations + selectedTranslation
@@ -333,6 +363,7 @@ final class ReaderStore {
         self.selectedPassage = nil
         self.selectedRenderedPassage = nil
         self.passageLoadState = .idle
+        self.passageHighlightColors = [:]
     }
 }
 
