@@ -13,7 +13,7 @@ import Foundation
 /// via inferred RawRepresentable -- SwiftData will see :String and just stores the string.
 ///
 /// Codable is required by SwiftData
-enum VerseAnnotationHighlightColor: String, Codable {
+enum VerseAnnotationHighlightColor: String, Codable, CaseIterable {
     case yellow = "yellow"
     case green = "green"
     case blue = "blue"
