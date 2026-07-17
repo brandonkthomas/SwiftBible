@@ -84,12 +84,14 @@ struct ReaderPassageView: View {
                             .padding(.leading,
                                      leadingPadding(for: paragraphs[paragraphIndex].style))
                             // custom TextRenderer to support verse highlights w/ animations
-                            .textRenderer(VerseHighlightRenderer(settledVerses: settledVerses,
-                                                                 revealingVerses: revealingVerses,
-                                                                 fadingVerses: fadingVerses,
-                                                                 tapOrigin: origin,
-                                                                 progress: revealProgress,
-                                                                 fadeProgress: fadeProgress))
+                            .textRenderer(VerseHighlightRenderer(
+                                settledVerses: settledVerses,
+                                revealingVerses: revealingVerses,
+                                fadingVerses: fadingVerses,
+                                tapOrigin: origin,
+                                progress: revealProgress,
+                                fadeProgress: fadeProgress,
+                                persistedHighlights: readerStore.passageHighlightColors))
                             // record tap gestures for use with VerseHighlightRenderer
                             .simultaneousGesture(SpatialTapGesture(coordinateSpace: .local)
                                 .onEnded {
@@ -287,10 +289,32 @@ struct ReaderPassageView: View {
 
 #Preview {
     let repository = FakeBibleRepository()
-    let readerStore = ReaderStore(repository: repository,
-                                  libraryRepository: InMemoryLibraryRepository())
-    let passage = try! PassageHTMLParser().parse(html: FakeBibleRepository.footnotePassageHTML)
 
-    ReaderPassageView(renderedPassage: passage)
+    let readerStore = ReaderStore(repository: repository,
+                                  libraryRepository: PreviewFixtures.seededLibraryRepository())
+
+    // Drive the real load path so passageHighlightColors is populated exactly as
+    // it is at runtime — no ReaderStore preview-only surface required.
+    ReaderPassagePreviewHost(readerStore: readerStore)
+}
+
+/// Preview-only host: drives ReaderStore through its public load lifecycle, then
+/// renders ReaderPassageView from the store's own rendered passage.
+private struct ReaderPassagePreviewHost: View {
+    let readerStore: ReaderStore
+
+    var body: some View {
+        Group {
+            if let renderedPassage = readerStore.selectedRenderedPassage {
+                ReaderPassageView(renderedPassage: renderedPassage)
+            } else {
+                ProgressView()
+            }
+        }
         .environment(readerStore)
+        .task {
+            await readerStore.loadTranslationsAndBooks()
+            await readerStore.loadSelectedPassage()
+        }
+    }
 }

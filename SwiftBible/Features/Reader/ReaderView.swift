@@ -128,7 +128,7 @@ struct ReaderView: View {
 #Preview("Loaded") {
     let repository = FakeBibleRepository()
     let readerStore = ReaderStore(repository: repository,
-                                  libraryRepository: InMemoryLibraryRepository())
+                                  libraryRepository: PreviewFixtures.seededLibraryRepository())
 
     ReaderView()
         .environment(readerStore)

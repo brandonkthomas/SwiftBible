@@ -34,6 +34,10 @@ struct VerseHighlightRenderer: TextRenderer {
     /// Progress for fading-out highlights on deselection
     var fadeProgress: CGFloat
 
+    /// Keep track of all highlighted verse ranges + their colors (according to LibraryRepository)
+    @AnimatableIgnored
+    let persistedHighlights: [Int: VerseAnnotationHighlightColor]
+
     // MARK: Functions (Implementations)
 
     /// Custom text drawing behavior for highlights
@@ -90,6 +94,13 @@ struct VerseHighlightRenderer: TextRenderer {
             for run in line {
                 // Does this run carry our custom attribute?
                 if let number = run[VerseNumberAttribute.self]?.number {
+                    // persisted layer as base so that selections still draw over top
+                    if let highlightColor = persistedHighlights[number] {
+                        let shape = RoundedRectangle(cornerRadius: 4, style: .continuous)
+                            .path(in: run.typographicBounds.rect)
+                        ctx.fill(shape, with: .color(highlightColor.color))
+                    }
+
                     // Clip revealing verses to a mask
                     if revealingVerses?.contains(number) == true {
                         // Build a rounded rect matching the run's on-screen frame...
