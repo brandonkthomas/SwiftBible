@@ -238,4 +238,36 @@ struct ReaderStoreTests {
         store.handleVerseSelection(startVerse: 5, endVerse: nil)
         #expect(store.selectedVerses == nil)
     }
+
+    /// Saving a highlight via the saveHighlight() method successfully saves to LibraryRepository
+    /// then updates the ReaderStore's passageHighlightColors dict
+    @Test func savingHighlightsPersistsToStore() async {
+        let repository = FakeBibleRepository()
+        let store = ReaderStore(repository: repository,
+                                libraryRepository: InMemoryLibraryRepository())
+
+        await store.loadTranslationsAndBooks()
+
+        store.selectedVerses = 1...1
+        store.saveHighlight(.yellow)
+        #expect(store.selectedVerses == nil)
+        #expect(store.passageHighlightColors[1] == .yellow)
+    }
+
+    /// Saving a highlight via the saveHighlight() method successfully saves to LibraryRepository
+    /// then updates the ReaderStore's passageHighlightColors dict
+    @Test func deletingHighlightsPersistsToStore() async {
+        let repository = FakeBibleRepository()
+        let store = ReaderStore(repository: repository,
+                                libraryRepository: InMemoryLibraryRepository())
+
+        await store.loadTranslationsAndBooks()
+
+        store.selectedVerses = 1...1
+        store.saveHighlight(.yellow)
+
+        store.selectedVerses = 1...1
+        store.deleteHighlights()
+        #expect(store.passageHighlightColors.count == 0)
+    }
 }

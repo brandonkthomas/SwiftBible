@@ -98,7 +98,7 @@ struct VerseHighlightRenderer: TextRenderer {
                     if let highlightColor = persistedHighlights[number] {
                         let shape = RoundedRectangle(cornerRadius: 4, style: .continuous)
                             .path(in: run.typographicBounds.rect)
-                        ctx.fill(shape, with: .color(highlightColor.color))
+                        ctx.fill(shape, with: .color(highlightColor.uiColor))
                     }
 
                     // Clip revealing verses to a mask

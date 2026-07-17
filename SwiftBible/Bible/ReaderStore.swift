@@ -75,6 +75,15 @@ final class ReaderStore {
         return "\(selectedBook.displayName) \(selectedChapter.number)"
     }
 
+    /// Does the current selection contain a highlight annotation?
+    var selectionContainsHighlight: Bool {
+        // do we have a selection?
+        guard let selectedVerses else {
+            return false
+        }
+        return selectedVerses.contains { passageHighlightColors[$0] != nil }
+    }
+
     // MARK: Properties (Private)
 
     /// API (Bible passage) command implementations
@@ -268,6 +277,85 @@ final class ReaderStore {
         default:
             self.selectedVerses = current.lowerBound...top
         }
+    }
+
+    /// Save the selected verse range as a highlight annotation w/ provided color
+    func saveHighlight(_ color: VerseAnnotationHighlightColor) {
+        Self.logger.debug("ENTRY ReaderStore.saveHighlight(\(color.uiColor))")
+
+        // Ensure current selection
+        guard let selectedVerses,
+              let selectedReference else {
+            return
+        }
+
+        // Try to build annotation
+        let annotation = VerseAnnotation(reference: selectedReference,
+                                         selectedVerses: selectedVerses,
+                                         highlightColor: color,
+                                         note: nil,
+                                         tags: nil)
+
+        guard let annotation else {
+            return
+        }
+
+        // Try to save
+        do {
+            try libraryRepository.save(annotation)
+        } catch {
+            Self.logger.error("Unable to save annotation: \(error.localizedDescription)")
+            return
+        }
+
+        // Refresh highlights
+        loadPassageHighlights(for: selectedReference)
+
+        // Deselect
+        self.selectedVerses = nil
+    }
+
+    /// Delete all highlights in selected verse range
+    func deleteHighlights() {
+        Self.logger.debug("ENTRY ReaderStore.deleteHighlight()")
+
+        // Ensure current selection
+        guard let selectedVerses,
+              let selectedReference else {
+            return
+        }
+
+        // Try to find + delete
+        do {
+            let annotations = try libraryRepository.annotations(for: selectedReference)
+            let highlightedAnnotations = annotations.filter {
+                $0.highlightColor != nil
+            }
+
+            // loop over all highlights: parse range + detect overlap + delete
+            for annotation in highlightedAnnotations {
+                let annotationRange = annotation.startVerse...(annotation.endVerse ?? annotation.startVerse)
+                // does this annotation contain ANY of our selected verses?
+                guard annotationRange.overlaps(selectedVerses) else { continue }
+
+                // try to delete
+                do {
+                    try libraryRepository.delete(annotation.id)
+                } catch {
+                    Self.logger.error("Unable to delete annotation \(annotation.id): \(error.localizedDescription)")
+                    continue
+                }
+            }
+        } catch {
+            Self.logger.error("Unable to delete annotations: \(error.localizedDescription)")
+            return
+        }
+
+        // Refresh highlights
+        loadPassageHighlights(for: selectedReference)
+
+        // Deselect
+        self.selectedVerses = nil
     }
 
     // MARK: Functions (Load; Private)

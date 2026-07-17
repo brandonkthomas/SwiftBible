@@ -9,18 +9,18 @@ import Foundation
 import SwiftUI
 
 extension VerseAnnotationHighlightColor {
-    var color: Color {
+    var uiColor: Color {
         switch self {
         case .blue:
-            return Color(.systemBlue)
+            return Color(.verseAnnotationHighlightColorBlue)
         case .green:
-            return Color(.systemGreen)
+            return Color(.verseAnnotationHighlightColorGreen)
         case .pink:
-            return Color(.systemPink)
+            return Color(.verseAnnotationHighlightColorPink)
         case .purple:
-            return Color(.systemPurple)
+            return Color(.verseAnnotationHighlightColorPurple)
         case .yellow:
-            return Color(.systemYellow)
+            return Color(.verseAnnotationHighlightColorYellow)
         }
     }
 }
