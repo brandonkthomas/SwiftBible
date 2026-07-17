@@ -15,18 +15,16 @@ struct LibraryRepositoryTests {
         let repository = InMemoryLibraryRepository()
         
         let reference = try #require(ScriptureReference(translationID: 123,
-                                                    bookCode: "GEN",
-                                                    chapter: 1,
-                                                    startVerse: 16,
-                                                    endVerse: nil))
+                                                        bookCode: "GEN",
+                                                        chapter: 1,
+                                                        startVerse: 16,
+                                                        endVerse: nil))
         
         let verseRange = try #require(reference.verseRange)
         
         let annotation = try #require(VerseAnnotation(reference: reference,
-                                                  selectedVerses: verseRange,
-                                                  highlightColor: nil,
-                                                  note: "Note content",
-                                                  tags: nil))
+                                                      selectedVerses: verseRange,
+                                                      content: .note("Note content")))
 
         try repository.save(annotation)
         let results = try repository.annotations(for: reference)
@@ -39,29 +37,25 @@ struct LibraryRepositoryTests {
         let repository = InMemoryLibraryRepository()
         
         let reference1 = try #require(ScriptureReference(translationID: 123,
-                                                     bookCode: "GEN",
-                                                     chapter: 1,
-                                                     startVerse: 16,
-                                                     endVerse: nil))
+                                                         bookCode: "GEN",
+                                                         chapter: 1,
+                                                         startVerse: 16,
+                                                         endVerse: nil))
         let verseRange1 = try #require(reference1.verseRange)
     
         let reference2 = try #require(ScriptureReference(translationID: 123,
-                                                     bookCode: "GEN",
-                                                     chapter: 2,
-                                                     startVerse: 16,
-                                                     endVerse: nil))
+                                                         bookCode: "GEN",
+                                                         chapter: 2,
+                                                         startVerse: 16,
+                                                         endVerse: nil))
         let verseRange2 = try #require(reference2.verseRange)
         
         let annotation1 = try #require(VerseAnnotation(reference: reference1,
-                                                   selectedVerses: verseRange1,
-                                                   highlightColor: nil,
-                                                   note: "Note content 1",
-                                                   tags: nil))
+                                                       selectedVerses: verseRange1,
+                                                       content: .note("Note content 1")))
         let annotation2 = try #require(VerseAnnotation(reference: reference2,
-                                                   selectedVerses: verseRange2,
-                                                   highlightColor: nil,
-                                                   note: "Note content 2",
-                                                   tags: nil))
+                                                       selectedVerses: verseRange2,
+                                                       content: .note("Note content 2")))
 
         try repository.save(annotation1)
         try repository.save(annotation2)
@@ -74,29 +68,25 @@ struct LibraryRepositoryTests {
     @Test func differentTranslationsAreNotReturned() throws {
         let repository = InMemoryLibraryRepository()
         let reference1 = try #require(ScriptureReference(translationID: 123,
-                                                     bookCode: "GEN",
-                                                     chapter: 1,
-                                                     startVerse: 16,
-                                                     endVerse: nil))
+                                                         bookCode: "GEN",
+                                                         chapter: 1,
+                                                         startVerse: 16,
+                                                         endVerse: nil))
         let verseRange1 = try #require(reference1.verseRange)
 
         let reference2 = try #require(ScriptureReference(translationID: 456,
-                                                     bookCode: "GEN",
-                                                     chapter: 1,
-                                                     startVerse: 16,
-                                                     endVerse: nil))
+                                                         bookCode: "GEN",
+                                                         chapter: 1,
+                                                         startVerse: 16,
+                                                         endVerse: nil))
         let verseRange2 = try #require(reference2.verseRange)
 
         let annotation1 = try #require(VerseAnnotation(reference: reference1,
-                                                   selectedVerses: verseRange1,
-                                                   highlightColor: nil,
-                                                   note: "Note content 1",
-                                                   tags: nil))
+                                                       selectedVerses: verseRange1,
+                                                       content: .note("Note content 1")))
         let annotation2 = try #require(VerseAnnotation(reference: reference2,
-                                                   selectedVerses: verseRange2,
-                                                   highlightColor: nil,
-                                                   note: "Note content 2",
-                                                   tags: nil))
+                                                       selectedVerses: verseRange2,
+                                                       content: .note("Note content 2")))
 
         try repository.save(annotation1)
         try repository.save(annotation2)
@@ -111,23 +101,21 @@ struct LibraryRepositoryTests {
         let repository = InMemoryLibraryRepository()
         
         let reference1 = try #require(ScriptureReference(translationID: 123,
-                                                    bookCode: "GEN",
-                                                     chapter: 1,
-                                                     startVerse: 16,
-                                                     endVerse: nil))
+                                                         bookCode: "GEN",
+                                                         chapter: 1,
+                                                         startVerse: 16,
+                                                         endVerse: nil))
         let verseRange1 = try #require(reference1.verseRange)
 
         let reference2 = try #require(ScriptureReference(translationID: 456,
-                                                     bookCode: "GEN",
-                                                     chapter: 1,
-                                                     startVerse: 16,
-                                                     endVerse: nil))
+                                                         bookCode: "GEN",
+                                                         chapter: 1,
+                                                         startVerse: 16,
+                                                         endVerse: nil))
         
         let annotation1 = try #require(VerseAnnotation(reference: reference1,
-                                                   selectedVerses: verseRange1,
-                                                   highlightColor: nil,
-                                                   note: "Note content",
-                                                   tags: nil))
+                                                       selectedVerses: verseRange1,
+                                                       content: .note("Note content")))
 
         try repository.save(annotation1)
 

@@ -123,9 +123,8 @@ struct VerseActionsView: View {
         }
     }
 
-    ///
+    /// Highlight action item (pen/eraser; compact pen popover)
     private func highlightAction() -> some View {
-        // Highlight
         Button(action: {
             if showEraser {
                 withAnimation(.snappy(duration: 0.35)) {
@@ -151,7 +150,7 @@ struct VerseActionsView: View {
                  attachmentAnchor: .point(.top),
                  arrowEdge: .bottom,
                  content: {
-            HStack(spacing: 10) {
+            HStack(spacing: 15) {
                 // show 1 button for each public color
                 ForEach(VerseAnnotationHighlightColor.allCases, id: \.rawValue) { item in
                     highlightColorButton(for: item)
@@ -175,12 +174,14 @@ struct VerseActionsView: View {
                 }
             }
         }) {
+            let size = UIFontMetrics(forTextStyle: .body).scaledValue(for: 30)
             Text("")
-                .frame(width: 25, height: 25)
+                .frame(width: size, height: size)
                 .foregroundColor(Color.black)
                 .background(color.uiColor)
                 .clipShape(Circle())
         }
+        // blend in w/ surrounding elements
         .glassEffect()
     }
 }

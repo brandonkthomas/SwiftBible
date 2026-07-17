@@ -19,12 +19,20 @@ nonisolated struct VerseAnnotation: Identifiable, Equatable {
     let startVerse: Int
     let endVerse: Int?
 
-    var highlightColor: VerseAnnotationHighlightColor?
-    var note: String?
-    var tags: [String]?
+    var content: AnnotationContent
 
     let createdAt: Date
     var updatedAt: Date?
+
+    // MARK: Properties (Computed)
+
+    var highlightColor: VerseAnnotationHighlightColor? {
+        if case .highlight(let color) = content {
+            return color
+        }
+
+        return nil
+    }
 
     // MARK: Init
     
@@ -37,10 +45,8 @@ nonisolated struct VerseAnnotation: Identifiable, Equatable {
          startVerse: Int,
          endVerse: Int?,
          
-         highlightColor: VerseAnnotationHighlightColor? = nil,
-         note: String? = nil,
-         tags: [String]? = nil,
-         
+         content: AnnotationContent,
+
          createdAt: Date,
          updatedAt: Date? = nil) {
         self.id = id
@@ -50,33 +56,24 @@ nonisolated struct VerseAnnotation: Identifiable, Equatable {
         self.startVerse = startVerse
         self.endVerse = endVerse
         
-        self.highlightColor = highlightColor
-        self.note = note
-        self.tags = tags
+        self.content = content
         
         self.createdAt = createdAt
         self.updatedAt = updatedAt
     }
 
-    /// Init will fail + return nil if none of highlight/note/tag are provided.
+    /// Init will fail + return nil if none of no real content is provided (i.e. non-empty).
     init?(
         id: UUID = UUID(),
         reference: ScriptureReference,
         selectedVerses: ClosedRange<Int>,
 
-        highlightColor: VerseAnnotationHighlightColor?,
-        note: String?,
-        tags: [String]?,
+        content: AnnotationContent,
 
         createdAt: Date = .now
     ) {
         // Ensure at least 1 non-empty storage value is provided
-        guard highlightColor != nil
-                || Self.hasText(note)
-                || tags?.contains(where: { Self.hasText($0) }) == true
-        else {
-            return nil
-        }
+        guard content.isMeaningful else { return nil }
 
         self.id = id
         self.translationID = reference.translationID
@@ -85,21 +82,28 @@ nonisolated struct VerseAnnotation: Identifiable, Equatable {
         self.startVerse = selectedVerses.lowerBound
         self.endVerse = selectedVerses.count == 1 ? nil : selectedVerses.upperBound
 
-        self.highlightColor = highlightColor
-        self.note = note
-        self.tags = tags
+        self.content = content
 
         self.createdAt = createdAt
         self.updatedAt = nil
     }
+}
 
-    // MARK: Functions (Private)
+nonisolated enum AnnotationContent: Equatable {
+    case highlight(VerseAnnotationHighlightColor)
+    case note(String)
+    case tags([String])
 
-    private static func hasText(_ value: String?) -> Bool {
-        guard let value else {
-            return false
+    var isMeaningful: Bool {
+        switch self {
+        case .highlight:
+            return true
+        case .note(let text):
+            return !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        case .tags(let names):
+            return names.contains { name in
+                !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            }
         }
-
-        return !value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 }

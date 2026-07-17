@@ -21,7 +21,7 @@ enum PreviewFixtures {
                                              chapter: 1,
                                              startVerse: 1,
                                              endVerse: nil,
-                                             highlightColor: .yellow,
+                                             content: .highlight(.yellow),
                                              createdAt: .now))
         return repository
     }

@@ -44,7 +44,8 @@ struct PassageHTMLParserTests {
         let passage = try parser.parse(html: html)
 
         #expect(passage.paragraphs.count == 1)
-        #expect(passage.paragraphs[0].style == .quoteLine)
+        // would be quoteLine but the parser now collapses fully-quoted passages to para runs
+        #expect(passage.paragraphs[0].style == .paragraph)
 
         #expect(passage.paragraphs[0].runs.count == 2)
         #expect(passage.paragraphs[0].runs[0] == .verseLabel(displayText: "1",

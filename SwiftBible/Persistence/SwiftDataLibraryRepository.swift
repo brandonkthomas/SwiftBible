@@ -24,16 +24,16 @@ final class SwiftDataLibraryRepository: LibraryRepository {
     
     /// Map VerseAnnotation => StoredVerseAnnotation, insert into self.context, & save self.context
     func save(_ annotation: VerseAnnotation) throws {
-        // Resolve tags
-        let resolvedTags = try resolveTags(annotation.tags)
+        let storageContent = storageContent(for: annotation.content)
+        let resolvedTags = try resolveTags(storageContent.tags)
         
         // Insert/update branch
         if let existingAnnotation = try fetch(by: annotation.id) {
             // We found an existing VerseAnnotation w/ this ID; update its mutable fields
             // directly (SwiftData tracks mutations for @Model)
-            existingAnnotation.highlightColor = annotation.highlightColor
+            existingAnnotation.highlightColor = storageContent.highlightColor
             existingAnnotation.tags = resolvedTags
-            existingAnnotation.note = annotation.note
+            existingAnnotation.note = storageContent.note
             existingAnnotation.updatedAt = .now
         } else {
             // There's no existing VerseAnnotation w/ this ID; insert a new one
@@ -43,8 +43,8 @@ final class SwiftDataLibraryRepository: LibraryRepository {
                                                               chapter: annotation.chapter,
                                                               startVerse: annotation.startVerse,
                                                               endVerse: annotation.endVerse,
-                                                              highlightColor: annotation.highlightColor,
-                                                              note: annotation.note,
+                                                              highlightColor: storageContent.highlightColor,
+                                                              note: storageContent.note,
                                                               createdAt: annotation.createdAt,
                                                               updatedAt: annotation.updatedAt)
             storedVerseAnnotation.tags = resolvedTags
@@ -76,19 +76,21 @@ final class SwiftDataLibraryRepository: LibraryRepository {
         let annotations: [StoredVerseAnnotation] = try context.fetch(fetchDescriptor)
         
         // Map + return results
-        let mappedAnnotations: [VerseAnnotation] = annotations.map {
-            VerseAnnotation.init(
-                id: $0.id,
-                translationID: $0.translationID,
-                bookCode: $0.bookCode,
-                chapter: $0.chapter,
-                startVerse: $0.startVerse,
-                endVerse: $0.endVerse,
-                highlightColor: $0.highlightColor,
-                note: $0.note,
-                tags: $0.tags?.map(\.displayName),
-                createdAt: $0.createdAt,
-                updatedAt: $0.updatedAt
+        let mappedAnnotations: [VerseAnnotation] = annotations.compactMap { storedAnnotation in
+            guard let content = annotationContent(from: storedAnnotation) else {
+                return nil
+            }
+
+            return VerseAnnotation.init(
+                id: storedAnnotation.id,
+                translationID: storedAnnotation.translationID,
+                bookCode: storedAnnotation.bookCode,
+                chapter: storedAnnotation.chapter,
+                startVerse: storedAnnotation.startVerse,
+                endVerse: storedAnnotation.endVerse,
+                content: content,
+                createdAt: storedAnnotation.createdAt,
+                updatedAt: storedAnnotation.updatedAt
             )
         }
         
@@ -108,6 +110,36 @@ final class SwiftDataLibraryRepository: LibraryRepository {
     
     // MARK: Functions (Private)
     
+    private func storageContent(for content: AnnotationContent) -> (highlightColor: VerseAnnotationHighlightColor?, note: String?, tags: [String]?) {
+        switch content {
+        case .highlight(let color):
+            return (color, nil, nil)
+        case .note(let note):
+            return (nil, note, nil)
+        case .tags(let tags):
+            return (nil, nil, tags)
+        }
+    }
+
+    /// Precedence: highlight -> note -> tags (only one of these will ever exist per annotation unless something went wrong)
+    private func annotationContent(from storedAnnotation: StoredVerseAnnotation) -> AnnotationContent? {
+        if let highlightColor = storedAnnotation.highlightColor {
+            return .highlight(highlightColor)
+        }
+
+        if let note = storedAnnotation.note,
+           !note.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return .note(note)
+        }
+
+        let tagNames = storedAnnotation.tags?.map(\.displayName) ?? []
+        guard tagNames.contains(where: { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }) else {
+            return nil
+        }
+
+        return .tags(tagNames)
+    }
+
     /// Find any matching StoredTag for a given list of tag names
     ///
     /// Move this to StoredTag if it's ever used outside this file in the future

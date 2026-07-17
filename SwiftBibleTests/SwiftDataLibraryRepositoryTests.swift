@@ -20,9 +20,7 @@ struct SwiftDataLibraryRepositoryTests {
         let verseRange = try #require(reference.verseRange)
         let annotation = try #require(VerseAnnotation(reference: reference,
                                                       selectedVerses: verseRange,
-                                                      highlightColor: .yellow,
-                                                      note: "Note content",
-                                                      tags: ["memory"]))
+                                                      content: .tags(["memory"])))
 
         try repository.save(annotation)
         let results = try repository.annotations(for: reference)
@@ -30,7 +28,7 @@ struct SwiftDataLibraryRepositoryTests {
         #expect(results == [annotation])
     }
 
-    /// Upsert: save the same id twice with a different color returns one updated annotation
+    /// Upsert: save the same id twice with different content returns one updated annotation
     @Test func savingSameIDUpdatesExistingAnnotation() throws {
         let repository = try buildRepository()
         let reference = try buildReference()
@@ -41,9 +39,7 @@ struct SwiftDataLibraryRepositoryTests {
         let annotation = try #require(VerseAnnotation(id: id,
                                                       reference: reference,
                                                       selectedVerses: verseRange,
-                                                      highlightColor: .yellow,
-                                                      note: "Original note",
-                                                      tags: ["memory"],
+                                                      content: .highlight(.yellow),
                                                       createdAt: createdAt))
         let updatedAnnotation = VerseAnnotation(id: id,
                                                 translationID: reference.translationID,
@@ -51,9 +47,7 @@ struct SwiftDataLibraryRepositoryTests {
                                                 chapter: reference.chapter,
                                                 startVerse: verseRange.lowerBound,
                                                 endVerse: verseRange.upperBound,
-                                                highlightColor: .blue,
-                                                note: "Updated note",
-                                                tags: ["study"],
+                                                content: .highlight(.blue),
                                                 createdAt: createdAt)
 
         try repository.save(annotation)
@@ -63,9 +57,7 @@ struct SwiftDataLibraryRepositoryTests {
 
         #expect(results.count == 1)
         #expect(result.id == id)
-        #expect(result.highlightColor == .blue)
-        #expect(result.note == "Updated note")
-        #expect(result.tags == ["study"])
+        #expect(result.content == .highlight(.blue))
         #expect(result.updatedAt != nil)
     }
 
@@ -79,14 +71,10 @@ struct SwiftDataLibraryRepositoryTests {
         let verseRange2 = try #require(reference2.verseRange)
         let annotation1 = try #require(VerseAnnotation(reference: reference1,
                                                        selectedVerses: verseRange1,
-                                                       highlightColor: nil,
-                                                       note: nil,
-                                                       tags: [" Memory "]))
+                                                       content: .tags([" Memory "])))
         let annotation2 = try #require(VerseAnnotation(reference: reference2,
                                                        selectedVerses: verseRange2,
-                                                       highlightColor: nil,
-                                                       note: nil,
-                                                       tags: ["memory", "MEMORY"]))
+                                                       content: .tags(["memory", "MEMORY"])))
 
         try repository.save(annotation1)
         try repository.save(annotation2)
@@ -104,9 +92,7 @@ struct SwiftDataLibraryRepositoryTests {
         let verseRange = try #require(reference.verseRange)
         let annotation = try #require(VerseAnnotation(reference: reference,
                                                       selectedVerses: verseRange,
-                                                      highlightColor: nil,
-                                                      note: nil,
-                                                      tags: ["memory"]))
+                                                      content: .tags(["memory"])))
 
         try repository.save(annotation)
         try repository.delete(annotation.id)

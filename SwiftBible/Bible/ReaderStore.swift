@@ -292,9 +292,7 @@ final class ReaderStore {
         // Try to build annotation
         let annotation = VerseAnnotation(reference: selectedReference,
                                          selectedVerses: selectedVerses,
-                                         highlightColor: color,
-                                         note: nil,
-                                         tags: nil)
+                                         content: .highlight(color))
 
         guard let annotation else {
             return
@@ -329,7 +327,11 @@ final class ReaderStore {
         do {
             let annotations = try libraryRepository.annotations(for: selectedReference)
             let highlightedAnnotations = annotations.filter {
-                $0.highlightColor != nil
+                if case .highlight = $0.content {
+                    return true
+                }
+
+                return false
             }
 
             // loop over all highlights: parse range + detect overlap + delete

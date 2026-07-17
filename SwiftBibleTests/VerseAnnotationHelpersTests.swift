@@ -131,14 +131,20 @@ struct VerseAnnotationHelpersTests {
         translationID: Int,
         createdAt: Date)
     -> VerseAnnotation {
-        .init(
+        let content: AnnotationContent = if let color {
+            .highlight(color)
+        } else {
+            .note(note ?? "")
+        }
+
+        return .init(
             id: UUID(),
             translationID: translationID,
             bookCode: "GEN",
             chapter: 1,
             startVerse: start,
             endVerse: end,
-            highlightColor: color,
+            content: content,
             createdAt: createdAt
         )
     }
