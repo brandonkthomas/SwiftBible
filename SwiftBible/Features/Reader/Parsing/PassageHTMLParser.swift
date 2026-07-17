@@ -32,8 +32,21 @@ nonisolated struct PassageHTMLParser {
         }
 
         // return parser/delegate results
-        return .init(paragraphs: delegate.paragraphs,
+        return .init(paragraphs: normalizedParagraphs(delegate.paragraphs),
                      footnotes: delegate.footnotes)
+    }
+
+    /// If every paragraph is indented, treat the passage as regular body text
+    private func normalizedParagraphs(_ paragraphs: [RenderedParagraph]) -> [RenderedParagraph] {
+        let hasBodyParagraph = paragraphs.contains { $0.style == .paragraph }
+
+        guard !hasBodyParagraph else {
+            return paragraphs
+        }
+
+        return paragraphs.map { paragraph in
+            RenderedParagraph(style: .paragraph, runs: paragraph.runs)
+        }
     }
 }
 
@@ -100,7 +113,7 @@ private nonisolated final class PassageHTMLParserDelegate: NSObject, XMLParserDe
 
             return
         } else if elementName == "span",
-                  attributeDict["class"] == "yv-n f",
+                  (hasClass("yv-n", in: attributeDict) && hasClass("f", in: attributeDict)),
                   let currentVerseRange, // TODO: this will silently skip footnotes appearing BEFORE a verse (!)
                   var paragraph = self.currentParagraph {
             // we're opening a new footnote; start tracking depth + short-circuit
@@ -265,17 +278,88 @@ private nonisolated final class PassageHTMLParserDelegate: NSObject, XMLParserDe
         }
     }
 
-    /// Parse YouVersion HTML classes into corresponding paragraph styles (indented line, quote line, paragraph)
-    private func paragraphStyle(for attributes: [String: String]) -> RenderedParagraphStyle? {
-        if hasClass("mi", in: attributes) {
-            return .indentedLine
-        } else if hasClass("q1", in: attributes) {
-            return .quoteLine
-        } else if hasClass("p", in: attributes) || hasClass("m", in: attributes) {
-            return .paragraph
-        } else {
+    /// Map YouVersion passage HTML classes to SwiftBible render elements.
+    ///
+    /// YouVersion documents `Passage.content` as either text or HTML, but does not publish
+    /// a complete class-name schema. The classes below are observed in API HTML and align
+    /// with USFM marker names:
+    ///
+    /// Paragraph-level classes:
+    /// - `p` (`\\p`, normal paragraph) -> `RenderedParagraphStyle.paragraph`
+    /// - `m` (`\\m`, margin/continuation paragraph) -> `RenderedParagraphStyle.paragraph`
+    /// - `pi`, `pi1`, `pi2` (`\\pi#`, indented paragraph) -> `RenderedParagraphStyle.indentedLine`
+    /// - `mi` (`\\mi`, flush-left indented paragraph) -> `RenderedParagraphStyle.indentedLine`
+    /// - `q`, `q1` (`\\q#`, first-level poetic line) -> `RenderedParagraphStyle.quoteLine`
+    /// - `q2`, `q3`, `q4` (`\\q#`, deeper poetic line) -> `RenderedParagraphStyle.indentedLine`
+    /// - `li`, `li1`, `li2` (`\\li#`, list entry) -> `RenderedParagraphStyle.indentedLine`
+    ///
+    /// Inline classes handled elsewhere in this parser:
+    /// - `yv-v` -> verse milestone; updates `RenderedVerseRange` from `v` / `ev` attributes
+    /// - `yv-vlbl` -> `RenderedPassageRun.verseLabel`
+    /// - `yv-n f` -> `RenderedPassageRun.footnoteMarker` plus a `Footnote`
+    /// - `fr` -> footnote origin reference; skipped from displayed footnote text
+    /// - `ft`, `fqa`, `fq`, `fk`, `fv` -> footnote body/quote/key/verse text; folded into `Footnote.text`
+    /// - `it` -> `RenderedPassageTextStyle.italic`
+    /// - `wj` -> `RenderedPassageTextStyle.wordsOfJesus`
+    /// - `nd` -> `RenderedPassageTextStyle.divineName`
+    private func paragraphStyle(
+        for attributes: [String: String]
+    ) -> RenderedParagraphStyle? {
+        let classes = classNames(in: attributes)
+
+        for className in classes {
+            switch className {
+            case "p", "m":
+                return .paragraph
+
+            case "q", "q1":
+                return .quoteLine
+
+            case "pi", "mi", "li":
+                return .indentedLine
+
+            default:
+                if isNumberedClass(className, prefix: "pi") ||
+                    isNumberedClass(className, prefix: "li") {
+                    return .indentedLine
+                }
+
+                if let quoteLevel = numberedClassLevel(
+                    className,
+                    prefix: "q"
+                ) {
+                    return quoteLevel == 1
+                        ? .quoteLine
+                        : .indentedLine
+                }
+            }
+        }
+
+        return nil
+    }
+
+    private func isNumberedClass(
+        _ className: Substring,
+        prefix: String
+    ) -> Bool {
+        numberedClassLevel(className, prefix: prefix) != nil
+    }
+
+    private func numberedClassLevel(
+        _ className: Substring,
+        prefix: String
+    ) -> Int? {
+        guard className.hasPrefix(prefix) else {
             return nil
         }
+
+        let levelText = className.dropFirst(prefix.count)
+
+        guard !levelText.isEmpty else {
+            return nil
+        }
+
+        return Int(levelText)
     }
 
     /// Parse YouVersion HTML classes into corresponding text styles (italic, words of Jesus, divine name)
@@ -297,16 +381,23 @@ private nonisolated final class PassageHTMLParserDelegate: NSObject, XMLParserDe
         return style.isEmpty ? nil : style
     }
 
-    /// Check an attribute dict for an expected class
-    private func hasClass(_ expectedClass: String,
-                          in attributes: [String: String]) -> Bool {
+    /// Check an attribute dictionary for an expected class
+    private func hasClass(
+        _ expectedClass: String,
+        in attributes: [String: String]
+    ) -> Bool {
+        classNames(in: attributes).contains { $0 == expectedClass }
+    }
+
+    /// Return every whitespace-separated HTML class in its original order.
+    private func classNames(
+        in attributes: [String: String]
+    ) -> [Substring] {
         guard let classValue = attributes["class"] else {
-            return false
+            return []
         }
 
-        return classValue
-            .split(separator: " ")
-            .contains(Substring(expectedClass))
+        return classValue.split(whereSeparator: \.isWhitespace)
     }
 
     /// Append passage text
