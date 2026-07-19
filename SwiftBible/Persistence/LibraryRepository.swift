@@ -18,7 +18,10 @@ protocol LibraryRepository {
     ///
     /// TODO: add filter options (i.e. optionally specify translation, etc)
     func annotations(for reference: ScriptureReference) throws -> [VerseAnnotation]
-    
+
+    /// Return list of every stored annotation
+    func allAnnotations() throws -> [VerseAnnotation]
+
     /// Delete a highlight/tag/note
     func delete(_ id: UUID) throws
 }

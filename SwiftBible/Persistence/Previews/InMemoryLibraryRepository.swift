@@ -26,7 +26,11 @@ nonisolated final class InMemoryLibraryRepository: LibraryRepository {
             && $0.chapter == reference.chapter
         }
     }
-    
+
+    func allAnnotations() throws -> [VerseAnnotation] {
+        return annotations
+    }
+
     func delete(_ id: UUID) throws {
         annotations.removeAll { $0.id == id }
     }

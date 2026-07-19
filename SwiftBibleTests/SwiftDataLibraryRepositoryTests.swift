@@ -65,6 +65,7 @@ struct SwiftDataLibraryRepositoryTests {
     @Test func sharedTagNamesReuseStoredTag() throws {
         let modelContainer = try buildModelContainer()
         let repository = SwiftDataLibraryRepository(modelContainer: modelContainer)
+
         let reference1 = try buildReference(chapter: 1)
         let verseRange1 = try #require(reference1.verseRange)
         let reference2 = try buildReference(chapter: 2)
@@ -104,6 +105,33 @@ struct SwiftDataLibraryRepositoryTests {
         #expect(tags.first?.normalizedName == "memory")
         #expect(tags.first?.annotations?.isEmpty != false)
     }
+
+    /// allAnnotations() correctly removes all filters
+    @Test func allAnnotationsFunctionReturnsAllResults() throws {
+        let modelContainer = try buildModelContainer()
+        let repository = SwiftDataLibraryRepository(modelContainer: modelContainer)
+
+        let reference1 = try buildReference(chapter: 1)
+        let verseRange1 = try #require(reference1.verseRange)
+        let reference2 = try buildReference(chapter: 2)
+        let verseRange2 = try #require(reference2.verseRange)
+        let annotation1 = try #require(VerseAnnotation(reference: reference1,
+                                                       selectedVerses: verseRange1,
+                                                       content: .highlight(.yellow)))
+        let annotation2 = try #require(VerseAnnotation(reference: reference2,
+                                                       selectedVerses: verseRange2,
+                                                       content: .highlight(.green)))
+
+        try repository.save(annotation1)
+        try repository.save(annotation2)
+        let annotations = try repository.allAnnotations()
+
+        #expect(annotations.count == 2)
+        #expect(annotations.contains { $0.id == annotation1.id } )
+        #expect(annotations.contains { $0.id == annotation2.id } )
+    }
+
+    // MARK: Functions (Private)
 
     private func buildRepository() throws -> SwiftDataLibraryRepository {
         try SwiftDataLibraryRepository(modelContainer: buildModelContainer())

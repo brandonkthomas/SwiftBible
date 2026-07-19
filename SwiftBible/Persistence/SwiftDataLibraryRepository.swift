@@ -76,27 +76,21 @@ final class SwiftDataLibraryRepository: LibraryRepository {
         let annotations: [StoredVerseAnnotation] = try context.fetch(fetchDescriptor)
         
         // Map + return results
-        let mappedAnnotations: [VerseAnnotation] = annotations.compactMap { storedAnnotation in
-            guard let content = annotationContent(from: storedAnnotation) else {
-                return nil
-            }
-
-            return VerseAnnotation.init(
-                id: storedAnnotation.id,
-                translationID: storedAnnotation.translationID,
-                bookCode: storedAnnotation.bookCode,
-                chapter: storedAnnotation.chapter,
-                startVerse: storedAnnotation.startVerse,
-                endVerse: storedAnnotation.endVerse,
-                content: content,
-                createdAt: storedAnnotation.createdAt,
-                updatedAt: storedAnnotation.updatedAt
-            )
-        }
-        
-        return mappedAnnotations
+        let verseAnnotations = map(from: annotations)
+        return verseAnnotations
     }
-    
+
+    /// Return all stored annotations
+    func allAnnotations() throws -> [VerseAnnotation] {
+        // No predicate means we get all results
+        let fetchDescriptor = FetchDescriptor<StoredVerseAnnotation>(predicate: nil)
+        let annotations: [StoredVerseAnnotation] = try context.fetch(fetchDescriptor)
+
+        // Map + return results
+        let verseAnnotations = map(from: annotations)
+        return verseAnnotations
+    }
+
     /// Delete a StoredVerseAnnotation by ID (if found)
     func delete(_ id: UUID) throws {
         let annotation = try fetch(by: id)
@@ -214,5 +208,26 @@ final class SwiftDataLibraryRepository: LibraryRepository {
         let annotations: [StoredVerseAnnotation] = try context.fetch(fetchDescriptor)
         
         return annotations.first // can be nil if not found
+    }
+
+    private func map(from storedVerseAnnotations: [StoredVerseAnnotation]) -> [VerseAnnotation] {
+        // Map + return results
+        return storedVerseAnnotations.compactMap { storedAnnotation in
+            guard let content = annotationContent(from: storedAnnotation) else {
+                return nil
+            }
+
+            return VerseAnnotation.init(
+                id: storedAnnotation.id,
+                translationID: storedAnnotation.translationID,
+                bookCode: storedAnnotation.bookCode,
+                chapter: storedAnnotation.chapter,
+                startVerse: storedAnnotation.startVerse,
+                endVerse: storedAnnotation.endVerse,
+                content: content,
+                createdAt: storedAnnotation.createdAt,
+                updatedAt: storedAnnotation.updatedAt
+            )
+        }
     }
 }
