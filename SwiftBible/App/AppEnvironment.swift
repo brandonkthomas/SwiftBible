@@ -22,7 +22,10 @@ final class AppEnvironment {
     // MARK: Properties
 
     let readerStore: ReaderStore
+    let libraryStore: LibraryStore
+
     let appConfiguration: AppConfiguration
+
     /// SwiftBible: Store the protocol itself for dependency inversion
     let libraryRepository: LibraryRepository
     
@@ -70,5 +73,8 @@ final class AppEnvironment {
 
         self.readerStore = ReaderStore(repository: repository,
                                        libraryRepository: libraryRepository)
+
+        // LibraryStore
+        self.libraryStore = LibraryStore(libraryRepository: libraryRepository)
     }
 }
