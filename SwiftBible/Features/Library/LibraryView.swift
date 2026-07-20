@@ -17,14 +17,29 @@ struct LibraryView: View {
     /// placed into the environment: .environment(readerStore))
     @Environment(LibraryStore.self) private var libraryStore: LibraryStore
 
+    @Environment(\.editMode) private var editMode
+
+    @State private var isInEditMode: Bool = false
+
     // MARK: Views
 
+    //                        PassageTextRenderer.text(for: passage.runs(for: verseRange),
+    //                                                      mode: .inline)
+
+    ///
     var body: some View {
         NavigationStack {
+            // List of items
             libraryListView
+                // Filter bar
+                .safeAreaInset(edge: .top, spacing: 5) {
+                    filterBarChipsView
+                }
+
+            // Navigation view modifiers
             .navigationTitle("Saved")
             .navigationSubtitle("\(libraryStore.annotations.count) Annotation\(libraryStore.annotations.count == 1 ? "" : "s")")
-//            .navigationBarTitleDisplayMode(.inline)
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 filterOptionsToolbarItem
             }
@@ -37,25 +52,26 @@ struct LibraryView: View {
     /// List of annotations
     var libraryListView: some View {
         List {
-            ForEach(libraryStore.annotations) { annotation in
-                // build this annotation into a card
-                Group {
-                    Text("\(annotation)")
-                }
-                .padding(10)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Color(.secondarySystemGroupedBackground),
-                            in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-                .shadow(color: .black.opacity(0.08), radius: 4, y: 2)
+            ForEach(libraryStore.filteredAnnotations) { annotation in
+                LibraryRowView(annotation: annotation)
             }
             .listRowSeparator(.hidden)
             .listRowBackground(Color.clear)
             .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+            .swipeActions {
+                Button(role: .destructive) {
+                    // TODO: popover delete model confirmation; wire actual delete
+                } label: {
+                    Image(systemName: "trash.fill")
+                }
+            }
         }
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
         .background(Color(.systemGroupedBackground))
     }
+
+    // MARK: Views (Toolbar)
 
     ///
     @ToolbarContentBuilder
@@ -112,15 +128,66 @@ struct LibraryView: View {
 
                 Divider()
 
-                Button {
-
-                } label: {
-                    Label("Select", systemImage: "checkmark.circle")
-                }
+                // can you not change EditButton appearance/label?
+                EditButton()
+//                Button {
+//
+//                } label: {
+//                    Label("Select", systemImage: "checkmark.circle")
+//                }
             } label: {
                 Image(systemName: "ellipsis")
             }
         }
+    }
+
+    // MARK: Views (Filter Bar)
+
+    /// Filter bar chips view
+    private var filterBarChipsView: some View {
+        HStack {
+            chipButtonView(for: .highlight,
+                           text: "Highlights",
+                           systemImage: "pencil.line")
+            chipButtonView(for: .tags,
+                           text: "Tags",
+                           systemImage: "tag.fill")
+            chipButtonView(for: .note,
+                           text: "Notes",
+                           systemImage: "bookmark.fill")
+        }
+        .shadow(color: Color.gray.opacity(0.1), radius: 5)
+    }
+
+    /// Individual builder for a single filter bar button
+    private func chipButtonView(for contentType: AnnotationContentType,
+                                text: String,
+                                systemImage: String) -> some View {
+        let isSelected = libraryStore.filter.contentType == contentType
+        let animation = Animation.timingCurve(0.25, 1, 0.67, 0.93, duration: 0.15)
+
+        return Button {
+            if isSelected {
+                libraryStore.filter.contentType = nil
+            } else {
+                libraryStore.filter.contentType = contentType
+            }
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: isSelected ? "xmark" : systemImage)
+                    .font(.system(size: 13, weight: .semibold))
+                    .frame(width: 16, height: 16)
+
+                Text(text)
+                    .font(.system(.footnote))
+            }
+        }
+        .padding(10)
+        .background(libraryStore.filter.contentType == contentType ? Color.secondary : Color.clear)
+        .animation(animation, value: isSelected)
+        .clipShape(.capsule)
+        .foregroundColor(.primary)
+        .glassEffect()
     }
 }
 

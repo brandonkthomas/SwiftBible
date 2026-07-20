@@ -13,7 +13,13 @@ final class LibraryStore {
 
     // MARK: Properties
 
+    /// Mutated by UI to change the value of LibraryStore.filteredAnnotations
+    var filter = LibraryFilter()
 
+    /// Calculated output source rendered by views
+    var filteredAnnotations: [VerseAnnotation] {
+        annotations.filter(filter.matches)
+    }
 
     // MARK: Properties (Private)
 

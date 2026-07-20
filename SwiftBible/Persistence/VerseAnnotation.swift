@@ -94,6 +94,14 @@ nonisolated enum AnnotationContent: Equatable {
     case note(String)
     case tags([String])
 
+    var type: AnnotationContentType {
+        switch self {
+        case .highlight: return .highlight
+        case .note: return .note
+        case .tags: return .tags
+        }
+    }
+
     var isMeaningful: Bool {
         switch self {
         case .highlight:
@@ -106,4 +114,10 @@ nonisolated enum AnnotationContent: Equatable {
             }
         }
     }
+}
+
+enum AnnotationContentType {
+    case highlight
+    case note
+    case tags
 }
