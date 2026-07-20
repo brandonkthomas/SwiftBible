@@ -33,10 +33,8 @@ struct ContentView: View {
             Tab("Customize", systemImage: "switch.2", value: CurrentTab.themes) {
                 SettingsView()
             }
-            Tab(value: CurrentTab.search, role: .search) {
+            Tab("Search", systemImage: "magnifyingglass", value: CurrentTab.search) {
                 SearchView()
-            } label: {
-                Image(systemName: "magnifyingglass")
             }
         }
         .font(.system(.body, design: .serif))
