@@ -155,7 +155,7 @@ struct ReaderPassageView: View {
             ReaderPassageFootnoteSheetView(verseRange: verse,
                                            passage: renderedPassage)
                 .presentationDetents([.medium, .large])
-                .presentationContentInteraction(.scrolls)
+                .presentationContentInteraction(.automatic)
         }
         // Handle deselection animations/etc ONCE (applies to all callers across all views)
         .onChange(of: readerStore.selectedVerses) {

@@ -183,11 +183,12 @@ struct LibraryView: View {
             }
         }
         .padding(10)
-        .background(libraryStore.filter.contentType == contentType ? Color.secondary : Color.clear)
         .animation(animation, value: isSelected)
-        .clipShape(.capsule)
         .foregroundColor(.primary)
-        .glassEffect()
+        .glassEffect(.regular
+                        .tint(libraryStore.filter.contentType == contentType ? .secondary : .clear)
+                        .interactive(),
+                     in: .capsule)
     }
 }
 

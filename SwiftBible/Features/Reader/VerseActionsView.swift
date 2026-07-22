@@ -178,11 +178,11 @@ struct VerseActionsView: View {
             Text("")
                 .frame(width: size, height: size)
                 .foregroundColor(Color.black)
-                .background(color.uiColor)
-                .clipShape(Circle())
+            //                .background(color.uiColor)
+            //                .clipShape(Circle())
         }
         // blend in w/ surrounding elements
-        .glassEffect()
+        .glassEffect(.regular.tint(color.uiColor).interactive(),in: .circle)
     }
 }
 
