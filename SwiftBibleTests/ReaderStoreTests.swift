@@ -239,7 +239,7 @@ struct ReaderStoreTests {
         #expect(store.selectedVerses == nil)
     }
 
-    /// Saving a highlight via the saveHighlight() method successfully saves to LibraryRepository
+    /// Saving a highlight via the save() method successfully saves to LibraryRepository
     /// then updates the ReaderStore's passageHighlightColors dict
     @Test func savingHighlightsPersistsToStore() async {
         let repository = FakeBibleRepository()
@@ -249,12 +249,12 @@ struct ReaderStoreTests {
         await store.loadTranslationsAndBooks()
 
         store.selectedVerses = 1...1
-        store.saveHighlight(.yellow)
+        store.save(.highlight(.yellow))
         #expect(store.selectedVerses == nil)
         #expect(store.passageHighlightColors[1] == .yellow)
     }
 
-    /// Saving a highlight via the saveHighlight() method successfully saves to LibraryRepository
+    /// Saving a highlight via the save() method successfully saves to LibraryRepository
     /// then updates the ReaderStore's passageHighlightColors dict
     @Test func deletingHighlightsPersistsToStore() async {
         let repository = FakeBibleRepository()
@@ -264,7 +264,7 @@ struct ReaderStoreTests {
         await store.loadTranslationsAndBooks()
 
         store.selectedVerses = 1...1
-        store.saveHighlight(.yellow)
+        store.save(.highlight(.yellow))
 
         store.selectedVerses = 1...1
         store.deleteHighlights()

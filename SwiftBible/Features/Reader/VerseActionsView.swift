@@ -170,7 +170,7 @@ struct VerseActionsView: View {
                 if showEraser {
                     readerStore.deleteHighlights()
                 } else {
-                    readerStore.saveHighlight(color)
+                    readerStore.save(.highlight(color))
                 }
             }
         }) {

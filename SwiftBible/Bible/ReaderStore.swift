@@ -279,9 +279,9 @@ final class ReaderStore {
         }
     }
 
-    /// Save the selected verse range as a highlight annotation w/ provided color
-    func saveHighlight(_ color: VerseAnnotationHighlightColor) {
-        Self.logger.debug("ENTRY ReaderStore.saveHighlight(\(color.uiColor))")
+    /// Save the selected verse range as some annotation content w/ provided data
+    func save(_ content: AnnotationContent) {
+        Self.logger.debug("ENTRY ReaderStore.save()")
 
         // Ensure current selection
         guard let selectedVerses,
@@ -292,7 +292,7 @@ final class ReaderStore {
         // Try to build annotation
         let annotation = VerseAnnotation(reference: selectedReference,
                                          selectedVerses: selectedVerses,
-                                         content: .highlight(color))
+                                         content: content)
 
         guard let annotation else {
             return
