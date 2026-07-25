@@ -63,7 +63,7 @@ struct PassagePickerView: View {
 
             // Actual Menu Component
             // -- transition between this and VerseActionsView on tabBarAccessory
-            menu
+            booksAndTranslationsMenuView
             .transition(.blurReplace)
 
             Spacer()
@@ -93,65 +93,55 @@ struct PassagePickerView: View {
         .transition(.blurReplace)
     }
 
-    private var menu: some View {
+    private var booksAndTranslationsMenuView: some View {
         Menu {
             // Books + Chapters nested menus
             Menu {
                 ForEach(readerStore.books) { book in
-                    Menu(book.displayName) {
-                        ForEach(book.chapters) { chapter in
-                            if readerStore.selectedChapter?.id == chapter.id {
-                                // Shows a menu item with a tick
-                                Toggle(isOn: .constant(true), label: {
-                                    Text(chapter.displayName)
-                                })
-                            }
-                            else {
-                                // Shows a menu item without a tick
-                                Button(action: {
-                                    Task {
-                                        await readerStore.selectBookAndChapter(bookID: book.id,
-                                                                               chapterID: chapter.id,
-                                                                               reloadPassage: true)
+                    Menu {
+                        // TODO: ControlGroup may be to blame for submenus "sticking" in place
+                        // for 2 seconds after closing the submenu + scrolling the parent menu
+                        ForEach(Array(chapterGroups(for: book).enumerated()), id: \.offset) { _, group in
+                            ControlGroup {
+                                ForEach(group) { chapter in
+                                    Toggle(isOn: chapterSelectionBinding(book: book, chapter: chapter)) {
+                                        Text(chapter.displayName)
                                     }
-                                }) {
-                                    Text(chapter.displayName)
                                 }
                             }
+                            .controlGroupStyle(.compactMenu)
+                            .font(.system(size: UIFontMetrics(forTextStyle: .body).scaledValue(for: 18),
+                                          weight: .medium))
                         }
+                    } label: {
+                        Text(book.displayName)
                     }
                 }
             } label: {
                 Label("Books", systemImage: "books.vertical")
+                if let selectedBook = readerStore.selectedBook,
+                   let selectedChapter = readerStore.selectedChapter {
+                    Text("\(selectedBook.displayName) \(selectedChapter.number)")
+                        .foregroundStyle(Color.secondary)
+                }
             }
             .menuOrder(.fixed)
 
             // Translations menu
             Menu {
                 ForEach(readerStore.translations.sorted { $0.title < $1.title }) { translation in
-                    if readerStore.selectedTranslation?.id == translation.id {
-                        // Shows a menu item with a tick
-                        Toggle(isOn: .constant(true), label: {
-                            Text(translation.title)
-                            Text(translation.abbreviation)
-                                .foregroundStyle(.secondary)
-                        })
-                    }
-                    else {
-                        // Shows a menu item without a tick
-                        Button(action: {
-                            Task {
-                                await readerStore.selectTranslationAndReloadAll(id: translation.id)
-                            }
-                        }) {
-                            Text(translation.title)
-                            Text(translation.abbreviation)
-                                .foregroundStyle(.secondary)
-                        }
+                    Toggle(isOn: translationSelectionBinding(for: translation)) {
+                        Text(translation.title)
+                        Text(translation.abbreviation)
+                            .foregroundStyle(.secondary)
                     }
                 }
             } label: {
-                Label("Translations", systemImage: "text.book.closed") // was text.redaction
+                Label("Translations", systemImage: "text.book.closed")
+                if let selectedTranslation = readerStore.selectedTranslation {
+                    Text(selectedTranslation.title)
+                        .foregroundStyle(Color.secondary)
+                }
             }
             .menuOrder(.fixed)
         } label: {
@@ -165,6 +155,46 @@ struct PassagePickerView: View {
         }
         .foregroundStyle(.primary) // Automatically adapts to light/dark
         .menuOrder(.fixed)
+    }
+
+    private func chapterGroups(for book: Book) -> [[Chapter]] {
+        stride(from: 0, to: book.chapters.count, by: 3).map { startIndex in
+            Array(book.chapters[startIndex..<min(startIndex + 3, book.chapters.count)])
+        }
+    }
+
+    private func chapterSelectionBinding(book: Book, chapter: Chapter) -> Binding<Bool> {
+        Binding(
+            get: {
+                readerStore.selectedChapter?.id == chapter.id
+            },
+            set: { isSelected in
+                guard isSelected,
+                      readerStore.selectedChapter?.id != chapter.id else { return }
+
+                Task {
+                    await readerStore.selectBookAndChapter(bookID: book.id,
+                                                           chapterID: chapter.id,
+                                                           reloadPassage: true)
+                }
+            }
+        )
+    }
+
+    private func translationSelectionBinding(for translation: Translation) -> Binding<Bool> {
+        Binding(
+            get: {
+                readerStore.selectedTranslation?.id == translation.id
+            },
+            set: { isSelected in
+                guard isSelected,
+                      readerStore.selectedTranslation?.id != translation.id else { return }
+
+                Task {
+                    await readerStore.selectTranslationAndReloadAll(id: translation.id)
+                }
+            }
+        )
     }
 
     /// TabBarAccessory label view
