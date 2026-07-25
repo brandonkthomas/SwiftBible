@@ -34,6 +34,14 @@ nonisolated struct VerseAnnotation: Identifiable, Equatable {
         return nil
     }
 
+    var verseRange: ClosedRange<Int>? {
+        if let endVerse {
+            return startVerse...endVerse
+        } else {
+            return startVerse...startVerse
+        }
+    }
+
     // MARK: Init
     
     /// Direct-field-reference non-failable init that bypasses field validation;
