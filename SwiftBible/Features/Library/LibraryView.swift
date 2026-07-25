@@ -21,6 +21,8 @@ struct LibraryView: View {
 
     @State private var isInEditMode: Bool = false
 
+    @Namespace private var chipBarNamespace
+
     // MARK: Views
 
     //                        PassageTextRenderer.text(for: passage.runs(for: verseRange),
@@ -145,18 +147,20 @@ struct LibraryView: View {
 
     /// Filter bar chips view
     private var filterBarChipsView: some View {
-        HStack {
-            chipButtonView(for: .highlight,
-                           text: "Highlights",
-                           systemImage: "pencil.line")
-            chipButtonView(for: .tags,
-                           text: "Tags",
-                           systemImage: "tag.fill")
-            chipButtonView(for: .note,
-                           text: "Notes",
-                           systemImage: "bookmark.fill")
+        GlassEffectContainer(spacing: 8) {
+            HStack {
+                chipButtonView(for: .highlight,
+                               text: "Highlights",
+                               systemImage: "pencil.line")
+                chipButtonView(for: .tags,
+                               text: "Tags",
+                               systemImage: "tag.fill")
+                chipButtonView(for: .note,
+                               text: "Notes",
+                               systemImage: "bookmark.fill")
+            }
+            .shadow(color: Color.gray.opacity(0.1), radius: 5)
         }
-        .shadow(color: Color.gray.opacity(0.1), radius: 5)
     }
 
     /// Individual builder for a single filter bar button
@@ -164,31 +168,25 @@ struct LibraryView: View {
                                 text: String,
                                 systemImage: String) -> some View {
         let isSelected = libraryStore.filter.contentType == contentType
-        let animation = Animation.timingCurve(0.25, 1, 0.67, 0.93, duration: 0.15)
 
-        return Button {
-            if isSelected {
-                libraryStore.filter.contentType = nil
-            } else {
-                libraryStore.filter.contentType = contentType
-            }
-        } label: {
-            HStack(spacing: 6) {
-                Image(systemName: isSelected ? "xmark" : systemImage)
-                    .font(.system(size: 13, weight: .semibold))
-                    .frame(width: 16, height: 16)
-
-                Text(text)
-                    .font(.system(.footnote))
-            }
-        }
-        .padding(10)
-        .animation(animation, value: isSelected)
-        .foregroundColor(.primary)
-        .glassEffect(.regular
-                        .tint(libraryStore.filter.contentType == contentType ? .secondary : .clear)
-                        .interactive(),
-                     in: .capsule)
+        return Toggle(text,
+                      systemImage: systemImage, // isSelected ? "xmark" : systemImage
+                      isOn: Binding(
+                          get: {
+                              libraryStore.filter.contentType == contentType
+                          },
+                          set: { newValue in
+                              libraryStore.filter.contentType = newValue ? contentType : nil
+                          }
+                      ))
+        .toggleStyle(.button)
+        .buttonStyle(.glass)
+        .glassEffectID(text, in: chipBarNamespace)
+        .animation(
+            .timingCurve(0.25, 1, 0.67, 0.93, duration: 0.15),
+            value: isSelected
+        )
+        .font(.system(size: 12, weight: .semibold))
     }
 }
 

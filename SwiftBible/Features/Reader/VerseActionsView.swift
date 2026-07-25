@@ -20,6 +20,9 @@ struct VerseActionsView: View {
     /// placed into the environment: .environment(readerStore))
     @Environment(ReaderStore.self) private var readerStore: ReaderStore
 
+    /// Used for Liquid Glass effects in highlight popover
+    @Namespace private var highlightColorPopoverNamespace
+
 //    /// Read appEnvironment.libraryRepository environment value from current view environment
 //    ///
 //    /// Don't need "\." here because this is a type-based lookup for an observable instance
@@ -150,16 +153,18 @@ struct VerseActionsView: View {
                  attachmentAnchor: .point(.top),
                  arrowEdge: .bottom,
                  content: {
-            HStack(spacing: 15) {
-                // show 1 button for each public color
-                ForEach(VerseAnnotationHighlightColor.allCases, id: \.rawValue) { item in
-                    highlightColorButton(for: item)
+            GlassEffectContainer(spacing: 15) {
+                HStack(spacing: 15) {
+                    // show 1 button for each public color
+                    ForEach(VerseAnnotationHighlightColor.allCases, id: \.rawValue) { item in
+                        highlightColorButton(for: item)
+                    }
                 }
+                // popover padding on L/R
+                .padding(EdgeInsets(top: 0, leading: 10, bottom: 0, trailing: 10))
+                // open minimal popover view
+                .presentationCompactAdaptation(.none)
             }
-            // popover padding on L/R
-            .padding(EdgeInsets(top: 0, leading: 10, bottom: 0, trailing: 10))
-            // open minimal popover view
-            .presentationCompactAdaptation(.none)
         })
     }
 
