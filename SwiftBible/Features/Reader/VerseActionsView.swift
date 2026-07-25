@@ -34,17 +34,28 @@ struct VerseActionsView: View {
     @State private var isHighlightPopoverPresented: Bool = false
     @State private var showEraser: Bool = false
 
-    private var selectedLabel: String {
-        guard let selectedVerses = readerStore.selectedVerses else {
+    private var isExpandedPlacement: Bool {
+        placement == .expanded || placement == nil
+    }
+
+    private var chapterAndVersesLabel: String {
+        guard let selectedChapter = readerStore.selectedChapter,
+              let selectedVerses = readerStore.selectedVerses else {
             return ""
         }
-        let count = selectedVerses.count
-        return "\(count) Verse\(count == 1 ? "" : "s")" //... Selected
+        let endText = selectedVerses.upperBound == selectedVerses.lowerBound
+            ? ""
+            : "-\(selectedVerses.upperBound)"
+
+        return "\(selectedChapter.number):\(selectedVerses.lowerBound)\(endText)"
     }
 
     // MARK: Views
 
     /// Tab bar accessory for Reader view
+    ///
+    /// Expanded:   \[  X  1:1-3 Selected      Pen  Bookmark  Share  \]
+    /// Collapsed:   \[  X  1:1-3      Pen  Bookmark  Share  \]
     var body: some View {
         HStack(spacing: 15) {
             // Deselect
@@ -60,34 +71,30 @@ struct VerseActionsView: View {
                                   weight: .bold))
             }
 
-            // only show label + spacer when expanded
+            // Label
             // this will smoothly transition when bar is collapsed/expanded in real time
-            if placement == .expanded || placement == nil {
-                // Label
-                Text(selectedLabel)
-                    .transition(.blurReplace)
+            HStack(spacing: 4) {
+                if isExpandedPlacement,
+                   let selectedBook = readerStore.selectedBook {
+                    Text(selectedBook.displayName)
+                        .transition(.blurReplace)
+                }
 
-                // Empty space
-                Spacer()
-                    .transition(.blurReplace)
+                Text(chapterAndVersesLabel)
+                    .fixedSize(horizontal: true, vertical: false)
             }
+            .animation(.snappy(duration: 0.35), value: isExpandedPlacement)
+
+            Spacer()
 
             // Highlight
             highlightAction()
 
-            // Bookmark
+            // Tags/Note
             Button(action: {
-                // TODO: open bookmark sheet
+                // TODO: open AnnotationEditorSheetView
             }) {
                 Image(systemName: "bookmark.fill")
-                    .font(.system(size: UIFontMetrics(forTextStyle: .body).scaledValue(for: 20)))
-            }
-
-            // Tag
-            Button(action: {
-                // TODO: open tags sheet
-            }) {
-                Image(systemName: "tag.fill")
                     .font(.system(size: UIFontMetrics(forTextStyle: .body).scaledValue(for: 20)))
             }
 

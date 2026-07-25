@@ -19,8 +19,9 @@ struct PassagePickerView: View {
 
     // MARK: Properties (Private State)
 
-    @State private var isLeftButtonDisabled: Bool = false
-    @State private var isRightButtonDisabled: Bool = false
+    private var isNavigationDisabled: Bool {
+        readerStore.loadState != .loaded //  || readerStore.passageLoadState != .loaded
+    }
 
     // MARK: Views
 
@@ -37,7 +38,8 @@ struct PassagePickerView: View {
                                   weight: .bold))
                     .foregroundStyle(.foreground)
             }
-            .disabled(isLeftButtonDisabled)
+            .disabled(isNavigationDisabled)
+            .opacity(isNavigationDisabled ? 0.45 : 1)
 
             Spacer()
 
@@ -57,7 +59,8 @@ struct PassagePickerView: View {
                                   weight: .bold))
                     .foregroundStyle(.foreground)
             }
-            .disabled(isRightButtonDisabled)
+            .disabled(isNavigationDisabled)
+            .opacity(isNavigationDisabled ? 0.45 : 1)
         }
         // frame, padding, bounding
         .frame(maxWidth: .infinity, maxHeight: .infinity)
