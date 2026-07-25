@@ -34,7 +34,7 @@ nonisolated struct VerseAnnotation: Identifiable, Equatable {
         return nil
     }
 
-    var verseRange: ClosedRange<Int>? {
+    var verseRange: ClosedRange<Int> {
         if let endVerse {
             return startVerse...endVerse
         } else {

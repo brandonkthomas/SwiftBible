@@ -10,12 +10,15 @@ import Testing
 @testable import SwiftBible
 
 // for testing only; Swift warns about main-actor default isolation,
-// and ReaderStore is observable UI state; use @MainActor to run these on UI actor
+// and AnnotationEditor is observable UI state; use @MainActor to run these on UI actor
 @MainActor
 struct AnnotationEditorTests {
 
     /// noteText and tags are populated when loading AnnotationEditor
-    @Test func readsFromRepository() async throws {
+    @Test func readsFromRepository() throws {
+        let noteContent1 = "Note content"
+        let tags = ["Tag 1", "Tag 2"]
+
         let repository = InMemoryLibraryRepository()
 
         let reference = try #require(ScriptureReference(translationID: 123,
@@ -26,10 +29,10 @@ struct AnnotationEditorTests {
 
         let annotation1 = try #require(VerseAnnotation(reference: reference,
                                                        selectedVerses: 1...3,
-                                                       content: .note("Note content")))
+                                                       content: .note(noteContent1)))
         let annotation2 = try #require(VerseAnnotation(reference: reference,
                                                        selectedVerses: 1...3,
-                                                       content: .tags(["Tag 1", "Tag 2"])))
+                                                       content: .tags(tags)))
 
         try repository.save(annotation1)
         try repository.save(annotation2)
@@ -40,12 +43,40 @@ struct AnnotationEditorTests {
 
         annotationEditor.load()
 
-        #expect(annotationEditor.noteText.isEmpty == false)
-        #expect(annotationEditor.tags.isEmpty == false)
+        #expect(annotationEditor.noteText == noteContent1)
+        #expect(annotationEditor.tags == tags)
+    }
+
+    /// annotations outside selected range are ignored
+    @Test func rangeIsNarrowed() throws {
+        let noteContent1 = "Note content"
+        let tags = ["Tag 1", "Tag 2"]
+
+        let repository = InMemoryLibraryRepository()
+
+        let reference = try #require(ScriptureReference(translationID: 123,
+                                                        bookCode: "GEN",
+                                                        chapter: 1,
+                                                        startVerse: 1,
+                                                        endVerse: 3))
+
+        let annotation1 = try #require(VerseAnnotation(reference: reference,
+                                                       selectedVerses: 5...7,
+                                                       content: .note(noteContent1)))
+
+        try repository.save(annotation1)
+
+        let annotationEditor = AnnotationEditor(reference: reference,
+                                                selectedVerses: 1...3,
+                                                libraryRepository: repository)
+
+        annotationEditor.load()
+
+        #expect(annotationEditor.noteText.isEmpty)
     }
 
     /// a range with nothing saved loads to empty noteText and []
-    @Test func loadsEmptyWhenNothingIsSaved() async throws {
+    @Test func loadsEmptyWhenNothingIsSaved() throws {
         let repository = InMemoryLibraryRepository()
 
         let reference = try #require(ScriptureReference(translationID: 123,
@@ -60,7 +91,7 @@ struct AnnotationEditorTests {
 
         annotationEditor.load()
 
-        #expect(annotationEditor.noteText.isEmpty == true)
-        #expect(annotationEditor.tags.isEmpty == true)
+        #expect(annotationEditor.noteText.isEmpty)
+        #expect(annotationEditor.tags.isEmpty)
     }
 }
