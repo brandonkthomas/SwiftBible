@@ -163,7 +163,7 @@ struct ReaderPassageView: View {
                 fadeOutVerses(currentlyHighlightedVerses)
             }
         }
-        // trigger slight tap on selection change
+        // trigger slight haptic on selection change
         .sensoryFeedback(.selection, trigger: readerStore.selectedVerses)
     }
 

@@ -17,7 +17,7 @@ struct PassagePickerView: View {
     /// placed into the environment: .environment(readerStore))
     @Environment(ReaderStore.self) private var readerStore: ReaderStore
 
-    // MARK: Properties (Private State)
+    // MARK: Properties (Private, Computed)
 
     /// disable if we are loading OR at start of Bible
     /// - Dont check passageLoadState right now as we want to be able to quickly tap the button while loading
@@ -33,15 +33,21 @@ struct PassagePickerView: View {
         || readerStore.nextAdjacentChapterExists == false
     }
 
+    // MARK: Properties (Private, State)
+
+    @State var triggerHaptic: Bool = false
+
     // MARK: Views
 
     /// Tab bar accessory for Reader view
     var body: some View {
         HStack(spacing: 15) {
+            // Previous Chapter Button
             Button {
                 Task {
                     await readerStore.selectAdjacentChapter(.previous)
                 }
+                triggerHaptic.toggle()
             } label: {
                 Image(systemName: "chevron.left")
                     .font(.system(size: UIFontMetrics(forTextStyle: .body).scaledValue(for: 20),
@@ -50,19 +56,24 @@ struct PassagePickerView: View {
             }
             .disabled(isPrevNavigationDisabled)
             .opacity(isPrevNavigationDisabled ? 0.35 : 1)
+            // trigger slight haptic feedback on tap
+            .sensoryFeedback(.selection, trigger: triggerHaptic)
 
             Spacer()
 
+            // Actual Menu Component
+            // -- transition between this and VerseActionsView on tabBarAccessory
             menu
-            // allows transition between this and VerseActionsView on tabBarAccessory
             .transition(.blurReplace)
 
             Spacer()
 
+            // Next Chapter Button
             Button {
                 Task {
                     await readerStore.selectAdjacentChapter(.next)
                 }
+                triggerHaptic.toggle()
             } label: {
                 Image(systemName: "chevron.right")
                     .font(.system(size: UIFontMetrics(forTextStyle: .body).scaledValue(for: 20),
@@ -71,6 +82,8 @@ struct PassagePickerView: View {
             }
             .disabled(isNextNavigationDisabled)
             .opacity(isNextNavigationDisabled ? 0.35 : 1)
+            // trigger slight haptic feedback on tap
+            .sensoryFeedback(.selection, trigger: triggerHaptic)
         }
         // frame, padding, bounding
         .frame(maxWidth: .infinity, maxHeight: .infinity)

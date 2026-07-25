@@ -184,7 +184,10 @@ struct VerseActionsView: View {
 
     /// Produces a selectable circle button for a given highlight color
     private func highlightColorButton(for color: VerseAnnotationHighlightColor) -> some View {
-        Button(action: {
+        @State var triggerHaptic: Bool = false
+        let sensoryFeedback: SensoryFeedback = showEraser ? .warning : .success
+
+        return Button(action: {
             withAnimation(.snappy(duration: 0.35)) {
                 if showEraser {
                     readerStore.deleteHighlights()
@@ -192,6 +195,7 @@ struct VerseActionsView: View {
                     readerStore.save(.highlight(color))
                 }
             }
+            triggerHaptic.toggle()
         }) {
             let size = UIFontMetrics(forTextStyle: .body).scaledValue(for: 30)
             Text("")
@@ -202,6 +206,8 @@ struct VerseActionsView: View {
         }
         // blend in w/ surrounding elements
         .glassEffect(.regular.tint(color.uiColor).interactive(),in: .circle)
+        // haptic on selection
+        .sensoryFeedback(sensoryFeedback, trigger: triggerHaptic)
     }
 }
 
