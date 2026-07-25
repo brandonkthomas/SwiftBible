@@ -24,6 +24,7 @@ final class AnnotationEditor {
 
     private let libraryRepository: any LibraryRepository
 
+    // Captured in load() for later use by save()
     private var existingNoteID: UUID?
     private var existingTagsID: UUID?
 
@@ -39,6 +40,8 @@ final class AnnotationEditor {
         self.selectedVerses = selectedVerses
         self.libraryRepository = libraryRepository
     }
+
+    // MARK: Functions
 
     /// Load any existing annotation(s) for this reference (a note OR a collection of tags)
     func load() {
@@ -67,6 +70,68 @@ final class AnnotationEditor {
             return
         }
     }
+
+    /// Save current tags/note to repository.
+    ///
+    /// Clean data, upsert by ID, update AnnotationEditor private IDs
+    ///
+    /// current             existing id    action
+    /// meaningful      nil                  create (new UUID)
+    /// meaningful      set                 update (reuse that id)
+    /// empty              set                 delete
+    /// empty              nil                   nothing
+    func save() {
+        // Note
+        let cleanedNote = noteText.trimmingCharacters(in: .whitespacesAndNewlines)
+        do {
+            // for ID: update existing else insert new
+            let annotationNote = VerseAnnotation(id: existingNoteID ?? UUID(),
+                                             reference: reference,
+                                             selectedVerses: selectedVerses,
+                                             content: .note(cleanedNote))
+
+            // annotation.content.isMeaningful will always be true at this point
+            // (since VerseAnnotation.init() would otherwise fail)
+            if let annotationNote {
+                // Only save if we have valid data
+                // Else try to delete if a record exists
+                try libraryRepository.save(annotationNote)
+                self.existingNoteID = annotationNote.id
+            } else if let existingNoteID {
+                try libraryRepository.delete(existingNoteID)
+                self.existingNoteID = nil
+            }
+        } catch {
+            Self.logger.error("Unable to save note: \(error.localizedDescription)")
+        }
+
+        // Tags
+        let cleanedTags = tags
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+        do {
+            // for ID: update existing else insert new
+            let annotationTags = VerseAnnotation(id: existingTagsID ?? UUID(),
+                                             reference: reference,
+                                             selectedVerses: selectedVerses,
+                                             content: .tags(cleanedTags))
+            // annotation.content.isMeaningful will always be true at this point
+            // (since VerseAnnotation.init() would otherwise fail)
+            if let annotationTags {
+                // Only save if we have valid data
+                // Else try to delete if a record exists
+                try libraryRepository.save(annotationTags)
+                self.existingTagsID = annotationTags.id
+            } else if let existingTagsID {
+                try libraryRepository.delete(existingTagsID)
+                self.existingTagsID = nil
+            }
+        } catch {
+            Self.logger.error("Unable to save tags: \(error.localizedDescription)")
+        }
+    }
+
+    // MARK: Functions (Private)
 
     private func clearStates() {
         noteText = ""
