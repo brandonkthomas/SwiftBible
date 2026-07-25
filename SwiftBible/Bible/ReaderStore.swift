@@ -360,6 +360,46 @@ final class ReaderStore {
         self.selectedVerses = nil
     }
 
+    func selectAdjacentChapter(
+            _ direction: ChapterNavigationDirection
+        ) async {
+        guard let selectedBook,
+              let selectedChapter,
+              let bookIndex = books.firstIndex(where: {
+                  $0.id == selectedBook.id
+              }),
+              let chapterIndex = selectedBook.chapters.firstIndex(where: {
+                  $0.id == selectedChapter.id
+              }) else {
+            return
+        }
+
+        let destination: (book: Book, chapter: Chapter)?
+
+        switch direction {
+        case .previous:
+            destination = previousChapter(
+                bookIndex: bookIndex,
+                chapterIndex: chapterIndex
+            )
+        case .next:
+            destination = nextChapter(
+                bookIndex: bookIndex,
+                chapterIndex: chapterIndex
+            )
+        }
+
+        guard let destination else {
+            return
+        }
+
+        await selectBookAndChapter(
+            bookID: destination.book.id,
+            chapterID: destination.chapter.id,
+            reloadPassage: true
+        )
+    }
+
     // MARK: Functions (Load; Private)
 
     /// Load a collection of available Books;
@@ -420,6 +460,74 @@ final class ReaderStore {
         }
     }
 
+    /// Try to select the prev chapter in order w/ wrap around for prev book
+    private func previousChapter(
+        bookIndex: Int,
+        chapterIndex: Int
+    ) -> (book: Book, chapter: Chapter)? {
+        let currentBook = books[bookIndex]
+
+        // Previous chapter in current book
+        if chapterIndex > currentBook.chapters.startIndex {
+            let previousChapterIndex =
+                currentBook.chapters.index(before: chapterIndex)
+
+            return (
+                currentBook,
+                currentBook.chapters[previousChapterIndex]
+            )
+        }
+
+        // Already at first chapter of first book
+        guard bookIndex > books.startIndex else {
+            return nil
+        }
+
+        // Last chapter of previous book
+        let previousBookIndex = books.index(before: bookIndex)
+        let previousBook = books[previousBookIndex]
+
+        guard let lastChapter = previousBook.chapters.last else {
+            return nil
+        }
+
+        return (previousBook, lastChapter)
+    }
+
+    /// Try to select the next chapter in order w/ wrap around for next book
+    private func nextChapter(
+        bookIndex: Int,
+        chapterIndex: Int
+    ) -> (book: Book, chapter: Chapter)? {
+        let currentBook = books[bookIndex]
+
+        // Next chapter in current book
+        if chapterIndex < currentBook.chapters.index(before: currentBook.chapters.endIndex) {
+            let nextChapterIndex =
+                currentBook.chapters.index(after: chapterIndex)
+
+            return (
+                currentBook,
+                currentBook.chapters[nextChapterIndex]
+            )
+        }
+
+        // Already at last chapter of last book
+        guard bookIndex < books.index(before: books.endIndex) else {
+            return nil
+        }
+
+        // First chapter of next book
+        let nextBookIndex = books.index(after: bookIndex)
+        let nextBook = books[nextBookIndex]
+
+        guard let firstChapter = nextBook.chapters.first else {
+            return nil
+        }
+
+        return (nextBook, firstChapter)
+    }
+
     // MARK: Functions (State; Private)
 
     /// Clear translations, books, selections
@@ -465,4 +573,9 @@ enum ReaderLoadState: Equatable {
     case emptyBooks
     case emptyChapters
     case failed(String)
+}
+
+enum ChapterNavigationDirection {
+    case previous
+    case next
 }

@@ -92,11 +92,18 @@ struct VerseActionsView: View {
             }
 
             // Share
-            ShareLink(item: "",
-                      preview: SharePreview("", image: "AppIcon")) { // TODO: get raw text from readerStore.selectedVerses
-                Label("", systemImage: "square.and.arrow.up.fill")
+            Button(action: {
+                // TODO: open share sheet
+            }) {
+                Image(systemName: "square.and.arrow.up.fill")
                     .font(.system(size: UIFontMetrics(forTextStyle: .body).scaledValue(for: 20)))
             }
+            // SHARELINK has weird trailing space
+//            ShareLink(item: "",
+//                      preview: SharePreview("", image: "AppIcon")) { // TODO: get raw text from readerStore.selectedVerses
+//                Label("", systemImage: "square.and.arrow.up.fill")
+//                    .font(.system(size: UIFontMetrics(forTextStyle: .body).scaledValue(for: 20)))
+//            }
         }
         // font, color
         .font(.system(size: UIFontMetrics(forTextStyle: .body).scaledValue(for: 14),

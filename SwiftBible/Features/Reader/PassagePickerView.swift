@@ -17,11 +17,57 @@ struct PassagePickerView: View {
     /// placed into the environment: .environment(readerStore))
     @Environment(ReaderStore.self) private var readerStore: ReaderStore
 
+    // MARK: Properties (Private State)
+
+    @State private var isLeftButtonDisabled: Bool = false
+    @State private var isRightButtonDisabled: Bool = false
+
     // MARK: Views
 
     /// Tab bar accessory for Reader view
     var body: some View {
-        // TODO: add L/R buttons for Prev/Next chapter when expanded
+        HStack(spacing: 15) {
+            Button {
+                Task {
+                    await readerStore.selectAdjacentChapter(.previous)
+                }
+            } label: {
+                Image(systemName: "chevron.left")
+                    .font(.system(size: UIFontMetrics(forTextStyle: .body).scaledValue(for: 20),
+                                  weight: .bold))
+                    .foregroundStyle(.foreground)
+            }
+            .disabled(isLeftButtonDisabled)
+
+            Spacer()
+
+            menu
+            // allows transition between this and VerseActionsView on tabBarAccessory
+            .transition(.blurReplace)
+
+            Spacer()
+
+            Button {
+                Task {
+                    await readerStore.selectAdjacentChapter(.next)
+                }
+            } label: {
+                Image(systemName: "chevron.right")
+                    .font(.system(size: UIFontMetrics(forTextStyle: .body).scaledValue(for: 20),
+                                  weight: .bold))
+                    .foregroundStyle(.foreground)
+            }
+            .disabled(isRightButtonDisabled)
+        }
+        // frame, padding, bounding
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(EdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16))
+        .contentShape(Rectangle())
+        // allows transition between this and PassagePickerView on tabBarAccessory
+        .transition(.blurReplace)
+    }
+
+    private var menu: some View {
         Menu {
             // Books + Chapters nested menus
             Menu {
@@ -93,8 +139,6 @@ struct PassagePickerView: View {
         }
         .foregroundStyle(.primary) // Automatically adapts to light/dark
         .menuOrder(.fixed)
-        // allows transition between this and VerseActionsView on tabBarAccessory
-        .transition(.blurReplace)
     }
 
     /// TabBarAccessory label view
