@@ -84,6 +84,25 @@ final class ReaderStore {
         return selectedVerses.contains { passageHighlightColors[$0] != nil }
     }
 
+    /// Can we navigate backward by 1 chapter right now given the current selection + loaded collections?
+    var previousAdjacentChapterExists: Bool {
+        guard let selectedChapterNumber = self.selectedChapter?.number else {
+            return false
+        }
+        return selectedChapterNumber > 1
+        || self.selectedBook != self.books.first
+    }
+
+    /// Can we navigate forward by 1 chapter right now given the current selection + loaded collections?
+    var nextAdjacentChapterExists: Bool {
+        guard let selectedBook = self.selectedBook,
+              let selectedChapterNumber = self.selectedChapter?.number else {
+            return false
+        }
+        return selectedChapterNumber < selectedBook.chapters.count
+        || self.selectedBook != self.books.last
+    }
+
     // MARK: Properties (Private)
 
     /// API (Bible passage) command implementations

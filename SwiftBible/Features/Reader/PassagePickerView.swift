@@ -19,8 +19,18 @@ struct PassagePickerView: View {
 
     // MARK: Properties (Private State)
 
-    private var isNavigationDisabled: Bool {
+    /// disable if we are loading OR at start of Bible
+    /// - Dont check passageLoadState right now as we want to be able to quickly tap the button while loading
+    private var isPrevNavigationDisabled: Bool {
         readerStore.loadState != .loaded //  || readerStore.passageLoadState != .loaded
+        || readerStore.previousAdjacentChapterExists == false
+    }
+
+    /// disable if we are loading OR at end of Bible
+    /// - Dont check passageLoadState right now as we want to be able to quickly tap the button while loading
+    private var isNextNavigationDisabled: Bool {
+        readerStore.loadState != .loaded //  || readerStore.passageLoadState != .loaded
+        || readerStore.nextAdjacentChapterExists == false
     }
 
     // MARK: Views
@@ -38,8 +48,8 @@ struct PassagePickerView: View {
                                   weight: .bold))
                     .foregroundStyle(.foreground)
             }
-            .disabled(isNavigationDisabled)
-            .opacity(isNavigationDisabled ? 0.45 : 1)
+            .disabled(isPrevNavigationDisabled)
+            .opacity(isPrevNavigationDisabled ? 0.35 : 1)
 
             Spacer()
 
@@ -59,8 +69,8 @@ struct PassagePickerView: View {
                                   weight: .bold))
                     .foregroundStyle(.foreground)
             }
-            .disabled(isNavigationDisabled)
-            .opacity(isNavigationDisabled ? 0.45 : 1)
+            .disabled(isNextNavigationDisabled)
+            .opacity(isNextNavigationDisabled ? 0.35 : 1)
         }
         // frame, padding, bounding
         .frame(maxWidth: .infinity, maxHeight: .infinity)
