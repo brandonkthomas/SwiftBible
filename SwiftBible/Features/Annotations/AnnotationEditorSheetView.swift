@@ -43,7 +43,7 @@ struct AnnotationEditorSheetView: View {
 
     ///
     private var visibleTags: [String] {
-        isCollapsed ? editor.tags : ["tag1", "tag2"] // tagVocabulary
+        isCollapsed ? editor.tags : editor.tagVocabulary
     }
 
     // MARK: Views

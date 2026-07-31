@@ -251,4 +251,57 @@ struct AnnotationEditorTests {
 
         #expect(annotations.count == 1)
     }
+
+    /// Seed annotations on different verse ranges with overlapping tags
+    ///  say "Faith" three times, "Creation" once, "creation" once
+    ///  then load() and assert:
+    ///  tagVocabulary starts with "Faith" (highest count),
+    ///     contains no case-duplicate of Creation,
+    ///     and has exactly 2 entries
+    @Test func tagVocabularyPopulatesAsExpected() throws {
+        let repository = InMemoryLibraryRepository()
+
+        let reference = try #require(ScriptureReference(translationID: 123,
+                                                        bookCode: "GEN",
+                                                        chapter: 1,
+                                                        startVerse: 1,
+                                                        endVerse: 3))
+
+        let annotation1 = try #require(VerseAnnotation(reference: reference,
+                                                       selectedVerses: 1...3,
+                                                       content: .tags(["Faith"])))
+
+        // Faith appears 3 times (across different ranges) → highest count.
+        let annotation2 = try #require(VerseAnnotation(reference: reference,
+                                                       selectedVerses: 5...7,
+                                                       content: .tags(["Faith"])))
+        let annotation3 = try #require(VerseAnnotation(reference: reference,
+                                                       selectedVerses: 9...11,
+                                                       content: .tags(["Faith"])))
+
+        // "Creation" and "creation" normalize to the same key → one entry, count 2.
+        // "Creation" is saved first, so its display spelling wins.
+        let annotation4 = try #require(VerseAnnotation(reference: reference,
+                                                       selectedVerses: 13...13,
+                                                       content: .tags(["Creation"])))
+        let annotation5 = try #require(VerseAnnotation(reference: reference,
+                                                       selectedVerses: 15...15,
+                                                       content: .tags(["creation"])))
+
+        try repository.save(annotation1)
+        try repository.save(annotation2)
+        try repository.save(annotation3)
+        try repository.save(annotation4)
+        try repository.save(annotation5)
+
+        let annotationEditor = AnnotationEditor(reference: reference,
+                                                selectedVerses: 1...3,
+                                                libraryRepository: repository)
+
+        annotationEditor.load()
+
+        #expect(annotationEditor.tagVocabulary[0] == "Faith")
+        #expect(!annotationEditor.tagVocabulary.contains { $0 == "creation" })
+        #expect(annotationEditor.tagVocabulary.count == 2)
+    }
 }

@@ -20,6 +20,15 @@ final class AnnotationEditor {
     var noteText: String = ""
     var tags: [String] = []
 
+    /// Do we have any valid input that would allow us to call save()?
+    var canSave: Bool {
+        !noteText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        || tags
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+            .count > 0
+    }
+
     // MARK: Properties (Private)
 
     private let libraryRepository: any LibraryRepository
@@ -27,6 +36,11 @@ final class AnnotationEditor {
     // Captured in load() for later use by save()
     private var existingNoteID: UUID?
     private var existingTagsID: UUID?
+
+    /// Every tag currently used in the library
+    ///
+    /// (set): Only AnnotationEditor can write -- equivalent to C# {get;private set;}
+    private(set) var tagVocabulary: [String] = []
 
     /// OS Logging
     private static let logger = Logger(subsystem: "SwiftBible", category: "AnnotationEditor")
@@ -48,6 +62,7 @@ final class AnnotationEditor {
         clearStates()
         
         do {
+            // Load annotations & parse any existing tags/notes
             let annotations = try libraryRepository.annotations(for: reference)
             let rangeAnnotations = annotations.filter { $0.verseRange == selectedVerses }
 
@@ -65,6 +80,29 @@ final class AnnotationEditor {
                     break
                 }
             }
+
+            // Assign flattened tags to local vocabulary
+            let flatNames = try libraryRepository.allAnnotations().flatMap { annotation -> [String] in
+                guard case .tags(let names) = annotation.content else { return [] }
+                return names
+            }
+
+            var displayByKey: [String: String] = [:]
+            var countByKey: [String: Int] = [:]
+
+            for name in flatNames {
+                let key = StoredTag.normalize(name)
+                guard !key.isEmpty else { continue }
+
+                countByKey[key, default: 0] += 1    // count every occurrence
+                if displayByKey[key] == nil {       // keep first display spelling
+                    displayByKey[key] = name.trimmingCharacters(in: .whitespacesAndNewlines)
+                }
+            }
+
+            tagVocabulary = countByKey
+                .sorted { ($0.value, $1.key) > ($1.value, $0.key) } // most-used first
+                .compactMap { displayByKey[$0.key] } // key => display name
         } catch {
             Self.logger.error("Unable to load annotations: \(error.localizedDescription)")
             return
@@ -138,5 +176,6 @@ final class AnnotationEditor {
         tags = []
         existingNoteID = nil
         existingTagsID = nil
+        tagVocabulary = []
     }
 }
