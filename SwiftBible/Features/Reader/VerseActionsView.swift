@@ -92,7 +92,16 @@ struct VerseActionsView: View {
 
             // Tags/Note
             Button(action: {
-                // TODO: open AnnotationEditorSheetView
+//                guard let selectedReference = readerStore.selectedReference,
+//                      let selectedVerses = readerStore.selectedVerses else {
+//                    return
+//                }
+//                let editor = AnnotationEditor(reference: selectedReference,
+//                                              selectedVerses: selectedVerses,
+//                                              libraryRepository: libraryRepository)
+//                AnnotationEditorSheetView(editor: editor)
+//                    .presentationDetents([.medium, .large])
+//                    .presentationContentInteraction(.automatic)
             }) {
                 Image(systemName: "bookmark.fill")
                     .font(.system(size: UIFontMetrics(forTextStyle: .body).scaledValue(for: 20)))

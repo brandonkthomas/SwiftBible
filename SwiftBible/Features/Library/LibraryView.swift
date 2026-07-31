@@ -31,13 +31,22 @@ struct LibraryView: View {
     ///
     var body: some View {
         NavigationStack {
-            // List of items
-            libraryListView
-                // Filter bar
-                .safeAreaInset(edge: .top, spacing: 5) {
-                    filterBarChipsView
+            Group {
+                if libraryStore.annotations.count == 0 {
+                    ContentUnavailableView(
+                        "No Annotations",
+                        systemImage: "bookmark",
+                        description: Text("Tap verses to annotate them.")
+                    )
+                } else {
+                    // List of items
+                    libraryListView
+                        // Filter bar
+                        .safeAreaInset(edge: .top, spacing: 5) {
+                            filterBarChipsView
+                        }
                 }
-
+            }
             // Navigation view modifiers
             .navigationTitle("Saved")
             .navigationSubtitle("\(libraryStore.annotations.count) Annotation\(libraryStore.annotations.count == 1 ? "" : "s")")
