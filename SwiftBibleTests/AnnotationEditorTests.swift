@@ -305,7 +305,7 @@ struct AnnotationEditorTests {
         #expect(annotationEditor.tagVocabulary.count == 2)
     }
 
-    ///
+    /// Tag selection normalizes identity while preserving display spelling
     @Test func tagSubscriptNormalizesAndRemoves() throws {
         let repository = InMemoryLibraryRepository()
 
