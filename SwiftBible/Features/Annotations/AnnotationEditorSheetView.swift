@@ -20,14 +20,19 @@ struct AnnotationEditorSheetView: View {
     /// for sheet close button
     @Environment(\.dismiss) private var dismiss
 
-    @FocusState private var isNoteFocused: Bool
-
-    private var isCollapsed: Bool { isNoteFocused }
-
+    /// Namespace for liquid glass effect on tag chips
     @Namespace private var tagChipBarNamespace
 
-    // MARK: Properties (Computed)
+    private enum FocusedField: Hashable {
+        case note
+        case newTag
+    }
+    /// Which field is focused right now (if any) -- note / new tag?
+    @FocusState private var focusedField: FocusedField?
 
+    // MARK: Properties (Computed, Private)
+
+    /// Title for this view (TODO:  Genesis 1:1-3)
     private var sheetTitle: String {
         //        guard let bookAndChapter = passage.referenceBookAndChapterDisplayName else {
         return "Notes & Tags"
@@ -35,15 +40,16 @@ struct AnnotationEditorSheetView: View {
         //        return "\(bookAndChapter):\(verseRange.displayText)"
     }
 
+    /// TODO: calculate based on width (if tags will go off screen, split into 2 rows; else show 1)
     private var rows: [GridItem] {
-        isCollapsed
-        ? [GridItem(.fixed(36))]
-        : [GridItem(.fixed(36)), GridItem(.fixed(36))]
+//        isCollapsed ? [GridItem(.fixed(36))] : [GridItem(.fixed(36)), GridItem(.fixed(36))]
+        [GridItem(.fixed(36)), GridItem(.fixed(36))]
     }
 
     ///
     private var visibleTags: [String] {
-        isCollapsed ? editor.tags : editor.tagVocabulary
+//        isCollapsed ? editor.tags : editor.tagVocabulary
+        editor.tagVocabulary
     }
 
     // MARK: Views
@@ -75,7 +81,7 @@ struct AnnotationEditorSheetView: View {
                 // padding before glassEffect (glass wraps padded field)
                 .padding()
                 .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 16))
-                .focused($isNoteFocused)
+                .focused($focusedField, equals: .note)
             }
             .font(.system(.body, design: .serif))
             // inset on top/bottom
@@ -103,9 +109,10 @@ struct AnnotationEditorSheetView: View {
                     .disabled(!editor.canSave)
                 }
             }
-            // load on open
+            // load on open; focus Note field
             .task {
                 editor.load()
+                focusedField = .note
             }
         }
     }
@@ -139,6 +146,7 @@ struct AnnotationEditorSheetView: View {
         .font(.system(size: 12, weight: .semibold))
     }
 
+    ///
     private func tagBinding(for tag: String) -> Binding<Bool> {
         return Binding(get: {
             editor.tags.contains(tag)
@@ -151,6 +159,8 @@ struct AnnotationEditorSheetView: View {
         })
     }
 }
+
+// MARK: Xcode Canvas Previews
 
 private extension AnnotationEditor {
     static func previewEditor() -> AnnotationEditor {

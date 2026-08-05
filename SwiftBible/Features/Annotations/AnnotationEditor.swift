@@ -9,15 +9,22 @@ import Foundation
 import OSLog
 
 /// Underlying model binding for AnnotationEditorSheetView
+///
+/// Identifiable: AnnotationEditor is one editing session;
+///  SwiftUI needs to distinguish "no session" from "present this specific session"
 @Observable
-final class AnnotationEditor {
+final class AnnotationEditor: Identifiable {
 
     // MARK: Properties (Public)
 
+    /// What passage reference does this annotation apply to?
     let reference: ScriptureReference
+    /// Which verses are selected (what does this annotation apply to)?
     let selectedVerses: ClosedRange<Int>
 
+    /// Sheet session's editable/entered note
     var noteText: String = ""
+    /// Sheet session's selected tag set
     var tags: [String] = []
 
     /// Do we have any valid input that would allow us to call save()?
@@ -53,6 +60,38 @@ final class AnnotationEditor {
         self.reference = reference
         self.selectedVerses = selectedVerses
         self.libraryRepository = libraryRepository
+    }
+
+    // MARK: Subscripts (Tags)
+
+    subscript(tagIsSelected tag: String) -> Bool {
+        get {
+            // Is a tag with the same normalized form selected?
+            tags.contains {
+                StoredTag.normalize($0) == StoredTag.normalize(tag)
+            }
+        }
+        set {
+            // ignore if normalized value is empty
+            let normalizedTag = StoredTag.normalize(tag)
+            guard !normalizedTag.isEmpty else {
+                return
+            }
+
+            // When adding, store the whitespace-trimmed display spelling
+            let cleanedTag = tag.trimmingCharacters(in: .whitespacesAndNewlines)
+
+            // add OR remove
+            if newValue {
+                // Don't append if an equivalent normalized tag already exists
+                // add one cleaned display value unless already present
+                if self[tagIsSelected: cleanedTag] == false {
+                    tags.append(cleanedTag)
+                }
+            } else {
+                tags.removeAll(where: { StoredTag.normalize($0) == normalizedTag })
+            }
+        }
     }
 
     // MARK: Functions

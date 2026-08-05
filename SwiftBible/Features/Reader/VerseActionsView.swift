@@ -23,13 +23,12 @@ struct VerseActionsView: View {
     /// Used for Liquid Glass effects in highlight popover
     @Namespace private var highlightColorPopoverNamespace
 
-//    /// Read appEnvironment.libraryRepository environment value from current view environment
-//    ///
-//    /// Don't need "\." here because this is a type-based lookup for an observable instance
-//    /// placed into the environment: .environment(readerStore))
-//    @Environment(\.libraryRepository) private var libraryRepository: any LibraryRepository
-
     // MARK: Properties (Private, State)
+
+    /// AnnotationEditor session:
+    /// if nil, nothing selected;
+    /// if non-nil, we have an existing session and need to open AnnotationEditorSheetView
+    @State private var annotationEditor: AnnotationEditor?
 
     @State private var isHighlightPopoverPresented: Bool = false
     @State private var showEraser: Bool = false
@@ -92,16 +91,8 @@ struct VerseActionsView: View {
 
             // Tags/Note
             Button(action: {
-//                guard let selectedReference = readerStore.selectedReference,
-//                      let selectedVerses = readerStore.selectedVerses else {
-//                    return
-//                }
-//                let editor = AnnotationEditor(reference: selectedReference,
-//                                              selectedVerses: selectedVerses,
-//                                              libraryRepository: libraryRepository)
-//                AnnotationEditorSheetView(editor: editor)
-//                    .presentationDetents([.medium, .large])
-//                    .presentationContentInteraction(.automatic)
+                // build an instance + assign it here so that the .sheet() listener fires
+                annotationEditor = readerStore.makeAnnotationEditor()
             }) {
                 Image(systemName: "bookmark.fill")
                     .font(.system(size: UIFontMetrics(forTextStyle: .body).scaledValue(for: 20)))
@@ -146,6 +137,12 @@ struct VerseActionsView: View {
             if readerStore.selectedVerses != nil {
                 showEraser = newValue
             }
+        }
+        // Fire AnnotationEditorSheetView when $annotationEditor instance is assigned
+        .sheet(item: $annotationEditor) { editor in
+            AnnotationEditorSheetView(editor: editor)
+                .presentationDetents([.medium, .large])
+                .presentationContentInteraction(.automatic)
         }
     }
 

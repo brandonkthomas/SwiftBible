@@ -419,6 +419,20 @@ final class ReaderStore {
         )
     }
 
+    /// Build AnnotationEditor session from the current ReaderStore's selections
+    func makeAnnotationEditor() -> AnnotationEditor? {
+        guard let reference = self.selectedReference,
+              let verses = self.selectedVerses else {
+            return nil
+        }
+
+        return AnnotationEditor(
+            reference: reference,
+            selectedVerses: verses,
+            libraryRepository: self.libraryRepository
+        )
+    }
+
     // MARK: Functions (Load; Private)
 
     /// Load a collection of available Books;

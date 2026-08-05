@@ -304,4 +304,35 @@ struct AnnotationEditorTests {
         #expect(!annotationEditor.tagVocabulary.contains { $0 == "creation" })
         #expect(annotationEditor.tagVocabulary.count == 2)
     }
+
+    ///
+    @Test func tagSubscriptNormalizesAndRemoves() throws {
+        let repository = InMemoryLibraryRepository()
+
+        let reference = try #require(ScriptureReference(translationID: 123,
+                                                        bookCode: "GEN",
+                                                        chapter: 1,
+                                                        startVerse: 1,
+                                                        endVerse: 3))
+
+        let annotationEditor = AnnotationEditor(reference: reference,
+                                                selectedVerses: 1...3,
+                                                libraryRepository: repository)
+
+        annotationEditor.load()
+
+        annotationEditor[tagIsSelected: " Faith "] = true
+        #expect(annotationEditor.tags == ["Faith"])
+        #expect(annotationEditor[tagIsSelected: "faith"] == true)
+
+        annotationEditor[tagIsSelected: "FAITH"] = true
+        #expect(annotationEditor.tags == ["Faith"])
+        #expect(annotationEditor[tagIsSelected: "faith"] == true)
+
+        annotationEditor[tagIsSelected: " faith "] = false
+        #expect(annotationEditor.tags.isEmpty)
+
+        annotationEditor[tagIsSelected: " "] = true
+        #expect(annotationEditor.tags.isEmpty)
+    }
 }
