@@ -166,7 +166,7 @@ struct LibraryView: View {
                                systemImage: "tag.fill")
                 chipButtonView(for: .note,
                                text: "Notes",
-                               systemImage: "bookmark.fill")
+                               systemImage: "text.alignleft")
             }
             .shadow(color: Color.gray.opacity(0.1), radius: 5)
         }
