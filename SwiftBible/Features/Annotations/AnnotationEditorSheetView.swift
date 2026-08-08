@@ -135,28 +135,15 @@ struct AnnotationEditorSheetView: View {
     /// Individual builder for a single filter bar button
     private func tagChipButtonView(tag: String) -> some View {
         Toggle(tag,
-               isOn: tagBinding(for: tag))
+               isOn: $editor[tagIsSelected: tag])
         .toggleStyle(.button)
         .buttonStyle(.glass)
         .glassEffectID(tag, in: tagChipBarNamespace)
         .animation(
             .timingCurve(0.25, 1, 0.67, 0.93, duration: 0.15),
-            value: editor.tags.contains(tag)
+            value: editor[tagIsSelected: tag]
         )
         .font(.system(size: 12, weight: .semibold))
-    }
-
-    ///
-    private func tagBinding(for tag: String) -> Binding<Bool> {
-        return Binding(get: {
-            editor.tags.contains(tag)
-        }, set: {
-            if $0 {
-                editor.tags.append(tag)
-            } else {
-                editor.tags.removeAll(where: { $0 == tag })
-            }
-        })
     }
 }
 
