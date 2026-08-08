@@ -30,6 +30,11 @@ struct AnnotationEditorSheetView: View {
     /// Which field is focused right now (if any) -- note / new tag?
     @FocusState private var focusedField: FocusedField?
 
+    /// Are we currently creating a new tag using the UI?
+    @State private var isCreatingTag = false
+    /// What is our new tag's text (temporary)?
+    @State private var newTagText = ""
+
     // MARK: Properties (Computed, Private)
 
     /// Title for this view (TODO:  Genesis 1:1-3)
@@ -48,8 +53,10 @@ struct AnnotationEditorSheetView: View {
 
     ///
     private var visibleTags: [String] {
-//        isCollapsed ? editor.tags : editor.tagVocabulary
-        editor.tagVocabulary
+        editor.tags
+        + editor.tagVocabulary.filter {
+            !editor[tagIsSelected: $0]
+        }
     }
 
     // MARK: Views
@@ -59,7 +66,7 @@ struct AnnotationEditorSheetView: View {
             VStack(alignment: .leading, spacing: 16) {
                 // Tags section
                 Label("TAGS", systemImage: "tag")
-                    .font(.caption)
+                    .font(.system(size: 11, weight: .regular, design: .serif))
                     .foregroundStyle(.secondary)
 
                 tagChipsView
@@ -68,10 +75,10 @@ struct AnnotationEditorSheetView: View {
 
                 // Note section
                 Label("NOTE", systemImage: "text.alignleft")
-                    .font(.caption)
+                    .font(.system(size: 11, weight: .regular, design: .serif))
                     .foregroundStyle(.secondary)
 
-                TextField("Write a note about this passage…",
+                TextField("Write a note about this passage...",
                           text: $editor.noteText,
                           axis: .vertical)
                 .onSubmit {
@@ -122,11 +129,74 @@ struct AnnotationEditorSheetView: View {
         GlassEffectContainer(spacing: 8) {
             ScrollView(.horizontal, showsIndicators: false) {
                 LazyHGrid(rows: rows, alignment: .top, spacing: 8) {
+                    if isCreatingTag {
+                        // Create tag input
+                        // TODO: show right-most plus button (for saving)
+                        // TODO: set isCreatingTag=false when focusing Note TextInput (to collapse this)
+                        // TODO: transition is instant rather than liquid glass morph between Button and TextField
+                        TextField("Enter tag name...",
+                                  text: $newTagText)
+                        // Style
+                        .lineLimit(1)
+                        .font(.system(size: 12, weight: .semibold, design: .serif))
+//                        .submitLabel(.done)
+                        .submitLabel(.next)
+                        // Style -- frame (
+                        .frame(minWidth: 140)
+                        // padding before glassEffect (glass wraps padded field)
+                        .padding(EdgeInsets(top: 7, leading: 10, bottom: 7, trailing: 10))
+                        // Share glass container
+                        .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 16))
+                        .glassEffectID("+ Tag", in: tagChipBarNamespace)
+                        // Focus / animation
+                        .animation(
+                            .timingCurve(0.25, 1, 0.67, 0.93, duration: 0.15),
+                            value: isCreatingTag
+                        )
+                        .focused($focusedField, equals: .newTag)
+                        .task {
+                            focusedField = .newTag
+                        }
+                        // Submission
+                        .onSubmit(submitNewTag)
+
+                        Button("Add Tag", systemImage: "checkmark", action: submitNewTag)
+                            .labelStyle(.iconOnly)
+                    } else {
+                        // Create tag button
+                        Button {
+                            isCreatingTag = true
+                        } label: {
+                            HStack {
+                                Image(systemName: "plus")
+                                Text("Tag")
+                            }
+                        }
+                        // Style
+                        .buttonStyle(.glass)
+                        .font(.system(size: 12, weight: .semibold, design: .serif))
+                        // Style -- Outline border
+                        // ???
+                        // Share glass container
+                        .glassEffectID("+ Tag", in: tagChipBarNamespace)
+                        // Animation
+                        .animation(
+                            .timingCurve(0.25, 1, 0.67, 0.93, duration: 0.15),
+                            value: isCreatingTag
+                        )
+                    }
+
+                    // Existing tags
                     ForEach(visibleTags, id: \.self) { tag in
                         tagChipButtonView(tag: tag)
                     }
                 }
                 .padding(.horizontal, 4)
+//                .onChange(of: focusedField) { _, newField in
+//                    if newField == .note {
+//                        isCreatingTag = false
+//                    }
+//                }
             }
             .shadow(color: Color.gray.opacity(0.1), radius: 5)
         }
@@ -136,14 +206,31 @@ struct AnnotationEditorSheetView: View {
     private func tagChipButtonView(tag: String) -> some View {
         Toggle(tag,
                isOn: $editor[tagIsSelected: tag])
+        // Style
         .toggleStyle(.button)
         .buttonStyle(.glass)
+        // Share glass container
         .glassEffectID(tag, in: tagChipBarNamespace)
         .animation(
             .timingCurve(0.25, 1, 0.67, 0.93, duration: 0.15),
             value: editor[tagIsSelected: tag]
         )
-        .font(.system(size: 12, weight: .semibold))
+        .font(.system(size: 12, weight: .semibold, design: .serif))
+    }
+
+    // MARK: Functions (Private)
+
+    /// Submit a newly entered tag + manage button/focus state
+    private func submitNewTag() {
+        // update editor.tags
+        editor[tagIsSelected: newTagText] = true
+        guard editor[tagIsSelected: newTagText] == true else {
+            return
+        }
+        // reset state
+        newTagText = ""
+        focusedField = .note
+        isCreatingTag = false
     }
 }
 
