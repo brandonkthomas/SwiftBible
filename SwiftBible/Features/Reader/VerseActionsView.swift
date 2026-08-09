@@ -141,7 +141,7 @@ struct VerseActionsView: View {
         // Fire AnnotationEditorSheetView when $annotationEditor instance is assigned
         .sheet(item: $annotationEditor) { editor in
             AnnotationEditorSheetView(editor: editor)
-                .presentationSizing(.fitted)
+                .presentationDragIndicator(.visible)
         }
     }
 

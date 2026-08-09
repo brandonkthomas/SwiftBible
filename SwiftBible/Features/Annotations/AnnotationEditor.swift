@@ -28,12 +28,19 @@ final class AnnotationEditor: Identifiable {
     var tags: [String] = []
 
     /// Do we have any valid input that would allow us to call save()?
+    ///
+    /// Enabled when current content is meaningful OR an existing note/tag record
+    /// was loaded (let user clear last note/tag + commit that deletion)
     var canSave: Bool {
+        hasMeaningfulContent
+        || existingNoteID != nil
+        || existingTagsID != nil
+    }
+
+    /// Is there any non-empty note text or tag right now?
+    private var hasMeaningfulContent: Bool {
         !noteText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-        || tags
-            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-            .filter { !$0.isEmpty }
-            .count > 0
+        || tags.contains { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
     }
 
     // MARK: Properties (Private)

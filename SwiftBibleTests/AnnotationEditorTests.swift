@@ -335,4 +335,38 @@ struct AnnotationEditorTests {
         annotationEditor[tagIsSelected: " "] = true
         #expect(annotationEditor.tags.isEmpty)
     }
+
+    /// Save stays enabled after clearing the only persisted tag; so deletion can be committed
+    /// New/empty editor w/ no existing records cannot save
+    @Test func canSaveWhenClearingExistingTag() throws {
+        let repository = InMemoryLibraryRepository()
+
+        let reference = try #require(ScriptureReference(translationID: 123,
+                                                        bookCode: "GEN",
+                                                        chapter: 1,
+                                                        startVerse: 1,
+                                                        endVerse: 3))
+
+        let annotation = try #require(VerseAnnotation(reference: reference,
+                                                      selectedVerses: 1...3,
+                                                      content: .tags(["Faith"])))
+        try repository.save(annotation)
+
+        let annotationEditor = AnnotationEditor(reference: reference,
+                                                selectedVerses: 1...3,
+                                                libraryRepository: repository)
+
+        annotationEditor.load()
+        // Deselect the only tag-- note is empty but an existing tags record was loaded
+        annotationEditor[tagIsSelected: "Faith"] = false
+        #expect(annotationEditor.tags.isEmpty)
+        #expect(annotationEditor.canSave)
+
+        // New editor w/ no content + no existing records cannot save
+        let emptyEditor = AnnotationEditor(reference: reference,
+                                           selectedVerses: 20...21,
+                                           libraryRepository: repository)
+        emptyEditor.load()
+        #expect(!emptyEditor.canSave)
+    }
 }

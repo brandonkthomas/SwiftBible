@@ -20,9 +20,6 @@ struct AnnotationEditorSheetView: View {
     /// for sheet close button
     @Environment(\.dismiss) private var dismiss
 
-    /// Namespace for liquid glass effect on tag chips
-    @Namespace private var tagChipBarNamespace
-
     private enum FocusedField: Hashable {
         case note
         case newTag
@@ -35,23 +32,29 @@ struct AnnotationEditorSheetView: View {
     /// What is our new tag's text (temporary)?
     @State private var newTagText = ""
 
+    /// Measured height of sheet content (used for fit-to-content detent)
+    /// NavigationStack always wants to fill, so `.presentationSizing(.fitted)`
+    /// can't shrink sheet; measuring content and pinning `.height` detent is ideal way to wrap
+    /// to content while keeping native chrome
+    @State private var contentHeight: CGFloat = 320
+
+    /// Shared animation for tag chip selection/reflow
+    private let glassMorph: Animation = .smooth(duration: 0.3)
+
     // MARK: Properties (Computed, Private)
 
-    /// Title for this view (TODO:  Genesis 1:1-3)
+    /// Title for this view (TODO: friendly "Genesis 1:1-3" once metadata join is done)
     private var sheetTitle: String {
-        //        guard let bookAndChapter = passage.referenceBookAndChapterDisplayName else {
-        return "Notes & Tags"
-        //        }
-        //        return "\(bookAndChapter):\(verseRange.displayText)"
+        "Notes & Tags"
     }
 
     /// TODO: calculate based on width (if tags will go off screen, split into 2 rows; else show 1)
     private var rows: [GridItem] {
-//        isCollapsed ? [GridItem(.fixed(36))] : [GridItem(.fixed(36)), GridItem(.fixed(36))]
         [GridItem(.fixed(36)), GridItem(.fixed(36))]
     }
 
-    ///
+    /// Order: selected, vocab
+    /// Filter by selection to avoid showing dupes
     private var visibleTags: [String] {
         editor.tags
         + editor.tagVocabulary.filter {
@@ -81,9 +84,6 @@ struct AnnotationEditorSheetView: View {
                 TextField("Write a note about this passage...",
                           text: $editor.noteText,
                           axis: .vertical)
-                .onSubmit {
-                    // ...
-                }
                 .lineLimit(1...8)
                 // padding before glassEffect (glass wraps padded field)
                 .padding()
@@ -91,27 +91,31 @@ struct AnnotationEditorSheetView: View {
                 .focused($focusedField, equals: .note)
             }
             .font(.system(.body, design: .serif))
-            // inset on top/bottom
-            .padding(EdgeInsets(top: 4, leading: 24, bottom: 0, trailing: 24))
-            // sheet title
-            // TODO: set to
+            .padding(EdgeInsets(top: 4, leading: 20, bottom: 16, trailing: 20))
+            // Measure padded content so sheet can hug it; add fixed allowance for inline navigation bar
+            .onGeometryChange(for: CGFloat.self) { proxy in
+                proxy.size.height
+            } action: { height in
+                contentHeight = height + navigationBarAllowance
+            }
             .navigationTitle(sheetTitle)
             .navigationBarTitleDisplayMode(.inline)
-            // toolbar for NavigationStack (for Close button)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button(action: {
+                    Button {
                         dismiss()
-                    }) {
-                        Label("Close", systemImage: "xmark")
+                    } label: {
+                        Label("Cancel", systemImage: "xmark")
+                            .labelStyle(.iconOnly)
                     }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button(action: {
+                    Button {
                         editor.save()
                         dismiss()
-                    }) {
+                    } label: {
                         Label("Save", systemImage: "checkmark")
+                            .labelStyle(.iconOnly)
                     }
                     .disabled(!editor.canSave)
                 }
@@ -121,116 +125,148 @@ struct AnnotationEditorSheetView: View {
                 editor.load()
                 focusedField = .note
             }
-        }
-    }
-
-    /// Filter bar chips view
-    private var tagChipsView: some View {
-        GlassEffectContainer(spacing: 8) {
-            ScrollView(.horizontal, showsIndicators: false) {
-                LazyHGrid(rows: rows, alignment: .top, spacing: 8) {
-                    if isCreatingTag {
-                        // Create tag input
-                        // TODO: show right-most plus button (for saving)
-                        // TODO: set isCreatingTag=false when focusing Note TextInput (to collapse this)
-                        // TODO: transition is instant rather than liquid glass morph between Button and TextField
-                        TextField("Enter tag name...",
-                                  text: $newTagText)
-                        // Style
-                        .lineLimit(1)
-                        .font(.system(size: 12, weight: .semibold, design: .serif))
-//                        .submitLabel(.done)
-                        .submitLabel(.next)
-                        // Style -- frame (
-                        .frame(minWidth: 140)
-                        // padding before glassEffect (glass wraps padded field)
-                        .padding(EdgeInsets(top: 7, leading: 10, bottom: 7, trailing: 10))
-                        // Share glass container
-                        .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 16))
-                        .glassEffectID("+ Tag", in: tagChipBarNamespace)
-                        // Focus / animation
-                        .animation(
-                            .timingCurve(0.25, 1, 0.67, 0.93, duration: 0.15),
-                            value: isCreatingTag
-                        )
-                        .focused($focusedField, equals: .newTag)
-                        .task {
-                            focusedField = .newTag
-                        }
-                        // Submission
-                        .onSubmit(submitNewTag)
-
-                        Button("Add Tag", systemImage: "checkmark", action: submitNewTag)
-                            .labelStyle(.iconOnly)
-                    } else {
-                        // Create tag button
-                        Button {
-                            isCreatingTag = true
-                        } label: {
-                            HStack {
-                                Image(systemName: "plus")
-                                Text("Tag")
-                            }
-                        }
-                        // Style
-                        .buttonStyle(.glass)
-                        .font(.system(size: 12, weight: .semibold, design: .serif))
-                        // Style -- Outline border
-                        // ???
-                        // Share glass container
-                        .glassEffectID("+ Tag", in: tagChipBarNamespace)
-                        // Animation
-                        .animation(
-                            .timingCurve(0.25, 1, 0.67, 0.93, duration: 0.15),
-                            value: isCreatingTag
-                        )
-                    }
-
-                    // Existing tags
-                    ForEach(visibleTags, id: \.self) { tag in
-                        tagChipButtonView(tag: tag)
-                    }
+            // Triggered when focus leaves tag input; morph input back into +Tag chip
+            // Handle here to guarantee note is first responder (avoid keyboard drops)
+            .onChange(of: focusedField) { _, newValue in
+                if newValue != .newTag, isCreatingTag {
+                    isCreatingTag = false
                 }
-                .padding(.horizontal, 4)
-//                .onChange(of: focusedField) { _, newField in
-//                    if newField == .note {
-//                        isCreatingTag = false
-//                    }
-//                }
             }
-            .shadow(color: Color.gray.opacity(0.1), radius: 5)
+        }
+        // Hug the measured content instead of using a large/medium detent.
+        .presentationDetents([.height(contentHeight)])
+    }
+
+    /// Fixed vertical allowance for inline navigation bar drawn above content (title row/padding)
+    private let navigationBarAllowance: CGFloat = 60
+
+    /// Horizontally scrollable, two-row tag chip bar
+    ///
+    /// No `GlassEffectContainer`: we coordinate/morph glass shapes of children, so swapping
+    /// small "+ Tag" capsule for wider input capsule produced a ghosting smear
+    /// Each chip keeps its own `.glassEffect`; without GlassEffectContainer, swap is instant
+    private var tagChipsView: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            LazyHGrid(rows: rows, alignment: .top, spacing: 8) {
+                // "+ Tag" cell which swaps to an inline text field
+                addTagCell
+
+                // Existing / suggested tags
+                ForEach(visibleTags, id: \.self) { tag in
+                    tagChipButtonView(tag: tag)
+                }
+            }
+            .padding(.horizontal, 4)
+            .padding(.vertical, 2)
         }
     }
 
-    /// Individual builder for a single filter bar button
+    /// One grid cell: either "+ Tag" chip or inline tag input
+    /// Shared-`glassEffectID` morph cross-faded both views at once (flickered)
+    @ViewBuilder
+    private var addTagCell: some View {
+        if isCreatingTag {
+            tagInputField
+        } else {
+            addTagButton
+        }
+    }
+
+    /// collapsed "+ Tag" chip
+    private var addTagButton: some View {
+        Button {
+            // Only reveal here
+            // Focusing is field's .onAppear; setting `focusedField = .newTag` now would target
+            // field that doesnt exist yet which causes SwiftUI to drop the request
+            isCreatingTag = true
+        } label: {
+            HStack(spacing: 4) {
+                Image(systemName: "plus")
+                Text("Tag")
+            }
+            .font(.system(size: 12, weight: .semibold, design: .serif))
+            .padding(.horizontal, 14)
+            .padding(.vertical, 8)
+        }
+        .buttonStyle(.plain)
+        .glassEffect(.regular.interactive(), in: .capsule)
+    }
+
+    /// inline tag input
+    /// Single line field plus circular blue add button together in one glass capsule
+    /// Fixed width keeps cell from collapsing LazyHGrid
+    private var tagInputField: some View {
+        HStack(spacing: 6) {
+            TextField("New tag", text: $newTagText)
+                .font(.system(size: 12, weight: .semibold, design: .serif))
+                .textInputAutocapitalization(.words)
+                .autocorrectionDisabled()
+                .submitLabel(.done)
+                .focused($focusedField, equals: .newTag)
+                .frame(width: 140)
+                .onSubmit(submitNewTag)
+                // Focus once field is actually in hierarchy AND ready to accept first responder
+                // onAppear alone fires too early (field exists but can't respond yet, so request
+                // is dropped)
+                // Async hop moves set to next runloop (transfer responder immediately)
+                .onAppear {
+                    DispatchQueue.main.async { focusedField = .newTag }
+                }
+
+            // Add button
+            Button(action: submitNewTag) {
+                Image(systemName: "plus")
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundStyle(.white)
+                    .frame(width: 24, height: 24)
+                    .background(Circle().fill(.blue))
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(EdgeInsets(top: 6, leading: 14, bottom: 6, trailing: 6))
+        .glassEffect(.regular.interactive(), in: .capsule)
+    }
+
+    /// One tag chip
+    /// Selected chips shown w/ "x"
+    /// Tapping toggles selection with the shared morph animation so chips reflow smoothly
     private func tagChipButtonView(tag: String) -> some View {
-        Toggle(tag,
-               isOn: $editor[tagIsSelected: tag])
-        // Style
-        .toggleStyle(.button)
-        .buttonStyle(.glass)
-        // Share glass container
-        .glassEffectID(tag, in: tagChipBarNamespace)
-        .animation(
-            .timingCurve(0.25, 1, 0.67, 0.93, duration: 0.15),
-            value: editor[tagIsSelected: tag]
-        )
-        .font(.system(size: 12, weight: .semibold, design: .serif))
+        let isSelected = editor[tagIsSelected: tag]
+
+        return Button {
+            withAnimation(glassMorph) {
+                editor[tagIsSelected: tag] = !isSelected
+            }
+        } label: {
+            HStack(spacing: 4) {
+                Text(tag)
+                if isSelected {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 9, weight: .bold))
+                }
+            }
+            .font(.system(size: 12, weight: .semibold, design: .serif))
+            .foregroundStyle(isSelected ? Color.white : Color.primary)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+        }
+        .buttonStyle(.plain)
+        .glassEffect(isSelected
+                     ? .regular.tint(.brown).interactive()
+                     : .regular.interactive(),
+                     in: .capsule)
     }
 
     // MARK: Functions (Private)
 
-    /// Submit a newly entered tag + manage button/focus state
+    /// Commit typed tag, then hand first responder back to Note
+    ///
+    /// Collapsing input back to "+ Tag" chip is done by body's `.onChange(of: focusedField)`
+    /// once Note has focus (avoid keyboard drops / race condition)
     private func submitNewTag() {
-        // update editor.tags
         editor[tagIsSelected: newTagText] = true
-        guard editor[tagIsSelected: newTagText] == true else {
-            return
-        }
-        // reset state
         newTagText = ""
         focusedField = .note
-        isCreatingTag = false
     }
 }
 
