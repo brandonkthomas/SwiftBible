@@ -214,7 +214,7 @@ struct AnnotationEditorSheetView: View {
                 Image(systemName: "plus")
                     .font(.system(size: 13, weight: .bold))
                     .foregroundStyle(.white)
-                    .frame(width: 24, height: 24)
+                    .frame(width: 18, height: 18)
                     .background(Circle().fill(.blue))
             }
             .buttonStyle(.plain)
