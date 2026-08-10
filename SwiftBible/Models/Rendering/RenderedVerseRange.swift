@@ -19,10 +19,12 @@ nonisolated struct RenderedVerseRange: Identifiable, Equatable, Hashable {
     let endVerse: Int?
 
     /// Computed verse range display string
+    ///
+    /// i.e. "1" or "1-2"
     var displayText: String {
         var end: String = ""
         if let endVerse = endVerse {
-            end = "-\(endVerse)"
+            end = "–\(endVerse)"
         }
         return "\(startVerse)\(end)"
     }

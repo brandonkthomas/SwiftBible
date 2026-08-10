@@ -67,6 +67,7 @@ final class ReaderStore {
         }
     }
 
+    /// i.e. "Genesis 1"
     var selectedReferenceFriendlyName: String? {
         guard let selectedBook,
               let selectedChapter else {
@@ -101,6 +102,19 @@ final class ReaderStore {
         }
         return selectedChapterNumber < selectedBook.chapters.count
         || self.selectedBook != self.books.last
+    }
+
+    /// i.e. "Genesis 1:1-3"
+    var selectedVerseReferenceFriendlyName: String? {
+        guard let selectedReferenceFriendlyName,
+              let selectedVerses else {
+            return nil
+        }
+
+        let range = RenderedVerseRange(startVerse: selectedVerses.lowerBound,
+                                       endVerse: selectedVerses.upperBound == selectedVerses.lowerBound ? nil : selectedVerses.upperBound)
+
+        return "\(selectedReferenceFriendlyName):\(range.displayText)"
     }
 
     // MARK: Properties (Private)

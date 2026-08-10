@@ -15,6 +15,9 @@ struct AnnotationEditorSheetView: View {
     // @State is only used when this view would be creating the object
     @Bindable var editor: AnnotationEditor
 
+    let sheetTitle: String
+    let translationAbbreviation: String
+
     // MARK: Properties (Private)
 
     /// for sheet close button
@@ -42,11 +45,6 @@ struct AnnotationEditorSheetView: View {
     private let glassMorph: Animation = .smooth(duration: 0.3)
 
     // MARK: Properties (Computed, Private)
-
-    /// Title for this view (TODO: friendly "Genesis 1:1-3" once metadata join is done)
-    private var sheetTitle: String {
-        "Notes & Tags"
-    }
 
     /// Order: selected, vocab
     /// Filter by selection to avoid showing dupes
@@ -94,6 +92,7 @@ struct AnnotationEditorSheetView: View {
                 contentHeight = height + navigationBarAllowance
             }
             .navigationTitle(sheetTitle)
+            .navigationSubtitle(translationAbbreviation)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -350,5 +349,7 @@ private extension AnnotationEditor {
 }
 
 #Preview {
-    AnnotationEditorSheetView(editor: .previewEditor())
+    AnnotationEditorSheetView(editor: .previewEditor(),
+                              sheetTitle: "Sheet Title",
+                              translationAbbreviation: "ABC")
 }

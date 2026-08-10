@@ -140,7 +140,9 @@ struct VerseActionsView: View {
         }
         // Fire AnnotationEditorSheetView when $annotationEditor instance is assigned
         .sheet(item: $annotationEditor) { editor in
-            AnnotationEditorSheetView(editor: editor)
+            AnnotationEditorSheetView(editor: editor,
+                                      sheetTitle: readerStore.selectedVerseReferenceFriendlyName ?? "Notes & Tags",
+                                      translationAbbreviation: readerStore.selectedTranslation?.abbreviation ?? "")
                 .presentationDragIndicator(.visible)
         }
     }

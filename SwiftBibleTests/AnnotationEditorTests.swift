@@ -362,6 +362,9 @@ struct AnnotationEditorTests {
         #expect(annotationEditor.tags.isEmpty)
         #expect(annotationEditor.canSave)
 
+        annotationEditor.save()
+        #expect(try repository.annotations(for: reference).count == 0)
+
         // New editor w/ no content + no existing records cannot save
         let emptyEditor = AnnotationEditor(reference: reference,
                                            selectedVerses: 20...21,
