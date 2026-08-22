@@ -15,9 +15,7 @@ struct ReaderStoreTests {
 
     /// ReaderStore initial loadState = idle & selectedReference = nil
     @Test func readerStoreStartsIdle() {
-        let repository = FakeBibleRepository()
-        let store = ReaderStore(repository: repository,
-                                libraryRepository: InMemoryLibraryRepository())
+        let store = readerStore()
 
         #expect(store.loadState == .idle)
         #expect(store.selectedReference == nil)
@@ -25,9 +23,7 @@ struct ReaderStoreTests {
 
     /// Loading translations should select the first translation, book, and chapter.
     @Test func loadTranslationsSelectsInitialReferences() async {
-        let repository = FakeBibleRepository()
-        let store = ReaderStore(repository: repository,
-                                libraryRepository: InMemoryLibraryRepository())
+        let store = readerStore()
 
         await store.loadTranslationsAndBooks(languageTag: "en")
 
@@ -51,6 +47,7 @@ struct ReaderStoreTests {
     @Test func loadTranslationsWithBookWithoutChaptersStopsAtEmptyChapters() async {
         let repository = FakeBibleRepository(books: FakeBibleRepository.booksWithoutChapters)
         let store = ReaderStore(repository: repository,
+                                catalogStore: BibleCatalogStore(repository: repository),
                                 libraryRepository: InMemoryLibraryRepository())
 
         await store.loadTranslationsAndBooks(languageTag: "en")
@@ -66,6 +63,7 @@ struct ReaderStoreTests {
     @Test func noTranslationsReturned() async {
         let repository = FakeBibleRepository(translations: [])
         let store = ReaderStore(repository: repository,
+                                catalogStore: BibleCatalogStore(repository: repository),
                                 libraryRepository: InMemoryLibraryRepository())
 
         await store.loadTranslationsAndBooks(languageTag: "en")
@@ -81,6 +79,7 @@ struct ReaderStoreTests {
     @Test func noBooksReturned() async {
         let repository = FakeBibleRepository(books: [])
         let store = ReaderStore(repository: repository,
+                                catalogStore: BibleCatalogStore(repository: repository),
                                 libraryRepository: InMemoryLibraryRepository())
 
         await store.loadTranslationsAndBooks(languageTag: "en")
@@ -96,6 +95,7 @@ struct ReaderStoreTests {
     @Test func selectionsClearedOnLoadTranslationsThrow() async {
         let repository = FakeBibleRepository(throwWhenLoadingTranslations: true)
         let store = ReaderStore(repository: repository,
+                                catalogStore: BibleCatalogStore(repository: repository),
                                 libraryRepository: InMemoryLibraryRepository())
 
         await store.loadTranslationsAndBooks(languageTag: "en")
@@ -113,9 +113,7 @@ struct ReaderStoreTests {
     /// selectBookAndChapter() functions as intended
     /// (persists selected book/chapter IDs to store's selectedBook and selectedChapter fields)
     @Test func selectBookAndChapterSucceeds() async {
-        let repository = FakeBibleRepository()
-        let store = ReaderStore(repository: repository,
-                                libraryRepository: InMemoryLibraryRepository())
+        let store = readerStore()
 
         #expect(store.selectedReference == nil)
 
@@ -149,25 +147,21 @@ struct ReaderStoreTests {
 
     /// loadSelectedPassage() functions as intended
     @Test func loadSelectedPassageSucceeds() async {
-        let repository = FakeBibleRepository()
-        let readerStore = ReaderStore(repository: repository,
-                                      libraryRepository: InMemoryLibraryRepository())
+        let store = readerStore()
 
-        await readerStore.loadTranslationsAndBooks(languageTag: "en")
+        await store.loadTranslationsAndBooks(languageTag: "en")
 
-        await readerStore.loadSelectedPassage()
+        await store.loadSelectedPassage()
 
-        #expect(readerStore.passageLoadState == .loaded)
-        #expect(readerStore.selectedPassage?.id == "GEN.1")
-        #expect(readerStore.selectedPassage?.htmlContent.isEmpty == false)
+        #expect(store.passageLoadState == .loaded)
+        #expect(store.selectedPassage?.id == "GEN.1")
+        #expect(store.selectedPassage?.htmlContent.isEmpty == false)
     }
 
     /// load passage, change chapter/book, verify selectedPassage becomes nil
     /// and passageLoadState becomes idle again
     @Test func changeSelectedChapterInvalidatesSelectedPassage() async {
-        let repository = FakeBibleRepository()
-        let store = ReaderStore(repository: repository,
-                                libraryRepository: InMemoryLibraryRepository())
+        let store = readerStore()
 
         await store.loadTranslationsAndBooks(languageTag: "en")
 
@@ -187,9 +181,7 @@ struct ReaderStoreTests {
 
     /// single verse selection is properly reflected in .selectedVerses
     @Test func singleVerseSelectionCreatesSingleVerseRange() {
-        let repository = FakeBibleRepository()
-        let store = ReaderStore(repository: repository,
-                                libraryRepository: InMemoryLibraryRepository())
+        let store = readerStore()
 
         store.handleVerseSelection(startVerse: 5, endVerse: nil)
         #expect(store.selectedVerses == 5...5)
@@ -197,9 +189,7 @@ struct ReaderStoreTests {
 
     /// Selecting a verse further forward in the range extends .selectedVerses forward
     @Test func forwardSelectionExtendsUpperRange() {
-        let repository = FakeBibleRepository()
-        let store = ReaderStore(repository: repository,
-                                libraryRepository: InMemoryLibraryRepository())
+        let store = readerStore()
 
         store.selectedVerses = 5...5
         store.handleVerseSelection(startVerse: 8, endVerse: nil)
@@ -208,9 +198,7 @@ struct ReaderStoreTests {
 
     /// Selecting a verse further backward in the range extends .selectedVerses backward
     @Test func backwardSelectionExtendsLowerRange() {
-        let repository = FakeBibleRepository()
-        let store = ReaderStore(repository: repository,
-                                libraryRepository: InMemoryLibraryRepository())
+        let store = readerStore()
 
         store.selectedVerses = 5...5
         store.handleVerseSelection(startVerse: 2, endVerse: nil)
@@ -219,9 +207,7 @@ struct ReaderStoreTests {
 
     /// Selecting a verse inside the current range shrinks the current range to only the tapped verse
     @Test func selectionChangeInsideCurrentRangeCollapsesSelection() {
-        let repository = FakeBibleRepository()
-        let store = ReaderStore(repository: repository,
-                                libraryRepository: InMemoryLibraryRepository())
+        let store = readerStore()
 
         store.selectedVerses = 3...8
         store.handleVerseSelection(startVerse: 5, endVerse: nil)
@@ -230,9 +216,7 @@ struct ReaderStoreTests {
 
     /// Selecting a verse where the current range matches identically sets .selectedVerses to nil
     @Test func selectingCurrentRangeExactlyDeselects() {
-        let repository = FakeBibleRepository()
-        let store = ReaderStore(repository: repository,
-                                libraryRepository: InMemoryLibraryRepository())
+        let store = readerStore()
 
         store.selectedVerses = 5...5
         store.handleVerseSelection(startVerse: 5, endVerse: nil)
@@ -242,10 +226,7 @@ struct ReaderStoreTests {
     /// Saving a highlight via the save() method successfully saves to LibraryRepository
     /// then updates the ReaderStore's passageHighlightColors dict
     @Test func savingHighlightsPersistsToStore() async {
-        let repository = FakeBibleRepository()
-        let store = ReaderStore(repository: repository,
-                                libraryRepository: InMemoryLibraryRepository())
-
+        let store = readerStore()
         await store.loadTranslationsAndBooks()
 
         store.selectedVerses = 1...1
@@ -257,10 +238,7 @@ struct ReaderStoreTests {
     /// Saving a highlight via the save() method successfully saves to LibraryRepository
     /// then updates the ReaderStore's passageHighlightColors dict
     @Test func deletingHighlightsPersistsToStore() async {
-        let repository = FakeBibleRepository()
-        let store = ReaderStore(repository: repository,
-                                libraryRepository: InMemoryLibraryRepository())
-
+        let store = readerStore()
         await store.loadTranslationsAndBooks()
 
         store.selectedVerses = 1...1
@@ -269,5 +247,14 @@ struct ReaderStoreTests {
         store.selectedVerses = 1...1
         store.deleteHighlights()
         #expect(store.passageHighlightColors.count == 0)
+    }
+    
+    // MARK: Functions (Private)
+    
+    private func readerStore() -> ReaderStore {
+        let repository = FakeBibleRepository()
+        return ReaderStore(repository: repository,
+                           catalogStore: BibleCatalogStore(repository: repository),
+                           libraryRepository: InMemoryLibraryRepository())
     }
 }

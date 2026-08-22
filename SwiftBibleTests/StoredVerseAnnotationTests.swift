@@ -140,15 +140,10 @@ struct StoredVerseAnnotationTests {
             StoredTag.self
         ]
         
-        do {
-            let schema: Schema = .init(typesToRegister)
-            let modelConfiguration = ModelConfiguration(schema: schema,
-                                                        isStoredInMemoryOnly: true)
-            return try ModelContainer(for: schema,
-                                      configurations: [modelConfiguration])
-        } catch {
-            // generic
-            assertionFailure("Failed to initialize ModelContainer: \(error.localizedDescription)")
-        }
+        let schema: Schema = .init(typesToRegister)
+        let modelConfiguration = ModelConfiguration(schema: schema,
+                                                    isStoredInMemoryOnly: true)
+        return try ModelContainer(for: schema,
+                                  configurations: [modelConfiguration])
     }
 }

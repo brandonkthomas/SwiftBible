@@ -16,8 +16,7 @@ import OSLog
 ///  immediately by all observers.
 ///
 /// Owns:
-/// - available translations
-/// - selected translation
+/// - selected translation (available translations owned by BibleCatalogStore)
 /// - available books for that translation
 /// - selected book
 /// - selected chapter
@@ -35,7 +34,9 @@ final class ReaderStore {
     var passageLoadState: PassageLoadState = .idle
 
     // Collections
-    var translations: [Translation] = []
+    var translations: [Translation] {
+        catalogStore.translations
+    }
     var books: [Book] = []
 
     // Selections
@@ -121,6 +122,9 @@ final class ReaderStore {
 
     /// API (Bible passage) command implementations
     private let repository: BibleRepository
+    
+    /// Authority for all available Translations
+    private let catalogStore: BibleCatalogStore
 
     /// User storage command implementations
     private let libraryRepository: any LibraryRepository
@@ -134,8 +138,10 @@ final class ReaderStore {
     // MARK: Init
 
     init(repository: BibleRepository,
+         catalogStore: BibleCatalogStore,
          libraryRepository: LibraryRepository) {
         self.repository = repository
+        self.catalogStore = catalogStore
         self.libraryRepository = libraryRepository
     }
 
@@ -158,8 +164,7 @@ final class ReaderStore {
         self.loadState = .loading
 
         do {
-            let translations = try await repository.translations(languageTag: languageTag)
-            self.translations = translations
+            try await catalogStore.loadTranslations(languageTag: languageTag)
 
             // ensure there's at least one translation
             guard let firstTranslation = self.translations.first else {
@@ -178,11 +183,11 @@ final class ReaderStore {
         }
     }
 
-    /// If translation ID exists in store, select it and reload self.books + self.chapters
-    func selectTranslationAndReloadAll(id: Int) async {
+    /// If translation ID exists in catalogStore, select it and reload self.books + self.chapters
+    func selectTranslationAndReloadAll(id: Translation.ID) async {
         Self.logger.debug("ENTRY ReaderStore.selectTranslationAndReloadAll(id: \(id, privacy: .public))")
 
-        guard let requestedTranslation = self.translations.first(where: { $0.id == id }) else {
+        guard let requestedTranslation = catalogStore.translation(for: id) else {
             return
         }
 
@@ -589,7 +594,6 @@ final class ReaderStore {
     /// Clear translations + selectedTranslation
     private func clearTranslationStates() {
         Self.logger.debug("ENTRY ReaderStore.clearTranslationStates()")
-        self.translations = []
         self.selectedTranslation = nil
     }
 

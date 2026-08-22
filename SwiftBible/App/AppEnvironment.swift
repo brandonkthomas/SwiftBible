@@ -22,6 +22,7 @@ final class AppEnvironment {
     // MARK: Properties
 
     let readerStore: ReaderStore
+    let catalogStore: BibleCatalogStore
     let libraryStore: LibraryStore
 
     let appConfiguration: AppConfiguration
@@ -67,11 +68,14 @@ final class AppEnvironment {
             preconditionFailure("Missing YOUVERSION_APP_KEY in bundled Secrets.plist")
         }
 
-        let repository = YouVersionBibleRepository(apiKey: apiKey,
+        let bibleRepository = YouVersionBibleRepository(apiKey: apiKey,
                                                    baseURL: appConfiguration.youVersionBaseURL,
                                                    urlSession: .shared)
 
-        self.readerStore = ReaderStore(repository: repository,
+        self.catalogStore = BibleCatalogStore(repository: bibleRepository)
+        
+        self.readerStore = ReaderStore(repository: bibleRepository,
+                                       catalogStore: catalogStore,
                                        libraryRepository: libraryRepository)
 
         // LibraryStore

@@ -291,6 +291,7 @@ struct ReaderPassageView: View {
     let repository = FakeBibleRepository()
 
     let readerStore = ReaderStore(repository: repository,
+                                  catalogStore: BibleCatalogStore(repository: repository),
                                   libraryRepository: PreviewFixtures.seededLibraryRepository())
 
     // Drive the real load path so passageHighlightColors is populated exactly as

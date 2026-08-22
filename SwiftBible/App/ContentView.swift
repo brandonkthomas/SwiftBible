@@ -56,6 +56,7 @@ struct ContentView: View {
 #Preview("Loaded") {
     let repository = FakeBibleRepository()
     let readerStore = ReaderStore(repository: repository,
+                                  catalogStore: BibleCatalogStore(repository: repository),
                                   libraryRepository: PreviewFixtures.seededLibraryRepository())
 
     ContentView()
@@ -65,6 +66,7 @@ struct ContentView: View {
 #Preview("Failed") {
     let repository = FakeBibleRepository(throwWhenLoadingTranslations: true)
     let readerStore = ReaderStore(repository: repository,
+                                  catalogStore: BibleCatalogStore(repository: repository),
                                   libraryRepository: InMemoryLibraryRepository())
 
     ContentView()
@@ -74,6 +76,7 @@ struct ContentView: View {
 #Preview("No Translations") {
     let repository = FakeBibleRepository(translations: [])
     let readerStore = ReaderStore(repository: repository,
+                                  catalogStore: BibleCatalogStore(repository: repository),
                                   libraryRepository: InMemoryLibraryRepository())
 
     ContentView()
@@ -83,6 +86,7 @@ struct ContentView: View {
 #Preview("No Books") {
     let repository = FakeBibleRepository(books: [])
     let readerStore = ReaderStore(repository: repository,
+                                  catalogStore: BibleCatalogStore(repository: repository),
                                   libraryRepository: InMemoryLibraryRepository())
 
     ContentView()
@@ -92,6 +96,7 @@ struct ContentView: View {
 #Preview("No Chapters") {
     let repository = FakeBibleRepository(books: FakeBibleRepository.booksWithoutChapters)
     let readerStore = ReaderStore(repository: repository,
+                                  catalogStore: BibleCatalogStore(repository: repository),
                                   libraryRepository: InMemoryLibraryRepository())
 
     ContentView()
@@ -101,6 +106,7 @@ struct ContentView: View {
 #Preview("Loading") {
     let repository = FakeBibleRepository(forceLoadingState: true)
     let readerStore = ReaderStore(repository: repository,
+                                  catalogStore: BibleCatalogStore(repository: repository),
                                   libraryRepository: InMemoryLibraryRepository())
 
     ContentView()
