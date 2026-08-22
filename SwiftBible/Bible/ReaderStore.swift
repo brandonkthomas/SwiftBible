@@ -8,7 +8,7 @@
 import Observation
 import OSLog
 
-/// Flow: BibleRepository -> ReaderStore -> ReaderView / picker UI
+/// Flow: BibleRepository & BibleCatalogStore -> ReaderStore -> ReaderView / picker UI
 ///
 /// final: cannot be subclassed; buys us shared, mutable, observable state
 ///  (when compared to a struct)
@@ -147,8 +147,7 @@ final class ReaderStore {
 
     // MARK: Functions
 
-    /// Load a collection of available Translations w/ optional languageTag filter;
-    /// set self.translations to results
+    /// Ask catalogStore to load a collection of available Translations w/ optional languageTag filter
     func loadTranslationsAndBooks(languageTag: String? = "en") async {
         Self.logger.debug("ENTRY ReaderStore.loadTranslationsAndBooks(languageTag: \(languageTag ?? "nil", privacy: .public))")
 
@@ -591,7 +590,7 @@ final class ReaderStore {
         clearPassageStates()
     }
 
-    /// Clear translations + selectedTranslation
+    /// Clear selectedTranslation
     private func clearTranslationStates() {
         Self.logger.debug("ENTRY ReaderStore.clearTranslationStates()")
         self.selectedTranslation = nil
