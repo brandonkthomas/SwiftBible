@@ -73,7 +73,7 @@ final class AppEnvironment {
                                                    urlSession: .shared)
 
         self.catalogStore = BibleCatalogStore(repository: bibleRepository)
-        
+
         self.readerStore = ReaderStore(repository: bibleRepository,
                                        catalogStore: catalogStore,
                                        libraryRepository: libraryRepository)

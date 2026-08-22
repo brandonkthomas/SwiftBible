@@ -122,7 +122,7 @@ final class ReaderStore {
 
     /// API (Bible passage) command implementations
     private let repository: BibleRepository
-    
+
     /// Authority for all available Translations
     private let catalogStore: BibleCatalogStore
 

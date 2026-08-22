@@ -248,9 +248,9 @@ struct ReaderStoreTests {
         store.deleteHighlights()
         #expect(store.passageHighlightColors.count == 0)
     }
-    
+
     // MARK: Functions (Private)
-    
+
     private func readerStore() -> ReaderStore {
         let repository = FakeBibleRepository()
         return ReaderStore(repository: repository,
