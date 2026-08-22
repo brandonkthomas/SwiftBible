@@ -17,11 +17,9 @@ import OSLog
 ///
 /// Owns:
 /// - selected translation (available translations owned by BibleCatalogStore)
-/// - available books for that translation
-/// - selected book
+/// - selected book for the selected translation (available books owned by BibleCatalogStore)
 /// - selected chapter
-/// - loading state
-/// - error state
+/// - loading / error states
 /// - selected verse range (tap-to-select and take action)
 /// - TODO: last-read restoration
 @Observable
@@ -30,16 +28,25 @@ final class ReaderStore {
     // MARK: Properties
 
     // State
+    
     var loadState: ReaderLoadState = .idle
     var passageLoadState: PassageLoadState = .idle
 
-    // Collections
+    // Calculated Collections (owned by BibleCatalogStore)
+    
     var translations: [Translation] {
         catalogStore.translations
     }
-    var books: [Book] = []
+    
+    var books: [Book] {
+        guard let selectedTranslation else {
+            return []
+        }
+        return catalogStore.books(for: selectedTranslation.id) ?? []
+    }
 
     // Selections
+    
     var selectedTranslation: Translation?
 
     var selectedBook: Book?
@@ -453,11 +460,8 @@ final class ReaderStore {
 
     // MARK: Functions (Load; Private)
 
-    /// Load a collection of available Books;
-    /// set self.books to results;
+    /// Load a collection of available Books via BibleCatalogStore;
     /// select first chapter
-    ///
-    /// Private for now unless needed externally
     private func loadBooks() async {
         Self.logger.debug("ENTRY ReaderStore.loadBooks()")
 
@@ -466,8 +470,8 @@ final class ReaderStore {
         }
 
         do {
-            let books = try await repository.books(for: selectedTranslation.id)
-            self.books = books
+            // load via BibleCatalogStore
+            try await catalogStore.loadBooks(for: selectedTranslation.id)
 
             // ensure there's at least one book
             guard let firstBook = self.books.first else {
@@ -581,7 +585,7 @@ final class ReaderStore {
 
     // MARK: Functions (State; Private)
 
-    /// Clear translations, books, selections
+    /// Clear selections, load/error states, highlight colors
     /// (loadState not modified)
     private func clearAllStates() {
         Self.logger.debug("ENTRY ReaderStore.clearAllStates()")
@@ -596,10 +600,9 @@ final class ReaderStore {
         self.selectedTranslation = nil
     }
 
-    /// Clear books + selectedBook + selectedChapter
+    /// Clear selectedBook + selectedChapter
     private func clearBookAndChapterStates() {
         Self.logger.debug("ENTRY ReaderStore.clearBookAndChapterStates()")
-        self.books = []
         self.selectedBook = nil
         self.selectedChapter = nil
     }
