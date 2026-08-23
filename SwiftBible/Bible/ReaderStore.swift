@@ -475,7 +475,7 @@ final class ReaderStore {
 
             // ensure there's at least one book
             guard let firstBook = self.books.first else {
-                clearBookAndChapterStates()
+                clearBookChapterAndPassageStates()
                 self.loadState = .emptyBooks
                 return
             }
@@ -484,7 +484,7 @@ final class ReaderStore {
 
             // ensure there's at least one chapter
             guard let firstChapter = firstBook.chapters.first else {
-                clearBookAndChapterStates()
+                clearBookChapterAndPassageStates()
                 self.loadState = .emptyChapters
                 return
             }
@@ -493,7 +493,7 @@ final class ReaderStore {
             self.loadState = .loaded // done
         } catch {
             // TODO: log exception
-            clearBookAndChapterStates()
+            clearBookChapterAndPassageStates()
             self.loadState = .failed("Unable to load books and chapters.")
         }
     }
@@ -590,8 +590,7 @@ final class ReaderStore {
     private func clearAllStates() {
         Self.logger.debug("ENTRY ReaderStore.clearAllStates()")
         clearTranslationStates()
-        clearBookAndChapterStates()
-        clearPassageStates()
+        clearBookChapterAndPassageStates()
     }
 
     /// Clear selectedTranslation
@@ -600,11 +599,15 @@ final class ReaderStore {
         self.selectedTranslation = nil
     }
 
-    /// Clear selectedBook + selectedChapter
-    private func clearBookAndChapterStates() {
-        Self.logger.debug("ENTRY ReaderStore.clearBookAndChapterStates()")
+    /// Clear selectedBook, selectedChapter, selectedVerses, selectedPassage, selectedRenderedPassage,
+    /// passageLoadState, passageHighlightColors
+    private func clearBookChapterAndPassageStates() {
+        Self.logger.debug("ENTRY ReaderStore.clearBookChapterPassageStates()")
+        // book / chapter
         self.selectedBook = nil
         self.selectedChapter = nil
+        // passage
+        clearPassageStates()
     }
 
     /// Clear selectedPassage + passageLoadState

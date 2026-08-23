@@ -248,6 +248,47 @@ struct ReaderStoreTests {
         store.deleteHighlights()
         #expect(store.passageHighlightColors.count == 0)
     }
+    
+    /// if book load fails, old passage information should be cleared
+    @Test func failedBookReloadClearsStalePassageState() async {
+        let repository = FakeBibleRepository()
+        let store = ReaderStore(repository: repository,
+                                catalogStore: BibleCatalogStore(repository: repository),
+                                libraryRepository: InMemoryLibraryRepository())
+        
+        await store.loadTranslationsAndBooks(languageTag: "en")
+        await store.loadSelectedPassage()
+        
+        #expect(store.passageLoadState == .loaded)
+        #expect(store.selectedPassage?.id == "GEN.1")
+        
+        store.selectedVerses = 1...1
+        
+        // now we need to simulate a failure
+        repository.throwWhenLoadingBooks = true
+        
+        guard let translationID = store.selectedTranslation?.id else {
+            Issue.record("Expected an initially selected translation")
+            return
+        }
+        
+        // loadTranslationsAndBooks wont work again here since it guards state != .loaded;
+        // use this method instead for subsequent book loads
+        await store.selectTranslationAndReloadAll(id: translationID)
+        
+        if case .failed = store.loadState {
+            // expect to fail
+        } else {
+            Issue.record("Expected loadState to be failed")
+        }
+        #expect(store.selectedBook == nil)
+        #expect(store.selectedChapter == nil)
+        #expect(store.selectedPassage == nil)
+        #expect(store.selectedRenderedPassage == nil)
+        #expect(store.selectedVerses == nil)
+        #expect(store.passageLoadState == .idle)
+        #expect(store.passageHighlightColors.isEmpty)
+    }
 
     // MARK: Functions (Private)
 

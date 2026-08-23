@@ -21,22 +21,26 @@ final class FakeBibleRepository: BibleRepository {
     private let passages: [PassageFixture]
     private let throwWhenLoadingTranslations: Bool
     private let forceLoadingState: Bool
+    
+    var throwWhenLoadingBooks: Bool
 
     init(translations: [Translation] = FakeBibleRepository.defaultTranslations,
          books: [Book] = FakeBibleRepository.defaultBooks,
          passages: [PassageFixture] = FakeBibleRepository.defaultPassages,
          throwWhenLoadingTranslations: Bool = false,
+         throwWhenLoadingBooks: Bool = false,
          forceLoadingState: Bool = false) {
         self.translations = translations
         self.books = books
         self.passages = passages
         self.throwWhenLoadingTranslations = throwWhenLoadingTranslations
+        self.throwWhenLoadingBooks = throwWhenLoadingBooks
         self.forceLoadingState = forceLoadingState
     }
 
     func translations(languageTag: String?) async throws -> [Translation] {
         if throwWhenLoadingTranslations {
-            throw TestError.testError("Test Error thrown.")
+            throw TestError.testError("Test Error thrown for Translations.")
         }
 
         if forceLoadingState {
@@ -47,6 +51,10 @@ final class FakeBibleRepository: BibleRepository {
     }
 
     func books(for translationID: Translation.ID) async throws -> [Book] {
+        if throwWhenLoadingBooks {
+            throw TestError.testError("Test Error thrown for Books.")
+        }
+        
         return books
     }
 
