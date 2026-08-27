@@ -10,22 +10,30 @@ import SwiftUI
 struct LibraryRowView: View {
 
     var annotation: VerseAnnotation
+    let passageLabel: String
+    let translationLabel: String
 
     var body: some View {
         // build this annotation into a card
         VStack(alignment: .leading, spacing: 10) {
             // Chapter / verse range / translation
             HStack {
-                let vr = RenderedVerseRange(startVerse: annotation.startVerse,
-                                            endVerse: annotation.endVerse)
-                Text("\(annotation.bookCode) \(annotation.chapter):\(vr.displayText)")
+                Text(passageLabel)
                     .font(.system(.headline))
-                Text(annotation.translationID.description)
+                Text(translationLabel)
                     .font(.system(.body))
             }
 
             // TODO: Verse rendered text
+//            let passage = try! PassageHTMLParser().parse(html: FakeBibleRepository.footnotePassageHTML)
+//            PassageTextRenderer.text(for: passage.runs(for: verseRange),
+//                                          mode: .inline)
             Text("\(annotation)")
+
+            Divider()
+
+            // Annotation type
+            annotationItemContent(for: annotation)
 
             Divider()
 
@@ -49,6 +57,17 @@ struct LibraryRowView: View {
         .shadow(color: .black.opacity(0.08), radius: 4, y: 2)
     }
 
+    private func annotationItemContent(for annotation: VerseAnnotation) -> some View {
+        switch annotation.content {
+        case .highlight(let color):
+            Text(color.rawValue)
+        case .note(let noteText):
+            Text(noteText)
+        case .tags(let tags):
+            Text(tags.joined(separator: ", "))
+        }
+    }
+
     private func annotationItemType(for annotation: VerseAnnotation) -> some View {
         HStack {
             switch annotation.content {
@@ -69,10 +88,10 @@ struct LibraryRowView: View {
                 switch annotation.content {
                 case .highlight:
                     Text("Highlight")
-                case .note(let note):
-                    Text(note)
+                case .note(_):
+                    Text("Note")
                 case .tags(let tags):
-                    Text(tags.joined(separator: ", "))
+                    Text("Tag\(tags.count == 1 ? "" : "s")")
                 }
             }
             .font(.system(.subheadline))
@@ -109,9 +128,15 @@ struct LibraryRowView: View {
 
 #Preview {
     VStack(spacing: 16) {
-        LibraryRowView(annotation: PreviewFixtures.sampleHighlightAnnotation)
-        LibraryRowView(annotation: PreviewFixtures.sampleNoteAnnotation)
-        LibraryRowView(annotation: PreviewFixtures.sampleTagsAnnotation)
+        LibraryRowView(annotation: PreviewFixtures.sampleHighlightAnnotation,
+                       passageLabel: "Genesis 1:1",
+                       translationLabel: "NIV")
+        LibraryRowView(annotation: PreviewFixtures.sampleNoteAnnotation,
+                       passageLabel: "Genesis 1:1–2",
+                       translationLabel: "NIV")
+        LibraryRowView(annotation: PreviewFixtures.sampleTagsAnnotation,
+                       passageLabel: "Genesis 1:1–3",
+                       translationLabel: "NIV")
     }
     .padding()
     .background(Color(.systemGroupedBackground))

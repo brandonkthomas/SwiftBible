@@ -17,6 +17,8 @@ struct LibraryView: View {
     /// placed into the environment: .environment(readerStore))
     @Environment(LibraryStore.self) private var libraryStore: LibraryStore
 
+    @Environment(BibleCatalogStore.self) private var catalogStore: BibleCatalogStore
+
     @Environment(\.editMode) private var editMode
 
     @State private var isInEditMode: Bool = false
@@ -24,9 +26,6 @@ struct LibraryView: View {
     @Namespace private var chipBarNamespace
 
     // MARK: Views
-
-    //                        PassageTextRenderer.text(for: passage.runs(for: verseRange),
-    //                                                      mode: .inline)
 
     ///
     var body: some View {
@@ -64,7 +63,19 @@ struct LibraryView: View {
     var libraryListView: some View {
         List {
             ForEach(libraryStore.filteredAnnotations) { annotation in
-                LibraryRowView(annotation: annotation)
+                let translation = catalogStore.translation(for: annotation.translationID)
+
+                let book = catalogStore.book(for: annotation.translationID,
+                                             bookCode: annotation.bookCode)
+
+                let range = RenderedVerseRange(startVerse: annotation.verseRange.lowerBound,
+                                               endVerse: annotation.verseRange.upperBound == annotation.verseRange.lowerBound ? nil : annotation.verseRange.upperBound)
+
+                let passageLabel = "\(book?.displayName ?? annotation.bookCode) \(annotation.chapter):\(range.displayText)"
+
+                LibraryRowView(annotation: annotation,
+                               passageLabel: passageLabel,
+                               translationLabel: translation?.abbreviation ?? annotation.translationID.description)
             }
             .listRowSeparator(.hidden)
             .listRowBackground(Color.clear)
@@ -202,17 +213,22 @@ struct LibraryView: View {
 // MARK: Xcode Canvas Previews
 
 #Preview {
+    let bibleRepository = FakeBibleRepository()
     let libraryStore = LibraryStore(libraryRepository: PreviewFixtures.seededLibraryRepository())
-    LibraryPreviewHost(libraryStore: libraryStore)
+    let catalogStore = BibleCatalogStore(repository: bibleRepository)
+    LibraryPreviewHost(libraryStore: libraryStore,
+                       catalogStore: catalogStore)
 }
 
 /// Preview-only host
 private struct LibraryPreviewHost: View {
     let libraryStore: LibraryStore
+    let catalogStore: BibleCatalogStore
 
     var body: some View {
         LibraryView()
         .environment(libraryStore)
+        .environment(catalogStore)
         .task {
             libraryStore.load()
         }
