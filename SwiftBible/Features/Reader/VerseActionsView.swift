@@ -133,10 +133,11 @@ struct VerseActionsView: View {
         .onAppear {
             showEraser = readerStore.selectionContainsHighlight
         }
-        .onChange(of: readerStore.selectionContainsHighlight) { _, newValue in
-            if readerStore.selectedVerses != nil {
-                showEraser = newValue
+        .onChange(of: readerStore.selectedVerses) { _, newValue in
+            guard newValue != nil else {
+                return
             }
+            showEraser = readerStore.selectionContainsHighlight
         }
         // Fire AnnotationEditorSheetView when $annotationEditor instance is assigned
         .sheet(item: $annotationEditor) { editor in
