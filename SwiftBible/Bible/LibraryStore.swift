@@ -8,25 +8,34 @@
 import Foundation
 import OSLog
 
+/// Observable feature state for Saved/Library interface
+///
+/// Flow: LibraryRepository -> LibraryStore -> LibraryView
+///
+/// The repository owns persistence operations. Here we convert those operations
+/// into view-facing state and apply user's in-memory Library filter
 @Observable
 final class LibraryStore {
 
     // MARK: Properties
 
-    /// Mutated by UI to change the value of LibraryStore.filteredAnnotations
+    /// Active user-selected filter
+    /// Mutating it automatically changes `filteredAnnotations` for observing views
     var filter = LibraryFilter()
 
-    /// Calculated output source rendered by views
+    /// view-facing projection of `annotations`; the stored collection remains
+    /// unchanged when the user changes a filter
     var filteredAnnotations: [VerseAnnotation] {
         annotations.filter(filter.matches)
     }
 
     // MARK: Properties (Private)
 
-    /// User storage command implementations
+    /// Persistence boundary for loading and mutating app-owned annotations
     private let libraryRepository: any LibraryRepository
 
-    /// 
+    /// Last successfully loaded annotation snapshots
+    /// External consumers may read this collection but only the store replaces it
     private(set) var annotations: [VerseAnnotation] = []
 
     /// OS Logging
@@ -34,17 +43,22 @@ final class LibraryStore {
 
     // MARK: Init
 
+    /// Creates Library feature state backed by the supplied persistence implementation
     init(libraryRepository: LibraryRepository) {
         self.libraryRepository = libraryRepository
     }
 
     // MARK: Load
 
+    /// Refreshes the view-facing annotation collection from persistence
+    ///
+    /// Assignment occurs only after the repository call succeeds, so a failed refresh
+    /// preserves the last successfully loaded collection
     func load() {
         do {
             annotations = try libraryRepository.allAnnotations()
         } catch {
-            Self.logger.error("Unable to save annotation: \(error.localizedDescription)")
+            Self.logger.error("Unable to load annotations: \(error.localizedDescription)")
         }
     }
 }

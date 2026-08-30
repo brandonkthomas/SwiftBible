@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import OSLog
 
 struct LibraryView: View {
 
@@ -21,9 +22,24 @@ struct LibraryView: View {
 
     @Environment(\.editMode) private var editMode
 
+    // MARK: Properties (State, Private)
+
     @State private var isInEditMode: Bool = false
 
     @Namespace private var chipBarNamespace
+
+    // MARK: Properties (Local, Private)
+
+    /// todo: doc
+    private var unloadedCatalogStoreTranslationIDs: Set<Translation.ID> {
+        Set(libraryStore.annotations
+            .filter { catalogStore.books(for: $0.translationID) == nil }
+            .map { $0.translationID }
+        )
+    }
+
+    /// OS Logging
+    private static let logger = Logger(subsystem: "SwiftBible", category: "LibraryView")
 
     // MARK: Views
 
@@ -54,8 +70,9 @@ struct LibraryView: View {
                 filterOptionsToolbarItem
             }
         }
-        .onAppear {
+        .task {
             libraryStore.load()
+            await loadMissingBookMetadata()
         }
     }
 
@@ -207,6 +224,19 @@ struct LibraryView: View {
             value: isSelected
         )
         .font(.system(size: 12, weight: .semibold))
+    }
+
+    // MARK: Functions
+
+    private func loadMissingBookMetadata() async {
+        let unloadedIDs = unloadedCatalogStoreTranslationIDs
+        for translationID in unloadedIDs {
+            do {
+                try await catalogStore.loadBooks(for: translationID)
+            } catch {
+                Self.logger.error("loadMissingBookMetadata(): load for ID \(translationID) failed: \(error.localizedDescription)")
+            }
+        }
     }
 }
 

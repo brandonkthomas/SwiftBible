@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import OSLog
 
 final class YouVersionBibleRepository: BibleRepository {
 
@@ -14,6 +15,8 @@ final class YouVersionBibleRepository: BibleRepository {
     private let apiKey: String
     private let baseURL: URL
     private let urlSession: URLSession
+
+    private static let logger = Logger(subsystem: "SwiftBible", category: "YouVersionBibleRepository")
 
     init(apiKey: String,
          baseURL: URL,
@@ -29,6 +32,8 @@ final class YouVersionBibleRepository: BibleRepository {
     ///
     /// nil languageTag will not pass the filter
     func translations(languageTag: String? = "en") async throws -> [Translation] {
+        Self.logger.debug("ENTRY YouVersionBibleRepository.translations(languageTag: \(languageTag ?? "nil", privacy: .public))")
+
         let bibleCollectionPath = baseURL.appending(path: "v1/bibles")
 
         guard var components = URLComponents(url: bibleCollectionPath,
@@ -63,6 +68,8 @@ final class YouVersionBibleRepository: BibleRepository {
 
     /// Load all available Books + Chapters + Verses for a given Translation ID
     func books(for translationID: Translation.ID) async throws -> [Book] {
+        Self.logger.debug("ENTRY YouVersionBibleRepository.books(translationID: \(translationID, privacy: .public))")
+
         let bibleIndexPath = baseURL.appending(path: "v1/bibles/\(translationID)/index")
 
         // no need to wrap so ReaderStore can handle failures directly
@@ -90,6 +97,8 @@ final class YouVersionBibleRepository: BibleRepository {
     /// YouVersion returns:
     ///  Passage(id: "JHN.1", reference: "John 1", htmlContent: "<div>...</div>")
     func passage(for reference: ScriptureReference) async throws -> Passage {
+        Self.logger.debug("ENTRY YouVersionBibleRepository.passage(reference.passageID: \(reference.passageID, privacy: .public))")
+
         let passagePath = baseURL.appending(path: "v1/bibles/\(reference.translationID)/passages/\(reference.passageID)")
 
         guard var components = URLComponents(url: passagePath,
