@@ -37,28 +37,28 @@ final class BiblePassageStore {
         if let existingCacheHit = cache[key] {
             // we have a cached match; return it immediately
             return existingCacheHit
-        } else {
-            // we do not have this cached...
-            // build reference
-            guard let reference = ScriptureReference(translationID: key.translationID,
-                                                     bookCode: key.bookCode,
-                                                     chapter: key.chapter) else {
-                throw BiblePassageStoreError.invalidBiblePassageKey
-            }
-
-            // retrieve passage
-            let passage = try await repository.passage(for: reference)
-
-            // parse HTML
-            let parser = PassageHTMLParser()
-            let renderedPassage = try parser.parse(html: passage.htmlContent)
-
-            // build LoadedBiblePassage; persist to cache; return
-            let loadedBiblePassage = LoadedBiblePassage.init(passage: passage,
-                                                             renderedPassage: renderedPassage)
-            cache[key] = loadedBiblePassage
-            return loadedBiblePassage
         }
+
+        // we do not have this cached...
+        // build reference
+        guard let reference = ScriptureReference(translationID: key.translationID,
+                                                 bookCode: key.bookCode,
+                                                 chapter: key.chapter) else {
+            throw BiblePassageStoreError.invalidBiblePassageKey
+        }
+
+        // retrieve passage
+        let passage = try await repository.passage(for: reference)
+
+        // parse HTML
+        let parser = PassageHTMLParser()
+        let renderedPassage = try parser.parse(html: passage.htmlContent)
+
+        // build LoadedBiblePassage; store @ in-memory cache; return
+        let loadedBiblePassage = LoadedBiblePassage(passage: passage,
+                                                    renderedPassage: renderedPassage)
+        cache[key] = loadedBiblePassage
+        return loadedBiblePassage
     }
 }
 
