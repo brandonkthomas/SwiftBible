@@ -243,9 +243,11 @@ struct LibraryView: View {
 // MARK: Xcode Canvas Previews
 
 #Preview {
-    let bibleRepository = FakeBibleRepository()
-    let libraryStore = LibraryStore(libraryRepository: PreviewFixtures.seededLibraryRepository())
-    let catalogStore = BibleCatalogStore(repository: bibleRepository)
+    let repository = FakeBibleRepository()
+    let passageStore = BiblePassageStore(repository: repository)
+    let libraryStore = LibraryStore(libraryRepository: PreviewFixtures.seededLibraryRepository(),
+                                    passageStore: passageStore)
+    let catalogStore = BibleCatalogStore(repository: repository)
     LibraryPreviewHost(libraryStore: libraryStore,
                        catalogStore: catalogStore)
 }

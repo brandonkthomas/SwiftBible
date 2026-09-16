@@ -34,6 +34,11 @@ final class LibraryStore {
     /// Persistence boundary for loading and mutating app-owned annotations
     private let libraryRepository: any LibraryRepository
 
+    /// Authority for all cached/loaded Passages
+    ///
+    /// Also contains BibleRepository API (Bible passage) command implementations
+    private let passageStore: BiblePassageStore
+
     /// Last successfully loaded annotation snapshots
     /// External consumers may read this collection but only the store replaces it
     private(set) var annotations: [VerseAnnotation] = []
@@ -44,8 +49,10 @@ final class LibraryStore {
     // MARK: Init
 
     /// Creates Library feature state backed by the supplied persistence implementation
-    init(libraryRepository: LibraryRepository) {
+    init(libraryRepository: LibraryRepository,
+         passageStore: BiblePassageStore) {
         self.libraryRepository = libraryRepository
+        self.passageStore = passageStore
     }
 
     // MARK: Load

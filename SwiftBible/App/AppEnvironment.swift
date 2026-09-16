@@ -60,15 +60,16 @@ final class AppEnvironment {
             preconditionFailure("Failed to initialize ModelContainer: \(error.localizedDescription)")
         }
 
-        // LibraryRepository - storage for annotation
+        // LibraryRepository 1 - storage for annotations
         let libraryRepository = SwiftDataLibraryRepository(modelContainer: modelContainer)
         self.libraryRepository = libraryRepository
 
-        // ReaderStore - API requests, Reader state, etc
+        // ReaderStore 1 - API requests, Reader state, etc B
         guard let apiKey = appConfiguration.youVersionApiKey else {
             preconditionFailure("Missing YOUVERSION_APP_KEY in bundled Secrets.plist")
         }
 
+        // deps
         let bibleRepository = YouVersionBibleRepository(apiKey: apiKey,
                                                    baseURL: appConfiguration.youVersionBaseURL,
                                                    urlSession: .shared)
@@ -76,11 +77,13 @@ final class AppEnvironment {
         self.passageStore = BiblePassageStore(repository: bibleRepository)
         self.catalogStore = BibleCatalogStore(repository: bibleRepository)
 
+        // ReaderStore 2 - API requests, Reader state, etc
         self.readerStore = ReaderStore(passageStore: passageStore,
                                        catalogStore: catalogStore,
                                        libraryRepository: libraryRepository)
 
-        // LibraryStore
-        self.libraryStore = LibraryStore(libraryRepository: libraryRepository)
+        // LibraryStore 2 - presentation view for annotations
+        self.libraryStore = LibraryStore(libraryRepository: libraryRepository,
+                                         passageStore: passageStore)
     }
 }
