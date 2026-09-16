@@ -127,9 +127,6 @@ final class ReaderStore {
 
     // MARK: Properties (Private)
 
-    /// API (Bible passage) command implementations
-//    private let repository: BibleRepository
-
     /// Authority for all cached/loaded Passages
     ///
     /// Also contains BibleRepository API (Bible passage) command implementations
@@ -270,11 +267,10 @@ final class ReaderStore {
 
         self.passageLoadState = .loading
 
-        // TODO: split into 2 do's (passage load + passage parse)
         do {
-            // Try to retrieve passage HTML + parse into SwiftBible.Passage
-            //   + mark result as selected
-            // We need to check for cache results first via passageStore
+            // Try to retrieve passage HTML + parse into SwiftBible.Passage + mark result as
+            //   selected
+            // We need to request cache results first via passageStore
             let key = BiblePassageKey(translationID: selectedReference.translationID,
                                       bookCode: selectedReference.bookCode,
                                       chapter: selectedReference.chapter)
