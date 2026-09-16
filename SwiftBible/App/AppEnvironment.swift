@@ -22,6 +22,7 @@ final class AppEnvironment {
     // MARK: Properties
 
     let readerStore: ReaderStore
+    let passageStore: BiblePassageStore
     let catalogStore: BibleCatalogStore
     let libraryStore: LibraryStore
 
@@ -72,9 +73,10 @@ final class AppEnvironment {
                                                    baseURL: appConfiguration.youVersionBaseURL,
                                                    urlSession: .shared)
 
+        self.passageStore = BiblePassageStore(repository: bibleRepository)
         self.catalogStore = BibleCatalogStore(repository: bibleRepository)
 
-        self.readerStore = ReaderStore(repository: bibleRepository,
+        self.readerStore = ReaderStore(passageStore: passageStore,
                                        catalogStore: catalogStore,
                                        libraryRepository: libraryRepository)
 

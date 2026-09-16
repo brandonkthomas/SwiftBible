@@ -128,7 +128,12 @@ final class ReaderStore {
     // MARK: Properties (Private)
 
     /// API (Bible passage) command implementations
-    private let repository: BibleRepository
+//    private let repository: BibleRepository
+
+    /// Authority for all cached/loaded Passages
+    ///
+    /// Also contains BibleRepository API (Bible passage) command implementations
+    private let passageStore: BiblePassageStore
 
     /// Authority for all available Translations
     private let catalogStore: BibleCatalogStore
@@ -144,10 +149,10 @@ final class ReaderStore {
 
     // MARK: Init
 
-    init(repository: BibleRepository,
+    init(passageStore: BiblePassageStore,
          catalogStore: BibleCatalogStore,
          libraryRepository: LibraryRepository) {
-        self.repository = repository
+        self.passageStore = passageStore
         self.catalogStore = catalogStore
         self.libraryRepository = libraryRepository
     }
@@ -268,14 +273,17 @@ final class ReaderStore {
         // TODO: split into 2 do's (passage load + passage parse)
         do {
             // Try to retrieve passage HTML + parse into SwiftBible.Passage
-            // + mark result as selected
-            let passage = try await repository.passage(for: selectedReference)
-            self.selectedPassage = passage
+            //   + mark result as selected
+            // We need to check for cache results first via passageStore
+            let key = BiblePassageKey(translationID: selectedReference.translationID,
+                                      bookCode: selectedReference.bookCode,
+                                      chapter: selectedReference.chapter)
 
-            // Try to render the now-selected passage HTML
-            let parser: PassageHTMLParser = .init()
+            let loadedPassage = try await passageStore.passage(for: key)
 
-            var renderedPassage = try parser.parse(html: passage.htmlContent)
+            self.selectedPassage = loadedPassage.passage
+
+            var renderedPassage = loadedPassage.renderedPassage
             renderedPassage.referenceBookAndChapterDisplayName = selectedReferenceFriendlyName
 
             self.selectedRenderedPassage = renderedPassage

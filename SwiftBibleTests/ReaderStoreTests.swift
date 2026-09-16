@@ -46,68 +46,72 @@ struct ReaderStoreTests {
     /// Loading a book without chapters should stop in the empty chapters state.
     @Test func loadTranslationsWithBookWithoutChaptersStopsAtEmptyChapters() async {
         let repository = FakeBibleRepository(books: FakeBibleRepository.booksWithoutChapters)
-        let store = ReaderStore(repository: repository,
+        let passageStore = BiblePassageStore(repository: repository)
+        let readerStore = ReaderStore(passageStore: passageStore,
                                 catalogStore: BibleCatalogStore(repository: repository),
                                 libraryRepository: InMemoryLibraryRepository())
 
-        await store.loadTranslationsAndBooks(languageTag: "en")
+        await readerStore.loadTranslationsAndBooks(languageTag: "en")
 
-        #expect(store.loadState == .emptyChapters)
-        #expect(store.selectedTranslation == store.translations.first)
-        #expect(store.selectedBook == nil)
-        #expect(store.selectedChapter == nil)
+        #expect(readerStore.loadState == .emptyChapters)
+        #expect(readerStore.selectedTranslation == readerStore.translations.first)
+        #expect(readerStore.selectedBook == nil)
+        #expect(readerStore.selectedChapter == nil)
     }
 
     /// No translations matches expected state;
     /// no selected translation/book/chapter
     @Test func noTranslationsReturned() async {
         let repository = FakeBibleRepository(translations: [])
-        let store = ReaderStore(repository: repository,
+        let passageStore = BiblePassageStore(repository: repository)
+        let readerStore = ReaderStore(passageStore: passageStore,
                                 catalogStore: BibleCatalogStore(repository: repository),
                                 libraryRepository: InMemoryLibraryRepository())
 
-        await store.loadTranslationsAndBooks(languageTag: "en")
+        await readerStore.loadTranslationsAndBooks(languageTag: "en")
 
-        #expect(store.loadState == .emptyTranslations)
-        #expect(store.selectedTranslation == nil)
-        #expect(store.selectedBook == nil)
-        #expect(store.selectedChapter == nil)
+        #expect(readerStore.loadState == .emptyTranslations)
+        #expect(readerStore.selectedTranslation == nil)
+        #expect(readerStore.selectedBook == nil)
+        #expect(readerStore.selectedChapter == nil)
     }
 
     /// No books matches expected state;
     /// no selected book/chapter
     @Test func noBooksReturned() async {
         let repository = FakeBibleRepository(books: [])
-        let store = ReaderStore(repository: repository,
+        let passageStore = BiblePassageStore(repository: repository)
+        let readerStore = ReaderStore(passageStore: passageStore,
                                 catalogStore: BibleCatalogStore(repository: repository),
                                 libraryRepository: InMemoryLibraryRepository())
 
-        await store.loadTranslationsAndBooks(languageTag: "en")
+        await readerStore.loadTranslationsAndBooks(languageTag: "en")
 
-        #expect(store.loadState == .emptyBooks)
-        #expect(store.selectedTranslation == store.translations.first)
-        #expect(store.selectedBook == nil)
-        #expect(store.selectedChapter == nil)
+        #expect(readerStore.loadState == .emptyBooks)
+        #expect(readerStore.selectedTranslation == readerStore.translations.first)
+        #expect(readerStore.selectedBook == nil)
+        #expect(readerStore.selectedChapter == nil)
     }
 
     /// Exceptions thrown in protocol implementations will set failed status
     /// and clear data
     @Test func selectionsClearedOnLoadTranslationsThrow() async {
         let repository = FakeBibleRepository(throwWhenLoadingTranslations: true)
-        let store = ReaderStore(repository: repository,
+        let passageStore = BiblePassageStore(repository: repository)
+        let readerStore = ReaderStore(passageStore: passageStore,
                                 catalogStore: BibleCatalogStore(repository: repository),
                                 libraryRepository: InMemoryLibraryRepository())
 
-        await store.loadTranslationsAndBooks(languageTag: "en")
+        await readerStore.loadTranslationsAndBooks(languageTag: "en")
 
-        #expect(store.loadState == .failed("An error occurred while loading Bibles."))
+        #expect(readerStore.loadState == .failed("An error occurred while loading Bibles."))
 
-        #expect(store.translations == [])
-        #expect(store.selectedTranslation == nil)
-        #expect(store.books == [])
-        #expect(store.selectedBook == nil)
-        #expect(store.selectedChapter == nil)
-        #expect(store.selectedReference == nil)
+        #expect(readerStore.translations == [])
+        #expect(readerStore.selectedTranslation == nil)
+        #expect(readerStore.books == [])
+        #expect(readerStore.selectedBook == nil)
+        #expect(readerStore.selectedChapter == nil)
+        #expect(readerStore.selectedReference == nil)
     }
 
     /// selectBookAndChapter() functions as intended
@@ -252,49 +256,51 @@ struct ReaderStoreTests {
     /// if book load fails, old passage information should be cleared
     @Test func failedBookReloadClearsStalePassageState() async {
         let repository = FakeBibleRepository()
-        let store = ReaderStore(repository: repository,
+        let passageStore = BiblePassageStore(repository: repository)
+        let readerStore = ReaderStore(passageStore: passageStore,
                                 catalogStore: BibleCatalogStore(repository: repository),
                                 libraryRepository: InMemoryLibraryRepository())
         
-        await store.loadTranslationsAndBooks(languageTag: "en")
-        await store.loadSelectedPassage()
-        
-        #expect(store.passageLoadState == .loaded)
-        #expect(store.selectedPassage?.id == "GEN.1")
-        
-        store.selectedVerses = 1...1
-        
+        await readerStore.loadTranslationsAndBooks(languageTag: "en")
+        await readerStore.loadSelectedPassage()
+
+        #expect(readerStore.passageLoadState == .loaded)
+        #expect(readerStore.selectedPassage?.id == "GEN.1")
+
+        readerStore.selectedVerses = 1...1
+
         // now we need to simulate a failure
         repository.throwWhenLoadingBooks = true
         
-        guard let translationID = store.selectedTranslation?.id else {
+        guard let translationID = readerStore.selectedTranslation?.id else {
             Issue.record("Expected an initially selected translation")
             return
         }
         
         // loadTranslationsAndBooks wont work again here since it guards state != .loaded;
         // use this method instead for subsequent book loads
-        await store.selectTranslationAndReloadAll(id: translationID)
-        
-        if case .failed = store.loadState {
+        await readerStore.selectTranslationAndReloadAll(id: translationID)
+
+        if case .failed = readerStore.loadState {
             // expect to fail
         } else {
             Issue.record("Expected loadState to be failed")
         }
-        #expect(store.selectedBook == nil)
-        #expect(store.selectedChapter == nil)
-        #expect(store.selectedPassage == nil)
-        #expect(store.selectedRenderedPassage == nil)
-        #expect(store.selectedVerses == nil)
-        #expect(store.passageLoadState == .idle)
-        #expect(store.passageHighlightColors.isEmpty)
+        #expect(readerStore.selectedBook == nil)
+        #expect(readerStore.selectedChapter == nil)
+        #expect(readerStore.selectedPassage == nil)
+        #expect(readerStore.selectedRenderedPassage == nil)
+        #expect(readerStore.selectedVerses == nil)
+        #expect(readerStore.passageLoadState == .idle)
+        #expect(readerStore.passageHighlightColors.isEmpty)
     }
 
     // MARK: Functions (Private)
 
     private func readerStore() -> ReaderStore {
         let repository = FakeBibleRepository()
-        return ReaderStore(repository: repository,
+        let passageStore = BiblePassageStore(repository: repository)
+        return ReaderStore(passageStore: passageStore,
                            catalogStore: BibleCatalogStore(repository: repository),
                            libraryRepository: InMemoryLibraryRepository())
     }

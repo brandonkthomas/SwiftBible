@@ -289,8 +289,8 @@ struct ReaderPassageView: View {
 
 #Preview {
     let repository = FakeBibleRepository()
-
-    let readerStore = ReaderStore(repository: repository,
+    let passageStore = BiblePassageStore(repository: repository)
+    let readerStore = ReaderStore(passageStore: passageStore,
                                   catalogStore: BibleCatalogStore(repository: repository),
                                   libraryRepository: PreviewFixtures.seededLibraryRepository())
 
