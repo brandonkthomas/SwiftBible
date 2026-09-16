@@ -7,7 +7,7 @@
 
 import Foundation
 
-/// Ownership model for loaded Passages
+/// Ownership model/cache for loaded Passages
 ///
 /// On request, if cached, return; else load > cache > return
 ///
@@ -21,6 +21,9 @@ final class BiblePassageStore {
 
     /// Stores any cached values; NOT externally readable (must use public overloads)
     private var cache: [BiblePassageKey: LoadedBiblePassage] = [:]
+
+    /// Tracks all currently-in-flight requests (if any) to prevent duplicate work
+    private var inFlightRequests: [BiblePassageKey: Task<LoadedBiblePassage, Error>] = [:]
 
     // MARK: Init
 
@@ -40,6 +43,12 @@ final class BiblePassageStore {
         }
 
         // we do not have this cached...
+        // first, return existing in-flight request for this key if present
+        if let existingRequest = inFlightRequests[key] {
+            return try await existingRequest.value
+        }
+
+        // ... else, begin the work ourselves
         // build reference
         guard let reference = ScriptureReference(translationID: key.translationID,
                                                  bookCode: key.bookCode,
@@ -47,17 +56,32 @@ final class BiblePassageStore {
             throw BiblePassageStoreError.invalidBiblePassageKey
         }
 
-        // retrieve passage
-        let passage = try await repository.passage(for: reference)
+        // store the fetch logic as a Task so that we can add it to inFlightRequests
+        let task = Task<LoadedBiblePassage, Error> {
+            // retrieve passage
+            let passage = try await repository.passage(for: reference)
 
-        // parse HTML
-        let parser = PassageHTMLParser()
-        let renderedPassage = try parser.parse(html: passage.htmlContent)
+            // parse HTML
+            let parser = PassageHTMLParser()
+            let renderedPassage = try parser.parse(html: passage.htmlContent)
 
-        // build LoadedBiblePassage; store @ in-memory cache; return
-        let loadedBiblePassage = LoadedBiblePassage(passage: passage,
-                                                    renderedPassage: renderedPassage)
+            // build LoadedBiblePassage; store @ in-memory cache; return
+            let loadedBiblePassage = LoadedBiblePassage(passage: passage,
+                                                        renderedPassage: renderedPassage)
+            return loadedBiblePassage
+        }
+
+        // set tracking; then clear it as soon as this function exits
+        inFlightRequests[key] = task
+
+        defer {
+            inFlightRequests[key] = nil
+        }
+
+        // no need to use "await task.result" because this func already throws
+        let loadedBiblePassage = try await task.value
         cache[key] = loadedBiblePassage
+
         return loadedBiblePassage
     }
 }

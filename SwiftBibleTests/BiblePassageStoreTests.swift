@@ -97,6 +97,196 @@ struct BiblePassageStoreTests {
         }
         #expect(repository.passageRequestCount == 0)
     }
+
+    @Test func simultaneousRequestsForSameKeyShareOneRepositoryRequest() async throws {
+        let repository = ControllablePassageRepository()
+        let store = BiblePassageStore(repository: repository)
+        let key = BiblePassageKey(translationID: 1234,
+                                  bookCode: "GEN",
+                                  chapter: 1)
+
+        let firstRequest = Task {
+            try await store.passage(for: key)
+        }
+        await repository.waitForPassageRequestCount(1)
+
+        let secondRequest = Task {
+            try await store.passage(for: key)
+        }
+        await Task.yield()
+
+        #expect(repository.passageRequestCount == 1)
+
+        try repository.succeedPassageRequest(for: key)
+
+        let firstResult = try await firstRequest.value
+        let secondResult = try await secondRequest.value
+
+        #expect(firstResult.passage == secondResult.passage)
+        #expect(repository.passageRequestCount == 1)
+    }
+
+    @Test func simultaneousRequestsForDifferentKeysRemainIndependent() async throws {
+        let repository = ControllablePassageRepository()
+        let store = BiblePassageStore(repository: repository)
+        let firstKey = BiblePassageKey(translationID: 1234,
+                                       bookCode: "GEN",
+                                       chapter: 1)
+        let secondKey = BiblePassageKey(translationID: 1849,
+                                        bookCode: "GEN",
+                                        chapter: 1)
+
+        let firstRequest = Task {
+            try await store.passage(for: firstKey)
+        }
+        let secondRequest = Task {
+            try await store.passage(for: secondKey)
+        }
+
+        await repository.waitForPassageRequestCount(2)
+        #expect(repository.passageRequestCount == 2)
+
+        try repository.succeedPassageRequest(for: firstKey)
+        try repository.succeedPassageRequest(for: secondKey)
+
+        let firstResult = try await firstRequest.value
+        let secondResult = try await secondRequest.value
+
+        #expect(firstResult.passage != secondResult.passage)
+        #expect(repository.passageRequestCount == 2)
+    }
+
+    @Test func failedRequestIsRemovedAndCanBeRetried() async throws {
+        let repository = ControllablePassageRepository()
+        let store = BiblePassageStore(repository: repository)
+        let key = BiblePassageKey(translationID: 1234,
+                                  bookCode: "GEN",
+                                  chapter: 1)
+
+        let failedRequest = Task {
+            try await store.passage(for: key)
+        }
+        await repository.waitForPassageRequestCount(1)
+        try repository.failPassageRequest(for: key)
+
+        await #expect(throws: ControllablePassageRepository.RepositoryError.intentionalFailure) {
+            try await failedRequest.value
+        }
+
+        let retryRequest = Task {
+            try await store.passage(for: key)
+        }
+        await repository.waitForPassageRequestCount(2)
+        try repository.succeedPassageRequest(for: key)
+
+        let retriedResult = try await retryRequest.value
+        let expectedPassage = try #require(
+            FakeBibleRepository.defaultPassages.first {
+                $0.translationID == key.translationID
+            }?.passage
+        )
+
+        #expect(retriedResult.passage == expectedPassage)
+        #expect(repository.passageRequestCount == 2)
+    }
+}
+
+@MainActor
+private final class ControllablePassageRepository: BibleRepository {
+    enum RepositoryError: Error, Equatable {
+        case intentionalFailure
+        case missingPendingRequest
+        case missingFixture
+    }
+
+    private struct RequestCountWaiter {
+        let expectedCount: Int
+        let continuation: CheckedContinuation<Void, Never>
+    }
+
+    private var pendingPassageRequests:
+        [BiblePassageKey: [CheckedContinuation<Passage, Error>]] = [:]
+    private var requestCountWaiters: [RequestCountWaiter] = []
+
+    private(set) var passageRequestCount = 0
+
+    func translations(languageTag: String?) async throws -> [Translation] {
+        []
+    }
+
+    func books(for translationID: Translation.ID) async throws -> [Book] {
+        []
+    }
+
+    func passage(for reference: ScriptureReference) async throws -> Passage {
+        let key = BiblePassageKey(translationID: reference.translationID,
+                                  bookCode: reference.bookCode,
+                                  chapter: reference.chapter)
+
+        passageRequestCount += 1
+        resumeSatisfiedRequestCountWaiters()
+
+        return try await withCheckedThrowingContinuation { continuation in
+            pendingPassageRequests[key, default: []].append(continuation)
+        }
+    }
+
+    func waitForPassageRequestCount(_ expectedCount: Int) async {
+        guard passageRequestCount < expectedCount else {
+            return
+        }
+
+        await withCheckedContinuation { continuation in
+            requestCountWaiters.append(
+                RequestCountWaiter(expectedCount: expectedCount,
+                                   continuation: continuation)
+            )
+        }
+    }
+
+    func succeedPassageRequest(for key: BiblePassageKey) throws {
+        let continuation = try removePendingPassageRequest(for: key)
+        guard let passage = FakeBibleRepository.defaultPassages.first(where: {
+            $0.translationID == key.translationID &&
+            $0.passage.id == "\(key.bookCode).\(key.chapter)"
+        })?.passage else {
+            continuation.resume(throwing: RepositoryError.missingFixture)
+            throw RepositoryError.missingFixture
+        }
+
+        continuation.resume(returning: passage)
+    }
+
+    func failPassageRequest(for key: BiblePassageKey) throws {
+        let continuation = try removePendingPassageRequest(for: key)
+        continuation.resume(throwing: RepositoryError.intentionalFailure)
+    }
+
+    private func removePendingPassageRequest(
+        for key: BiblePassageKey
+    ) throws -> CheckedContinuation<Passage, Error> {
+        guard var continuations = pendingPassageRequests[key],
+              !continuations.isEmpty else {
+            throw RepositoryError.missingPendingRequest
+        }
+
+        let continuation = continuations.removeFirst()
+        pendingPassageRequests[key] = continuations.isEmpty ? nil : continuations
+        return continuation
+    }
+
+    private func resumeSatisfiedRequestCountWaiters() {
+        let satisfiedWaiters = requestCountWaiters.filter {
+            passageRequestCount >= $0.expectedCount
+        }
+        requestCountWaiters.removeAll {
+            passageRequestCount >= $0.expectedCount
+        }
+
+        for waiter in satisfiedWaiters {
+            waiter.continuation.resume()
+        }
+    }
 }
 
 @MainActor
