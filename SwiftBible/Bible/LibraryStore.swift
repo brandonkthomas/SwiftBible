@@ -43,6 +43,10 @@ final class LibraryStore {
     /// External consumers may read this collection but only the store replaces it
     private(set) var annotations: [VerseAnnotation] = []
 
+    /// Annotations are verse-scoped BUT cache is chapter-scoped; allow N annotations in
+    /// LibraryStore to produce 1 passage request
+    private(set) var loadedPassages: [BiblePassageKey: LoadedBiblePassage] = [:]
+
     /// OS Logging
     private static let logger = Logger(subsystem: "SwiftBible", category: "LibraryStore")
 
@@ -55,7 +59,7 @@ final class LibraryStore {
         self.passageStore = passageStore
     }
 
-    // MARK: Load
+    // MARK: Functions (Public + Load)
 
     /// Refreshes the view-facing annotation collection from persistence
     ///
@@ -67,5 +71,39 @@ final class LibraryStore {
         } catch {
             Self.logger.error("Unable to load annotations: \(error.localizedDescription)")
         }
+    }
+
+    /// Load all distinct/reduced passages from all existing annotations/verses
+    func loadPassages() async {
+        // dont need (for:) here since "self" is implied
+        let keys = Set(annotations.map(passageKey))
+
+        // TODO: loading sequentially for now
+        for key in keys {
+            do {
+                let loadedPassage = try await passageStore.passage(for: key)
+                loadedPassages[key] = loadedPassage
+            } catch {
+                // do not remove existing entries on failure; just log
+                Self.logger.error("Unable to load passage: \(error.localizedDescription)")
+            }
+        }
+    }
+
+    /// Map VerseAnnotation -> LoadedBiblePassage (if available)
+    func passage(for annotation: VerseAnnotation) -> LoadedBiblePassage? {
+        if let loadedPassage = loadedPassages[passageKey(for: annotation)] {
+            return loadedPassage
+        }
+        return nil
+    }
+
+    // MARK: Functions (Private)
+
+    /// Map VerseAnnotation -> BiblePassageKey
+    private func passageKey(for annotation: VerseAnnotation) -> BiblePassageKey {
+        return BiblePassageKey(translationID: annotation.translationID,
+                               bookCode: annotation.bookCode,
+                               chapter: annotation.chapter)
     }
 }
