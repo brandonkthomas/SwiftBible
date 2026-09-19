@@ -35,4 +35,14 @@ nonisolated struct RenderedVerseRange: Identifiable, Equatable, Hashable {
         self.startVerse = startVerse
         self.endVerse = endVerse
     }
+
+    /// Does this instance's range overlap the inputted range?
+    ///
+    /// self start ≤ other end  AND  other start ≤ self end
+    func overlaps(verseRange otherVerseRange: RenderedVerseRange) -> Bool {
+        let otherEndVerse = otherVerseRange.endVerse ?? otherVerseRange.startVerse
+
+        return self.startVerse <= otherEndVerse
+        && otherVerseRange.startVerse <= (self.endVerse ?? self.startVerse)
+    }
 }

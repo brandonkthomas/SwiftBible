@@ -1,6 +1,6 @@
 //
 //  AppEnvironment.swift
-//  HomePlus
+//  SwiftBible
 //
 //  Created by Brandon Thomas on 6/27/26.
 //

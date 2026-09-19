@@ -16,6 +16,6 @@ nonisolated struct RenderedPassage {
     /// Retrieve all runs from this RenderedPassage for a given RenderedVerseRange
     func runs(for verseRange: RenderedVerseRange) -> [RenderedPassageRun] {
         // iterate all paragraphs' runs in order; keep only verse range matches + append to list
-        return paragraphs.flatMap(\.runs).filter { $0.verseRange == verseRange }
+        return paragraphs.flatMap(\.runs).filter { $0.verseRange?.overlaps(verseRange: verseRange) == true }
     }
 }
