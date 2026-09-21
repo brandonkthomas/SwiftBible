@@ -26,6 +26,7 @@ nonisolated struct VerseAnnotation: Identifiable, Equatable {
 
     // MARK: Properties (Computed)
 
+    /// If this is a highlight type,
     var highlightColor: VerseAnnotationHighlightColor? {
         if case .highlight(let color) = content {
             return color
@@ -34,12 +35,24 @@ nonisolated struct VerseAnnotation: Identifiable, Equatable {
         return nil
     }
 
+    /// If an endVerse exists, calculate using that; else range will be startVerse...startVerse
     var verseRange: ClosedRange<Int> {
         if let endVerse {
             return startVerse...endVerse
         } else {
             return startVerse...startVerse
         }
+    }
+
+    /// Which verses are highlighted, and in which color?
+    var highlightedVerses: [Int: VerseAnnotationHighlightColor] {
+        if case .highlight(let color) = content {
+            return Dictionary(uniqueKeysWithValues:
+                verseRange.map { ($0, color) }
+            )
+        }
+
+        return [:]
     }
 
     // MARK: Init

@@ -10,8 +10,28 @@ import SwiftUI
 struct LibraryRowView: View {
 
     var annotation: VerseAnnotation
+    let renderedPassageRuns: [RenderedPassageRun]?
     let passageLabel: String
     let translationLabel: String
+
+    // MARK: Properties (Passage Truncation, Private)
+
+    /// Same value used in ReaderPassageView
+    private let passageLineHeight: CGFloat = 30
+
+    /// Passage text collapses to this many lines; overflow fades out
+    private let passageLineLimit = 3
+
+    /// Full (unclamped) height of the passage text, measured off-screen
+    @State private var unclampedPassageHeight: CGFloat = 0
+
+    /// Does the passage need more lines than we display?
+    ///
+    /// Line height is fixed, so height / lineHeight is the real line count
+    /// Rounding absorbs the first line's ascent/descent overshoot
+    private var isPassageTruncated: Bool {
+        Int((unclampedPassageHeight / passageLineHeight).rounded()) > passageLineLimit
+    }
 
     var body: some View {
         // build this annotation into a card
@@ -24,16 +44,50 @@ struct LibraryRowView: View {
                     .font(.system(.body))
             }
 
-            // TODO: Verse rendered text
-//            let passage = try! PassageHTMLParser().parse(html: FakeBibleRepository.footnotePassageHTML)
-//            PassageTextRenderer.text(for: passage.runs(for: verseRange),
-//                                          mode: .inline)
-            Text("\(annotation)")
-
-            Divider()
+            // Verse rendered text
+            if let renderedPassageRuns {
+                passageText(for: renderedPassageRuns)
+                    .lineLimit(passageLineLimit)
+                    .background(alignment: .top) {
+                        // Hidden unclamped copy of the same text
+                        // Visible copy is already capped at passageLineLimit,
+                        // This copy lays out at the same width with its ideal height
+                        passageText(for: renderedPassageRuns)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .hidden()
+                            .onGeometryChange(for: CGFloat.self) { proxy in
+                                proxy.size.height
+                            } action: { height in
+                                unclampedPassageHeight = height
+                            }
+                    }
+                    .mask(alignment: .top) {
+                        if isPassageTruncated {
+                            // Mask alpha from gradient
+                            LinearGradient(
+                                stops: [
+                                    .init(color: .black, location: 0),
+                                    .init(color: .black, location: 0.6),
+                                    .init(color: .clear, location: 1)
+                                ],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                        } else {
+                            Rectangle()
+                        }
+                    }
+            }
 
             // Annotation type
-            annotationItemContent(for: annotation)
+            // switch doesnt work here due to exhaustive complaints
+            if case .note(let noteText) = annotation.content {
+                Divider()
+                Text(noteText)
+            } else if case .tags(let tags) = annotation.content {
+                Divider()
+                Text(tags.joined(separator: ", "))
+            }
 
             Divider()
 
@@ -57,15 +111,23 @@ struct LibraryRowView: View {
         .shadow(color: .black.opacity(0.08), radius: 4, y: 2)
     }
 
-    private func annotationItemContent(for annotation: VerseAnnotation) -> some View {
-        switch annotation.content {
-        case .highlight(let color):
-            Text(color.rawValue)
-        case .note(let noteText):
-            Text(noteText)
-        case .tags(let tags):
-            Text(tags.joined(separator: ", "))
-        }
+    /// Passage text styling, shared by the visible copy and the measuring copy
+    /// so both lay out identically
+    private func passageText(for runs: [RenderedPassageRun]) -> some View {
+        PassageTextRenderer.text(for: runs,
+                                 footnoteMarkerMode: .hidden)
+            .font(.system(.body, design: .serif))
+            .lineHeight(AttributedString.LineHeight.exact(points: passageLineHeight))
+            .frame(maxWidth: .infinity, alignment: .leading)
+            // custom TextRenderer to support verse highlights w/ animations
+            .textRenderer(VerseHighlightRenderer(
+                settledVerses: nil,
+                revealingVerses: nil,
+                fadingVerses: nil,
+                tapOrigin: nil,
+                progress: 0,
+                fadeProgress: 0,
+                persistedHighlights: annotation.highlightedVerses))
     }
 
     private func annotationItemType(for annotation: VerseAnnotation) -> some View {
@@ -129,12 +191,15 @@ struct LibraryRowView: View {
 #Preview {
     VStack(spacing: 16) {
         LibraryRowView(annotation: PreviewFixtures.sampleHighlightAnnotation,
+                       renderedPassageRuns: nil, // TBD
                        passageLabel: "Genesis 1:1",
                        translationLabel: "NIV")
         LibraryRowView(annotation: PreviewFixtures.sampleNoteAnnotation,
+                       renderedPassageRuns: nil, // TBD
                        passageLabel: "Genesis 1:1–2",
                        translationLabel: "NIV")
         LibraryRowView(annotation: PreviewFixtures.sampleTagsAnnotation,
+                       renderedPassageRuns: nil, // TBD
                        passageLabel: "Genesis 1:1–3",
                        translationLabel: "NIV")
     }

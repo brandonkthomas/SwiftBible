@@ -33,8 +33,8 @@ struct LibraryView: View {
     /// todo: doc
     private var unloadedCatalogStoreTranslationIDs: Set<Translation.ID> {
         Set(libraryStore.annotations
-            .filter { catalogStore.books(for: $0.translationID) == nil }
-            .map { $0.translationID }
+            .filter { catalogStore.books(for: $0.translationID) == nil } // not in memory
+            .map { $0.translationID } // only need the ID
         )
     }
 
@@ -43,7 +43,7 @@ struct LibraryView: View {
 
     // MARK: Views
 
-    ///
+    /// Primary body
     var body: some View {
         NavigationStack {
             Group {
@@ -71,7 +71,14 @@ struct LibraryView: View {
             }
         }
         .task {
+            // First load all annotations
             libraryStore.load()
+
+            // Required for all annotations to load their associated passages
+            // Prereq for rendering each card's verse
+            await libraryStore.loadPassages()
+
+            // Load book names for each annotation
             await loadMissingBookMetadata()
         }
     }
@@ -80,19 +87,35 @@ struct LibraryView: View {
     var libraryListView: some View {
         List {
             ForEach(libraryStore.filteredAnnotations) { annotation in
+                // Calculate required params
+                // Translation
                 let translation = catalogStore.translation(for: annotation.translationID)
 
+                // Book
                 let book = catalogStore.book(for: annotation.translationID,
                                              bookCode: annotation.bookCode)
 
-                let range = RenderedVerseRange(startVerse: annotation.verseRange.lowerBound,
-                                               endVerse: annotation.verseRange.upperBound == annotation.verseRange.lowerBound ? nil : annotation.verseRange.upperBound)
+                // Verse range
+                let upperBoundSameAsLowerBound = annotation.verseRange.upperBound == annotation.verseRange.lowerBound
+                let endVerseCalculated = upperBoundSameAsLowerBound ? nil : annotation.verseRange.upperBound
 
-                let passageLabel = "\(book?.displayName ?? annotation.bookCode) \(annotation.chapter):\(range.displayText)"
+                let verseRange = RenderedVerseRange(startVerse: annotation.verseRange.lowerBound,
+                                                    endVerse: endVerseCalculated)
 
+                // Passage label
+                let passageLabel = "\(book?.displayName ?? annotation.bookCode) \(annotation.chapter):\(verseRange.displayText)"
+
+                // RenderedPassageRuns
+                let passageForAnnotation = libraryStore.passage(for: annotation)
+
+                let renderedPassageRunsForAnnotation = passageForAnnotation?.renderedPassage.runs(for: verseRange)
+
+                // Build actual single annotation view
                 LibraryRowView(annotation: annotation,
+                               renderedPassageRuns: renderedPassageRunsForAnnotation,
                                passageLabel: passageLabel,
-                               translationLabel: translation?.abbreviation ?? annotation.translationID.description)
+                               translationLabel: translation?.abbreviation
+                                   ?? annotation.translationID.description)
             }
             .listRowSeparator(.hidden)
             .listRowBackground(Color.clear)

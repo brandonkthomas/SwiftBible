@@ -79,7 +79,7 @@ struct ReaderPassageView: View {
 
                         // build this paragraph into a Text view
                         PassageTextRenderer.text(for: paragraphs[paragraphIndex].runs,
-                                                 mode: .collapsed)
+                                                 footnoteMarkerMode: .collapsed)
                             // custom leading padding for inline/block quote styles
                             .padding(.leading,
                                      leadingPadding(for: paragraphs[paragraphIndex].style))
@@ -102,7 +102,7 @@ struct ReaderPassageView: View {
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .lineHeight(AttributedString.LineHeight.exact(points: 30))
+                .lineHeight(AttributedString.LineHeight.exact(points: 30)) // same value used in LibraryRowView
                 // inset on L/R edges; spacing between paragraphs
                 .padding(EdgeInsets(top: 2, leading: 24, bottom: 2, trailing: 24))
             }

@@ -28,7 +28,7 @@ struct PassageTextRenderer {
     /// Each verse is rendered w/ customAttribute for use in highlight rendering later...
     /// see https://alexanderweiss.dev/blog/2024-06-24-using-textrenderer-to-create-highlighted-text
     static func text(for runs: [RenderedPassageRun],
-                     mode: MarkerMode) -> Text {
+                     footnoteMarkerMode: MarkerMode) -> Text {
         var result = Text("")
 
         // If mode.collapsed:
@@ -43,7 +43,7 @@ struct PassageTextRenderer {
 
         // Append footnote marker if current verse has a footnote
         func flushMarkerIfNeeded() {
-            guard mode == .collapsed,
+            guard footnoteMarkerMode == .collapsed,
                   verseHasFootnote,
                   let verseRange = accumulatingVerseRange else { return }
 
@@ -60,7 +60,7 @@ struct PassageTextRenderer {
         // + swap to new verse
         func beginVerseIfChanged(_ verseRange: RenderedVerseRange?) {
             if verseRange != accumulatingVerseRange {
-                if mode == .collapsed {
+                if footnoteMarkerMode == .collapsed {
                     flushMarkerIfNeeded()
                 }
 
@@ -130,7 +130,7 @@ struct PassageTextRenderer {
 
             case .footnoteMarker(_,
                                  verseRange: let currentVerseRange):
-                switch mode {
+                switch footnoteMarkerMode {
                 case .collapsed:
                     // don't append right now;
                     // just set a marker that the current verse has footnote(s)
