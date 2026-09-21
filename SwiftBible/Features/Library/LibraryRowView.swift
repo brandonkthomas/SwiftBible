@@ -37,12 +37,15 @@ struct LibraryRowView: View {
         // build this annotation into a card
         VStack(alignment: .leading, spacing: 10) {
             // Chapter / verse range / translation
-            HStack {
+            HStack(spacing: 8) {
                 Text(passageLabel)
-                    .font(.system(.headline))
                 Text(translationLabel)
-                    .font(.system(.body))
+                    .foregroundStyle(.secondary)
             }
+            .font(.system(size: UIFontMetrics(forTextStyle: .body).scaledValue(for: 16),
+                          weight: .medium,
+                          design: .serif))
+            .contentShape(Rectangle())
 
             // Verse rendered text
             if let renderedPassageRuns {
@@ -127,7 +130,8 @@ struct LibraryRowView: View {
                 tapOrigin: nil,
                 progress: 0,
                 fadeProgress: 0,
-                persistedHighlights: annotation.highlightedVerses))
+                persistedHighlights: annotation.highlightedVerses,
+                opacity: 0.5)) // custom for this view only (default 1)
     }
 
     private func annotationItemType(for annotation: VerseAnnotation) -> some View {
