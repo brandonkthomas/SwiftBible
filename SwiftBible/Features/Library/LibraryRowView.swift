@@ -34,20 +34,46 @@ struct LibraryRowView: View {
     }
 
     var body: some View {
-        // build this annotation into a card
         VStack(alignment: .leading, spacing: 10) {
-            // Chapter / verse range / translation
-            HStack(spacing: 8) {
-                Text(passageLabel)
-                Text(translationLabel)
-                    .foregroundStyle(.secondary)
-            }
-            .font(.system(size: UIFontMetrics(forTextStyle: .body).scaledValue(for: 16),
-                          weight: .medium,
-                          design: .serif))
-            .contentShape(Rectangle())
+            // Row 1: Annotation summary
+            HStack {
+                // Annotation type icon
+                Group {
+                    switch annotation.content {
+//                    case .highlight(let color):
+                    case .highlight(_):
+                        Image(systemName: "pencil.line")
+                            .symbolRenderingMode(.palette)
+//                            .foregroundStyle(.primary, color.uiColor)
+                    case .note(_):
+                        Image(systemName: "text.alignleft")
+                    case .tags(_):
+                        Image(systemName: "tag")
+                    }
+                }
+                .font(.system(size: 16, weight: .regular, design: .serif))
+                .foregroundStyle(.secondary)
 
-            // Verse rendered text
+                // Chapter / verse range / translation
+                HStack(spacing: 8) {
+                    Text(passageLabel)
+                    Text(translationLabel)
+                        .foregroundStyle(.secondary)
+                }
+                .font(.system(size: UIFontMetrics(forTextStyle: .body).scaledValue(for: 16),
+                              weight: .medium,
+                              design: .serif))
+                .contentShape(Rectangle())
+
+                Spacer()
+
+                // Action menu
+                annotationItemMenu
+                // TODO: hitbox is TINY
+//                .frame(maxHeight: )
+            }
+
+            // Row 2: Verse rendered text
             if let renderedPassageRuns {
                 passageText(for: renderedPassageRuns)
                     .lineLimit(passageLineLimit)
@@ -82,23 +108,22 @@ struct LibraryRowView: View {
                     }
             }
 
-            // Annotation type
+            // Row 3: Annotation details (need to present Note/Tags ONLY)
             // switch doesnt work here due to exhaustive complaints
             if case .note(let noteText) = annotation.content {
                 Divider()
                 Text(noteText)
+                    .font(.system(size: UIFontMetrics(forTextStyle: .body).scaledValue(for: 16),
+                                  weight: .regular,
+                                  design: .serif))
+                    .lineHeight(AttributedString.LineHeight.exact(points: 20)) // try to match AnnotationEditorSheetView Note TextInput
             } else if case .tags(let tags) = annotation.content {
                 Divider()
                 Text(tags.joined(separator: ", "))
-            }
-
-            Divider()
-
-            // Annotation actions
-            HStack {
-                annotationItemType(for: annotation)
-                Spacer()
-                annotationItemMenu
+                    .font(.system(size: UIFontMetrics(forTextStyle: .body).scaledValue(for: 16),
+                                  weight: .regular,
+                                  design: .serif))
+                    .lineHeight(AttributedString.LineHeight.exact(points: 20)) // try to match AnnotationEditorSheetView Note TextInput
             }
 
             // TODO: Date; pending view refactor
@@ -132,37 +157,6 @@ struct LibraryRowView: View {
                 fadeProgress: 0,
                 persistedHighlights: annotation.highlightedVerses,
                 opacity: 0.5)) // custom for this view only (default 1)
-    }
-
-    private func annotationItemType(for annotation: VerseAnnotation) -> some View {
-        HStack {
-            switch annotation.content {
-            case .highlight(let color):
-                Image(systemName: "pencil.line")
-                    .font(.system(size: UIFontMetrics(forTextStyle: .body).scaledValue(for: 20)))
-                    .symbolRenderingMode(.palette)
-                    .foregroundStyle(.primary, color.uiColor)
-            case .note(_):
-                Image(systemName: "bookmark")
-                    .font(.system(size: UIFontMetrics(forTextStyle: .body).scaledValue(for: 20)))
-            case .tags(_):
-                Image(systemName: "tag")
-                    .font(.system(size: UIFontMetrics(forTextStyle: .body).scaledValue(for: 20)))
-            }
-
-            Group {
-                switch annotation.content {
-                case .highlight:
-                    Text("Highlight")
-                case .note(_):
-                    Text("Note")
-                case .tags(let tags):
-                    Text("Tag\(tags.count == 1 ? "" : "s")")
-                }
-            }
-            .font(.system(.subheadline))
-            .foregroundStyle(Color(.label))
-        }
     }
 
     private var annotationItemMenu: some View {
