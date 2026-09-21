@@ -38,6 +38,10 @@ struct VerseHighlightRenderer: TextRenderer {
     @AnimatableIgnored
     let persistedHighlights: [Int: VerseAnnotationHighlightColor]
 
+    /// Optional: used for views outside of main ReaderPassageView
+    @AnimatableIgnored // this is not animated
+    var opacity: CGFloat = 1
+
     // MARK: Functions (Implementations)
 
     /// Custom text drawing behavior for highlights
@@ -58,6 +62,7 @@ struct VerseHighlightRenderer: TextRenderer {
             }
         }
 
+        // TAP ANIMATION
         // calculate circle path
         var circlePath: Path = .init()
 
@@ -98,7 +103,7 @@ struct VerseHighlightRenderer: TextRenderer {
                     if let highlightColor = persistedHighlights[number] {
                         let shape = RoundedRectangle(cornerRadius: 4, style: .continuous)
                             .path(in: run.typographicBounds.rect)
-                        ctx.fill(shape, with: .color(highlightColor.uiColor))
+                        ctx.fill(shape, with: .color(highlightColor.uiColor.opacity(opacity)))
                     }
 
                     // Clip revealing verses to a mask
