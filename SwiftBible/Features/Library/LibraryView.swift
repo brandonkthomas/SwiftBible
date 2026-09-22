@@ -76,7 +76,7 @@ struct LibraryView: View {
 
             // Required for all annotations to load their associated passages
             // Prereq for rendering each card's verse
-            await libraryStore.loadPassages()
+//            await libraryStore.loadAllPassages()
 
             // Load book names for each annotation
             await loadMissingBookMetadata()
@@ -116,6 +116,11 @@ struct LibraryView: View {
                                passageLabel: passageLabel,
                                translationLabel: translation?.abbreviation
                                    ?? annotation.translationID.description)
+                .task {
+                    // Required for annotation to load its associated passage
+                    // Prereq for rendering this card's verse
+                    await libraryStore.loadPassage(for: annotation)
+                }
             }
             .listRowSeparator(.hidden)
             .listRowBackground(Color.clear)

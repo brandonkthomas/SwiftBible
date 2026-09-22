@@ -74,19 +74,42 @@ final class LibraryStore {
     }
 
     /// Load all distinct/reduced passages from all existing annotations/verses
-    func loadPassages() async {
+    func loadAllPassages() async {
         // dont need (for:) here since "self" is implied
-        let keys = Set(annotations.map(passageKey))
+        let biblePassageKeys = Set(annotations.map(passageKey))
 
         // TODO: loading sequentially for now
-        for key in keys {
+        for biblePassageKey in biblePassageKeys {
+            // no need to load again if already done
+            if loadedPassages[biblePassageKey] != nil {
+                continue
+            }
             do {
-                let loadedPassage = try await passageStore.passage(for: key)
-                loadedPassages[key] = loadedPassage
+                let loadedPassage = try await passageStore.passage(for: biblePassageKey)
+                loadedPassages[biblePassageKey] = loadedPassage
             } catch {
                 // do not remove existing entries on failure; just log
                 Self.logger.error("Unable to load passage: \(error.localizedDescription)")
             }
+        }
+    }
+
+    /// Load a specific annotation's passage
+    func loadPassage(for annotation: VerseAnnotation) async {
+        // dont need (for:) here since "self" is implied
+        let biblePassageKey = passageKey(for: annotation)
+
+        // no need to load again if already done
+        if loadedPassages[biblePassageKey] != nil {
+            return
+        }
+
+        do {
+            let loadedPassage = try await passageStore.passage(for: biblePassageKey)
+            loadedPassages[biblePassageKey] = loadedPassage
+        } catch {
+            // do not remove existing entries on failure; just log
+            Self.logger.error("Unable to load passage: \(error.localizedDescription)")
         }
     }
 
