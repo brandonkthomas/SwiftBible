@@ -30,6 +30,9 @@ struct VerseActionsView: View {
     /// if non-nil, we have an existing session and need to open AnnotationEditorSheetView
     @State private var annotationEditor: AnnotationEditor?
 
+    /// Triggered when a highlight popover button is tapped
+    @State private var highlightHapticTrigger: Bool = false
+
     @State private var isHighlightPopoverPresented: Bool = false
     @State private var showEraser: Bool = false
 
@@ -192,7 +195,6 @@ struct VerseActionsView: View {
 
     /// Produces a selectable circle button for a given highlight color
     private func highlightColorButton(for color: VerseAnnotationHighlightColor) -> some View {
-        @State var highlightFeedbackTrigger: Bool = false
         var highlightFeedback: SensoryFeedback = .success
 
         return Button(action: {
@@ -205,7 +207,7 @@ struct VerseActionsView: View {
             }
             // TODO: this is not playing the correct haptic pattern
             highlightFeedback = showEraser ? .warning : .success
-            highlightFeedbackTrigger.toggle()
+            highlightHapticTrigger.toggle()
         }) {
             let size = UIFontMetrics(forTextStyle: .body).scaledValue(for: 30)
             Text("") // color only
@@ -215,7 +217,7 @@ struct VerseActionsView: View {
         // blend in w/ surrounding elements; interactive; tint to correct color
         .glassEffect(.regular.tint(color.uiColor).interactive(),in: .circle)
         // haptic on selection
-        .sensoryFeedback(highlightFeedback, trigger: highlightFeedbackTrigger)
+        .sensoryFeedback(highlightFeedback, trigger: highlightHapticTrigger)
     }
 }
 

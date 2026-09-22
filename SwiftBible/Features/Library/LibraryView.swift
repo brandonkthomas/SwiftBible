@@ -122,6 +122,7 @@ struct LibraryView: View {
             .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
             .swipeActions {
                 Button(role: .destructive) {
+                    // TODO: define onDelete behavior
                     // TODO: popover delete model confirmation; wire actual delete
                 } label: {
                     Image(systemName: "trash.fill")

@@ -9,14 +9,24 @@ import SwiftUI
 
 struct LibraryRowView: View {
 
+    // MARK: Properties
+
+    /// Annotation which this row represents
     var annotation: VerseAnnotation
+
+    /// Runs for this passage (used for rendering actual verse using PassageTextRenderer)
     let renderedPassageRuns: [RenderedPassageRun]?
+
+    /// Label for the passage (i.e. "Genesis 1:1-2")
     let passageLabel: String
+
+    /// Label for the translation (i.e. "NIV")
     let translationLabel: String
 
     // MARK: Properties (Passage Truncation, Private)
 
     /// Same value used in ReaderPassageView
+    /// TODO: Consolidate in central location
     private let passageLineHeight: CGFloat = 30
 
     /// Passage text collapses to this many lines; overflow fades out
@@ -24,6 +34,9 @@ struct LibraryRowView: View {
 
     /// Full (unclamped) height of the passage text, measured off-screen
     @State private var unclampedPassageHeight: CGFloat = 0
+
+    /// Has 1 second passed since we first rendered the empty card passage slot?
+    @State private var isPassageLoadSpinnerVisible: Bool = false
 
     /// Does the passage need more lines than we display?
     ///
@@ -33,14 +46,16 @@ struct LibraryRowView: View {
         Int((unclampedPassageHeight / passageLineHeight).rounded()) > passageLineLimit
     }
 
+    // MARK: Views
+
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             // Row 1: Annotation summary
             HStack {
                 // Annotation type icon
+                // TODO: enforce width & normalize size
                 Group {
                     switch annotation.content {
-//                    case .highlight(let color):
                     case .highlight(_):
                         Image(systemName: "pencil.line")
                             .symbolRenderingMode(.palette)
@@ -105,6 +120,21 @@ struct LibraryRowView: View {
                         } else {
                             Rectangle()
                         }
+                    }
+            // Row 2: Verse rendered text (loading state)
+            } else {
+                Color.clear
+                    .frame(height: passageLineHeight * CGFloat(passageLineLimit))
+                    .overlay {
+                        if isPassageLoadSpinnerVisible {
+                            ProgressView()
+                                .accessibilityLabel("Loading passage...")
+                        }
+                    }
+                    .task {
+                        try? await Task.sleep(for: .seconds(1))
+                        guard !Task.isCancelled else { return }
+                        isPassageLoadSpinnerVisible = true
                     }
             }
 
