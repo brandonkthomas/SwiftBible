@@ -38,12 +38,20 @@ struct LibraryRowView: View {
     /// Has 1 second passed since we first rendered the empty card passage slot?
     @State private var isPassageLoadSpinnerVisible: Bool = false
 
+    /// Has this passage been tapped (to expand)?
+    @State private var isPassageExpanded: Bool = false
+
     /// Does the passage need more lines than we display?
     ///
     /// Line height is fixed, so height / lineHeight is the real line count
     /// Rounding absorbs the first line's ascent/descent overshoot
     private var isPassageTruncated: Bool {
         Int((unclampedPassageHeight / passageLineHeight).rounded()) > passageLineLimit
+    }
+
+    /// Fade the bottom edge only while overflowing text is hidden
+    private var isPassageFaded: Bool {
+        isPassageTruncated && !isPassageExpanded
     }
 
     // MARK: Views
@@ -90,41 +98,26 @@ struct LibraryRowView: View {
 
             // Row 2: Verse rendered text
             if let renderedPassageRuns {
-                passageText(for: renderedPassageRuns)
-                    .lineLimit(passageLineLimit)
-                    .background(alignment: .top) {
-                        // Hidden unclamped copy of the same text
-                        // Visible copy is already capped at passageLineLimit,
-                        // This copy lays out at the same width with its ideal height
-                        passageText(for: renderedPassageRuns, renderHighlight: false)
-                            .fixedSize(horizontal: false, vertical: true)
-                            .hidden()
-                            .onGeometryChange(for: CGFloat.self) { proxy in
-                                proxy.size.height
-                            } action: { height in
-                                unclampedPassageHeight = height
-                            }
+                // Always a Button so view identity stays stable when truncation is first
+                // measured; short passages simply ignore taps
+                Button {
+                    withAnimation(.snappy) {
+                        isPassageExpanded.toggle()
                     }
-                    .mask(alignment: .top) {
-                        if isPassageTruncated {
-                            // Mask alpha from gradient
-                            LinearGradient(
-                                stops: [
-                                    .init(color: .black, location: 0),
-                                    .init(color: .black, location: 0.6),
-                                    .init(color: .clear, location: 1)
-                                ],
-                                startPoint: .top,
-                                endPoint: .bottom
-                            )
-                        } else {
-                            Rectangle()
-                        }
-                    }
+                } label: {
+                    passage(for: renderedPassageRuns)
+                }
+                // borderless: inside a List, confines the tap to the label instead of the whole row
+                .buttonStyle(.borderless)
+                // Only listen for taps when collapsed
+                .allowsHitTesting(isPassageTruncated)
+                // accessibility compat
+                .accessibilityRemoveTraits(isPassageTruncated ? [] : .isButton)
+                .accessibilityHint(passageAccessibilityHint)
             // Row 2: Verse rendered text (loading state)
             } else {
                 Color.clear
-                    .frame(height: passageLineHeight * CGFloat(passageLineLimit))
+                    .frame(height: collapsedPassageHeight)
                     .overlay {
                         if isPassageLoadSpinnerVisible {
                             ProgressView()
@@ -169,14 +162,77 @@ struct LibraryRowView: View {
         .shadow(color: .black.opacity(0.08), radius: 4, y: 2)
     }
 
-    /// Passage text styling, shared by the visible copy and the measuring copy
-    /// so both lay out identically
-    private func passageText(for runs: [RenderedPassageRun],
-                             renderHighlight: Bool = true) -> some View {
+    /// VoiceOver hint describing what a tap will do (empty when the passage can't expand)
+    private var passageAccessibilityHint: String {
+        guard isPassageTruncated else {
+            return ""
+        }
+        return isPassageExpanded ? "Collapses the passage" : "Shows the full passage"
+    }
+
+    /// Height of the collapsed passage (also used by the loading placeholder)
+    private var collapsedPassageHeight: CGFloat {
+        passageLineHeight * CGFloat(passageLineLimit)
+    }
+
+    /// Height the passage is clipped to
+    ///
+    /// Collapsed is the default *before* measuring too: rows that first appeared at full
+    /// height then snapped to 3 lines would shift everything below it, and LazyVStack
+    /// re-creates rows while scrolling up, so the list would jump repeatedly
+    private var visiblePassageHeight: CGFloat {
+        // not measured yet (0): assume collapsed
+        guard unclampedPassageHeight > 0 else {
+            return collapsedPassageHeight
+        }
+        // short passages and expanded passages show their full height
+        guard isPassageTruncated, !isPassageExpanded else {
+            return unclampedPassageHeight
+        }
+        return collapsedPassageHeight
+    }
+
+    /// Visible passage: clipped to 3 lines unless expanded, with a bottom fade while clipped
+    ///
+    /// The text always lays out every line, so wrapping never changes when expanding
+    /// Only the clipping frame's height changes, which animates as a clean reveal
+    /// (animating lineLimit instead re-wraps the text and moves glyphs mid-animation)
+    private func passage(for renderedPassageRuns: [RenderedPassageRun]) -> some View {
+        passageText(for: renderedPassageRuns)
+            // Full natural height, never compressed by the frame below
+            .fixedSize(horizontal: false, vertical: true)
+            // Measure the full text directly (no hidden copy needed)
+            .onGeometryChange(for: CGFloat.self) { proxy in
+                proxy.size.height
+            } action: { height in
+                unclampedPassageHeight = height
+            }
+            .frame(height: visiblePassageHeight, alignment: .top)
+            .clipped()
+            .mask(alignment: .top) {
+                // One gradient in both states (no if/else) so identity never changes;
+                // only the final stop's color does
+                LinearGradient(
+                    stops: [
+                        .init(color: .black, location: 0),
+                        .init(color: .black, location: 0.6),
+                        .init(color: isPassageFaded ? .clear : .black, location: 1)
+                    ],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+            }
+    }
+
+    /// Passage text styling
+    private func passageText(for runs: [RenderedPassageRun]) -> some View {
         PassageTextRenderer.text(for: runs,
-                                 footnoteMarkerMode: .hidden)
+                                 footnoteMarkerMode: .hidden,
+                                 produceLinkAttributes: false) // do NOT want these tap events here
             .font(.system(.body, design: .serif))
             .lineHeight(AttributedString.LineHeight.exact(points: passageLineHeight))
+            // Button labels center multi-line text by default
+            .multilineTextAlignment(.leading)
             .frame(maxWidth: .infinity, alignment: .leading)
             // custom TextRenderer to support verse highlights w/ animations
             .textRenderer(VerseHighlightRenderer(
@@ -186,7 +242,7 @@ struct LibraryRowView: View {
                 tapOrigin: nil,
                 progress: 0,
                 fadeProgress: 0,
-                persistedHighlights: renderHighlight ? annotation.highlightedVerses : [:],
+                persistedHighlights: annotation.highlightedVerses,
                 opacity: 0.5)) // custom for this view only (default 1)
     }
 

@@ -81,58 +81,65 @@ struct LibraryView: View {
     }
 
     /// List of annotations
+    ///
+    /// ScrollView + LazyVStack rather than List: List's underlying collection view resizes
+    /// rows around their center, so expanding/collapsing a card jumped. A VStack lays out
+    /// top-down, keeping each card's top edge fixed while the cards below move with it.
+    /// Rows are still created lazily as they scroll into view.
     var libraryListView: some View {
-        List {
-            ForEach(libraryStore.filteredAnnotations) { annotation in
-                // Calculate required params
-                // Translation
-                let translation = catalogStore.translation(for: annotation.translationID)
+        ScrollView {
+            LazyVStack(spacing: 16) {
+                ForEach(libraryStore.filteredAnnotations) { annotation in
+                    // Calculate required params
+                    // Translation
+                    let translation = catalogStore.translation(for: annotation.translationID)
 
-                // Book
-                let book = catalogStore.book(for: annotation.translationID,
-                                             bookCode: annotation.bookCode)
+                    // Book
+                    let book = catalogStore.book(for: annotation.translationID,
+                                                 bookCode: annotation.bookCode)
 
-                // Verse range
-                let upperBoundSameAsLowerBound = annotation.verseRange.upperBound == annotation.verseRange.lowerBound
-                let endVerseCalculated = upperBoundSameAsLowerBound ? nil : annotation.verseRange.upperBound
+                    // Verse range
+                    let upperBoundSameAsLowerBound = annotation.verseRange.upperBound == annotation.verseRange.lowerBound
+                    let endVerseCalculated = upperBoundSameAsLowerBound ? nil : annotation.verseRange.upperBound
 
-                let verseRange = RenderedVerseRange(startVerse: annotation.verseRange.lowerBound,
-                                                    endVerse: endVerseCalculated)
+                    let verseRange = RenderedVerseRange(startVerse: annotation.verseRange.lowerBound,
+                                                        endVerse: endVerseCalculated)
 
-                // Passage label
-                let passageLabel = "\(book?.displayName ?? annotation.bookCode) \(annotation.chapter):\(verseRange.displayText)"
+                    // Passage label
+                    let passageLabel = "\(book?.displayName ?? annotation.bookCode) \(annotation.chapter):\(verseRange.displayText)"
 
-                // RenderedPassageRuns
-                let passageForAnnotation = libraryStore.passage(for: annotation)
+                    // RenderedPassageRuns
+                    let passageForAnnotation = libraryStore.passage(for: annotation)
 
-                let renderedPassageRunsForAnnotation = passageForAnnotation?.renderedPassage.runs(for: verseRange)
+                    let renderedPassageRunsForAnnotation = passageForAnnotation?.renderedPassage.runs(for: verseRange)
 
-                // Build actual single annotation view
-                LibraryRowView(annotation: annotation,
-                               renderedPassageRuns: renderedPassageRunsForAnnotation,
-                               passageLabel: passageLabel,
-                               translationLabel: translation?.abbreviation
-                                   ?? annotation.translationID.description)
-                .task {
-                    // Required for annotation to load its associated passage
-                    // Prereq for rendering this card's verse
-                    await libraryStore.loadPassage(for: annotation)
+                    // Build actual single annotation view
+                    LibraryRowView(annotation: annotation,
+                                   renderedPassageRuns: renderedPassageRunsForAnnotation,
+                                   passageLabel: passageLabel,
+                                   translationLabel: translation?.abbreviation
+                                       ?? annotation.translationID.description)
+                    .task {
+                        // Required for annotation to load its associated passage
+                        // Prereq for rendering this card's verse
+                        await libraryStore.loadPassage(for: annotation)
+                    }
+                    // Outside a List, only takes effect inside swipeActionsContainer() (iOS 27+)
+                    .swipeActions {
+                        Button(role: .destructive) {
+                            // TODO: define onDelete behavior
+                            // TODO: popover delete model confirmation; wire actual delete
+                            // TODO: iOS 26 has no swipe here; offer delete in the card's menu
+                        } label: {
+                            Image(systemName: "trash.fill")
+                        }
+                    }
                 }
             }
-            .listRowSeparator(.hidden)
-            .listRowBackground(Color.clear)
-            .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
-            .swipeActions {
-                Button(role: .destructive) {
-                    // TODO: define onDelete behavior
-                    // TODO: popover delete model confirmation; wire actual delete
-                } label: {
-                    Image(systemName: "trash.fill")
-                }
-            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 8)
         }
-        .listStyle(.plain)
-        .scrollContentBackground(.hidden)
+        .swipeActionsContainerIfAvailable()
         .background(Color(.systemGroupedBackground))
     }
 
@@ -194,6 +201,8 @@ struct LibraryView: View {
                 Divider()
 
                 // can you not change EditButton appearance/label?
+                // TODO: EditButton only drives List's built-in edit mode; since the switch to
+                // LazyVStack it toggles editMode but nothing responds. Replace with custom selection.
                 EditButton()
 //                Button {
 //
@@ -262,6 +271,24 @@ struct LibraryView: View {
             } catch {
                 Self.logger.error("loadMissingBookMetadata(): load for ID \(translationID) failed: \(error.localizedDescription)")
             }
+        }
+    }
+}
+
+// MARK: Swipe Actions Availability
+
+private extension View {
+
+    /// Enables row `.swipeActions` outside a List on iOS 27+; no-op on earlier versions
+    ///
+    /// The `if` depends only on the OS version, which never changes while the app runs,
+    /// so view identity stays stable (unlike a conditional modifier driven by state)
+    @ViewBuilder
+    func swipeActionsContainerIfAvailable() -> some View {
+        if #available(iOS 27, *) {
+            swipeActionsContainer()
+        } else {
+            self
         }
     }
 }

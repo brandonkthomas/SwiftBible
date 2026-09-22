@@ -28,7 +28,8 @@ struct PassageTextRenderer {
     /// Each verse is rendered w/ customAttribute for use in highlight rendering later...
     /// see https://alexanderweiss.dev/blog/2024-06-24-using-textrenderer-to-create-highlighted-text
     static func text(for runs: [RenderedPassageRun],
-                     footnoteMarkerMode: MarkerMode) -> Text {
+                     footnoteMarkerMode: MarkerMode,
+                     produceLinkAttributes: Bool = true) -> Text {
         var result = Text("")
 
         // If mode.collapsed:
@@ -47,7 +48,8 @@ struct PassageTextRenderer {
                   verseHasFootnote,
                   let verseRange = accumulatingVerseRange else { return }
 
-            let marker = styledVerseEndMarker(for: verseRange)
+            let marker = styledVerseEndMarker(for: verseRange,
+                                              useLinkAttribute: produceLinkAttributes)
 
             // '+' was deprecated in iOS 26.0:
             // Use string interpolation on `Text` instead: `Text("Hello \(name)")`
@@ -81,7 +83,7 @@ struct PassageTextRenderer {
                 let text = styledText(runText,
                                       style: [],
                                       verseRange: currentVerseRange,
-                                      useLinkAttribute: true)
+                                      useLinkAttribute: produceLinkAttributes)
 
                 var segment = Text(text)
 
@@ -103,7 +105,7 @@ struct PassageTextRenderer {
                 let text = styledText(runText,
                                       style: style,
                                       verseRange: currentVerseRange,
-                                      useLinkAttribute: true)
+                                      useLinkAttribute: produceLinkAttributes)
 
                 var segment = Text(text)
 
@@ -173,6 +175,10 @@ struct PassageTextRenderer {
                                    useLinkAttribute: Bool = false) -> AttributedString {
         var result = AttributedString("\(text)\(trailingSeparator(after: text))")
 
+        // Explicit color so neither link styling nor a containing Button's tint
+        // recolors Scripture text
+        result.foregroundColor = .primary
+
         // Tap link (adds support for verse selection via tap action)
         if useLinkAttribute,
            let verseRange {
@@ -181,7 +187,6 @@ struct PassageTextRenderer {
                 url.append("&ev=\(endVerse)")
             }
             result.link = URL(string: url)
-            result.foregroundColor = .primary
         }
 
         // Support for italic, words of Jesus, divine name styling from YouVersion API
@@ -231,13 +236,18 @@ struct PassageTextRenderer {
     }
 
     /// Generate an end footnote marker for a given verseRange
-    private static func styledVerseEndMarker(for verseRange: RenderedVerseRange) -> AttributedString {
+    private static func styledVerseEndMarker(for verseRange: RenderedVerseRange,
+                                             useLinkAttribute: Bool = true) -> AttributedString {
         var result = AttributedString("† ")
         result.baselineOffset = 6
         result.font = .system(.caption2, design: .serif, weight: .bold)
         result.foregroundColor = .accentColor
 
         // Tap link (adds support for opening ReaderPassageFootnoteSheetView via tap action)
+        guard useLinkAttribute else {
+            return result
+        }
+
         var url = "swiftbible://footnote?sv=\(verseRange.startVerse)"
         if let endVerse = verseRange.endVerse {
             url.append("&ev=\(endVerse)")
