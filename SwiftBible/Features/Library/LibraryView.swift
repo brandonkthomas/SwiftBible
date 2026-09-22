@@ -72,11 +72,8 @@ struct LibraryView: View {
         }
         .task {
             // First load all annotations
+            // Passages are loaded as-needed by LibraryRowView instances below
             libraryStore.load()
-
-            // Required for all annotations to load their associated passages
-            // Prereq for rendering each card's verse
-//            await libraryStore.loadAllPassages()
 
             // Load book names for each annotation
             await loadMissingBookMetadata()
