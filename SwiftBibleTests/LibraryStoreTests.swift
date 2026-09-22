@@ -13,7 +13,7 @@ import Testing
 struct LibraryStoreTests {
 
     /// Multiple annotations in the same translation, book, and chapter cause one repository request
-    @Test func loadPassagesLoadsOnePassageForAnnotationsInSameChapter() async throws {
+    @Test func loadPassageLoadsOnePassageForAnnotationsInSameChapter() async throws {
         let libraryRepository = InMemoryLibraryRepository()
         let passageRepository = LibraryPassageCountingRepository()
         let passageStore = BiblePassageStore(repository: passageRepository)
@@ -136,32 +136,6 @@ struct LibraryStoreTests {
                             chapter: 1)
         ])
         #expect(libraryStore.passage(for: annotation)?.passage == expectedPassage)
-    }
-
-    /// A second annotation in an already-loaded chapter reuses the loaded passage
-    @Test func loadPassageSkipsRequestForAlreadyLoadedChapter() async throws {
-        let libraryRepository = InMemoryLibraryRepository()
-        let passageRepository = LibraryPassageCountingRepository()
-        let passageStore = BiblePassageStore(repository: passageRepository)
-        let libraryStore = LibraryStore(libraryRepository: libraryRepository,
-                                        passageStore: passageStore)
-        let firstAnnotation = makeAnnotation(translationID: 1234,
-                                             startVerse: 1,
-                                             content: .note("First note"))
-        let secondAnnotation = makeAnnotation(translationID: 1234,
-                                              startVerse: 2,
-                                              content: .tags(["Second tag"]))
-
-        try libraryRepository.save(firstAnnotation)
-        try libraryRepository.save(secondAnnotation)
-        libraryStore.load()
-        await libraryStore.loadPassage(for: firstAnnotation)
-        await libraryStore.loadPassage(for: secondAnnotation)
-
-        #expect(passageRepository.passageRequestCount == 1)
-        #expect(libraryStore.loadedPassages.count == 1)
-        #expect(libraryStore.passage(for: secondAnnotation)?.passage
-                == libraryStore.passage(for: firstAnnotation)?.passage)
     }
 
     /// Genesis 2 is absent from the default fixtures; tests needing a second chapter add it
