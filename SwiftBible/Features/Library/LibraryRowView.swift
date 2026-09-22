@@ -96,7 +96,7 @@ struct LibraryRowView: View {
                         // Hidden unclamped copy of the same text
                         // Visible copy is already capped at passageLineLimit,
                         // This copy lays out at the same width with its ideal height
-                        passageText(for: renderedPassageRuns)
+                        passageText(for: renderedPassageRuns, renderHighlight: false)
                             .fixedSize(horizontal: false, vertical: true)
                             .hidden()
                             .onGeometryChange(for: CGFloat.self) { proxy in
@@ -171,7 +171,8 @@ struct LibraryRowView: View {
 
     /// Passage text styling, shared by the visible copy and the measuring copy
     /// so both lay out identically
-    private func passageText(for runs: [RenderedPassageRun]) -> some View {
+    private func passageText(for runs: [RenderedPassageRun],
+                             renderHighlight: Bool = true) -> some View {
         PassageTextRenderer.text(for: runs,
                                  footnoteMarkerMode: .hidden)
             .font(.system(.body, design: .serif))
@@ -185,7 +186,7 @@ struct LibraryRowView: View {
                 tapOrigin: nil,
                 progress: 0,
                 fadeProgress: 0,
-                persistedHighlights: annotation.highlightedVerses,
+                persistedHighlights: renderHighlight ? annotation.highlightedVerses : [:],
                 opacity: 0.5)) // custom for this view only (default 1)
     }
 
