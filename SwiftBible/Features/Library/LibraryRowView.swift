@@ -32,13 +32,16 @@ struct LibraryRowView: View {
     /// Passage text collapses to this many lines; overflow fades out
     private let passageLineLimit = 3
 
-    /// Full (unclamped) height of the passage text, measured off-screen
+    /// Full (unclamped) height of the passage text, measured directly
     @State private var unclampedPassageHeight: CGFloat = 0
 
     /// Has 1 second passed since we first rendered the empty card passage slot?
     @State private var isPassageLoadSpinnerVisible: Bool = false
 
     /// Has this passage been tapped (to expand)?
+    ///
+    /// TODO: move up a layer to LibraryView; state that outlives the row's LazyVStack life
+    /// should NOT live inside the row itself (is lost on row recycle)
     @State private var isPassageExpanded: Bool = false
 
     /// Does the passage need more lines than we display?
@@ -107,9 +110,9 @@ struct LibraryRowView: View {
                 } label: {
                     passage(for: renderedPassageRuns)
                 }
-                // borderless: inside a List, confines the tap to the label instead of the whole row
+                // borderless: inside a LazyVStack, confines the tap to the label instead of the whole row
                 .buttonStyle(.borderless)
-                // Only listen for taps when collapsed
+                // Only listen for taps when truncated
                 .allowsHitTesting(isPassageTruncated)
                 // accessibility compat
                 .accessibilityRemoveTraits(isPassageTruncated ? [] : .isButton)
@@ -124,9 +127,12 @@ struct LibraryRowView: View {
                                 .accessibilityLabel("Loading passage...")
                         }
                     }
+                    // task cancelled when LazyVStack rebuilds this row (i.e. scroll offscreen)
                     .task {
                         try? await Task.sleep(for: .seconds(1))
+                        // have we been asked to cancel while sleeping?
                         guard !Task.isCancelled else { return }
+                        // now we're safe to run logic
                         isPassageLoadSpinnerVisible = true
                     }
             }

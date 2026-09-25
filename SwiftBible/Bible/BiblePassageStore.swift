@@ -57,6 +57,11 @@ final class BiblePassageStore {
         }
 
         // store the fetch logic as a Task so that we can add it to inFlightRequests
+        // Unstructured task: independent of its awaiters
+        //   Awaiting task.value does NOT pass cancellation down here
+        //   Basically we don't have any C# "CancellationToken" here
+        //   We do NOT need to wire this up though because other cards may be waiting on this
+        //   We may need to cancel per-URL-request and only when no one wants the chapter anymore...
         let task = Task<LoadedBiblePassage, Error> {
             // retrieve passage
             let passage = try await repository.passage(for: reference)

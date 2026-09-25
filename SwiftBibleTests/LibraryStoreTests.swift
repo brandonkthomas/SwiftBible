@@ -61,6 +61,7 @@ struct LibraryStoreTests {
         await libraryStore.loadPassage(for: firstTranslationAnnotation)
         await libraryStore.loadPassage(for: secondTranslationAnnotation)
 
+        // Set returns a random order every time
         let expectedKeys: Set<BiblePassageKey> = [
             BiblePassageKey(translationID: 1234,
                             bookCode: "GEN",

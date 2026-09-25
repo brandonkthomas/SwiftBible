@@ -89,6 +89,8 @@ struct LibraryView: View {
     var libraryListView: some View {
         ScrollView {
             LazyVStack(spacing: 16) {
+                // VerseAnnotation is stable Identifiable; required so ForEach doesnt continually
+                // delete and re-insert the same rows if IDs were to change mid-life
                 ForEach(libraryStore.filteredAnnotations) { annotation in
                     // Calculate required params
                     // Translation

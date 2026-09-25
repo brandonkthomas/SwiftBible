@@ -79,6 +79,9 @@ final class LibraryStore {
         let biblePassageKey = passageKey(for: annotation)
 
         // no need to load again if already done
+        // Assigning here notifies every @Observing view even if value is unchanged;
+        //   therefore we need this check to ensure that the whole list doesnt re-eval for
+        //   every row refresh
         if loadedPassages[biblePassageKey] != nil {
             return
         }

@@ -45,8 +45,12 @@ nonisolated struct VerseAnnotation: Identifiable, Equatable {
     }
 
     /// Which verses are highlighted, and in which color?
+    ///
+    /// Don't return optional state; [:] already represents this
     var highlightedVerses: [Int: VerseAnnotationHighlightColor] {
         if case .highlight(let color) = content {
+            // Dictionary(uniqueKeysWithValues:) can crash on dupe keys;
+            // BUT verseRange is ClosedRange<Int> which returns 1...1 as [1]
             return Dictionary(uniqueKeysWithValues:
                 verseRange.map { ($0, color) }
             )
