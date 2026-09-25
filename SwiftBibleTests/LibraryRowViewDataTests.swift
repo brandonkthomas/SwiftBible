@@ -64,10 +64,32 @@ struct LibraryRowViewDataTests {
         #expect(viewData.renderedPassageRuns == nil)
     }
 
+    /// Once the annotation's chapter has been saved + loaded, its verse has real runs to render
+    @Test func loadedChapterProducesNonEmptyRuns() async throws {
+        let catalogStore = BibleCatalogStore(repository: FakeBibleRepository())
+        let libraryRepository = InMemoryLibraryRepository()
+        let libraryStore = makeLibraryStore(libraryRepository: libraryRepository)
+        // translationID 1234 + GEN 1 matches FakeBibleRepository.defaultPassages
+        let annotation = makeAnnotation(startVerse: 1)
+
+        try libraryRepository.save(annotation)
+        libraryStore.load()
+        await libraryStore.loadPassage(for: annotation)
+
+        let viewData = LibraryRowViewData(annotation: annotation,
+                                          catalogStore: catalogStore,
+                                          libraryStore: libraryStore)
+
+        let runs = try #require(viewData.renderedPassageRuns)
+        #expect(!runs.isEmpty)
+    }
+
     // MARK: Functions (Private Helpers)
 
-    private func makeLibraryStore() -> LibraryStore {
-        LibraryStore(libraryRepository: InMemoryLibraryRepository(),
+    private func makeLibraryStore(
+        libraryRepository: any LibraryRepository = InMemoryLibraryRepository()
+    ) -> LibraryStore {
+        LibraryStore(libraryRepository: libraryRepository,
                     passageStore: BiblePassageStore(repository: FakeBibleRepository()))
     }
 

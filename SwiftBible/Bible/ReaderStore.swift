@@ -119,8 +119,7 @@ final class ReaderStore {
             return nil
         }
 
-        let range = RenderedVerseRange(startVerse: selectedVerses.lowerBound,
-                                       endVerse: selectedVerses.upperBound == selectedVerses.lowerBound ? nil : selectedVerses.upperBound)
+        let range = RenderedVerseRange(range: selectedVerses)
 
         return "\(selectedReferenceFriendlyName):\(range.displayText)"
     }

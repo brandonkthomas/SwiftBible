@@ -32,11 +32,7 @@ struct LibraryRowViewData {
                                      bookCode: annotation.bookCode)
 
         // Verse range
-        let upperBoundSameAsLowerBound = annotation.verseRange.upperBound == annotation.verseRange.lowerBound
-        let endVerseCalculated = upperBoundSameAsLowerBound ? nil : annotation.verseRange.upperBound
-
-        let verseRange = RenderedVerseRange(startVerse: annotation.verseRange.lowerBound,
-                                            endVerse: endVerseCalculated)
+        let verseRange = RenderedVerseRange(range: annotation.verseRange)
 
         // Passage label
         let passageLabel = "\(book?.displayName ?? annotation.bookCode) \(annotation.chapter):\(verseRange.displayText)"
