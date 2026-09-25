@@ -92,35 +92,13 @@ struct LibraryView: View {
                 // VerseAnnotation is stable Identifiable; required so ForEach doesnt continually
                 // delete and re-insert the same rows if IDs were to change mid-life
                 ForEach(libraryStore.filteredAnnotations) { annotation in
-                    // Calculate required params
-                    // Translation
-                    let translation = catalogStore.translation(for: annotation.translationID)
-
-                    // Book
-                    let book = catalogStore.book(for: annotation.translationID,
-                                                 bookCode: annotation.bookCode)
-
-                    // Verse range
-                    let upperBoundSameAsLowerBound = annotation.verseRange.upperBound == annotation.verseRange.lowerBound
-                    let endVerseCalculated = upperBoundSameAsLowerBound ? nil : annotation.verseRange.upperBound
-
-                    let verseRange = RenderedVerseRange(startVerse: annotation.verseRange.lowerBound,
-                                                        endVerse: endVerseCalculated)
-
-                    // Passage label
-                    let passageLabel = "\(book?.displayName ?? annotation.bookCode) \(annotation.chapter):\(verseRange.displayText)"
-
-                    // RenderedPassageRuns
-                    let passageForAnnotation = libraryStore.passage(for: annotation)
-
-                    let renderedPassageRunsForAnnotation = passageForAnnotation?.renderedPassage.runs(for: verseRange)
+                    // Retrieve data
+                    let libraryRowViewData = LibraryRowViewData(annotation: annotation,
+                                                                catalogStore: catalogStore,
+                                                                libraryStore: libraryStore)
 
                     // Build actual single annotation view
-                    LibraryRowView(annotation: annotation,
-                                   renderedPassageRuns: renderedPassageRunsForAnnotation,
-                                   passageLabel: passageLabel,
-                                   translationLabel: translation?.abbreviation
-                                       ?? annotation.translationID.description)
+                    LibraryRowView(data: libraryRowViewData)
                     .task {
                         // Required for annotation to load its associated passage
                         // Prereq for rendering this card's verse

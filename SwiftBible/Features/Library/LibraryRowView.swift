@@ -11,17 +11,8 @@ struct LibraryRowView: View {
 
     // MARK: Properties
 
-    /// Annotation which this row represents
-    var annotation: VerseAnnotation
-
-    /// Runs for this passage (used for rendering actual verse using PassageTextRenderer)
-    let renderedPassageRuns: [RenderedPassageRun]?
-
-    /// Label for the passage (i.e. "Genesis 1:1-2")
-    let passageLabel: String
-
-    /// Label for the translation (i.e. "NIV")
-    let translationLabel: String
+    /// Consolidated entry point for required data
+    var data: LibraryRowViewData
 
     // MARK: Properties (Passage Truncation, Private)
 
@@ -66,7 +57,7 @@ struct LibraryRowView: View {
                 // Annotation type icon
                 // TODO: enforce width & normalize size
                 Group {
-                    switch annotation.content {
+                    switch data.annotation.content {
                     case .highlight(_):
                         Image(systemName: "pencil.line")
                             .symbolRenderingMode(.palette)
@@ -82,8 +73,8 @@ struct LibraryRowView: View {
 
                 // Chapter / verse range / translation
                 HStack(spacing: 8) {
-                    Text(passageLabel)
-                    Text(translationLabel)
+                    Text(data.passageLabel)
+                    Text(data.translationLabel)
                         .foregroundStyle(.secondary)
                 }
                 .font(.system(size: UIFontMetrics(forTextStyle: .body).scaledValue(for: 16),
@@ -100,7 +91,7 @@ struct LibraryRowView: View {
             }
 
             // Row 2: Verse rendered text
-            if let renderedPassageRuns {
+            if let renderedPassageRuns = data.renderedPassageRuns {
                 // Always a Button so view identity stays stable when truncation is first
                 // measured; short passages simply ignore taps
                 Button {
@@ -139,14 +130,14 @@ struct LibraryRowView: View {
 
             // Row 3: Annotation details (need to present Note/Tags ONLY)
             // switch doesnt work here due to exhaustive complaints
-            if case .note(let noteText) = annotation.content {
+            if case .note(let noteText) = data.annotation.content {
                 Divider()
                 Text(noteText)
                     .font(.system(size: UIFontMetrics(forTextStyle: .body).scaledValue(for: 16),
                                   weight: .regular,
                                   design: .serif))
                     .lineHeight(AttributedString.LineHeight.exact(points: 20)) // try to match AnnotationEditorSheetView Note TextInput
-            } else if case .tags(let tags) = annotation.content {
+            } else if case .tags(let tags) = data.annotation.content {
                 Divider()
                 Text(tags.joined(separator: ", "))
                     .font(.system(size: UIFontMetrics(forTextStyle: .body).scaledValue(for: 16),
@@ -248,7 +239,7 @@ struct LibraryRowView: View {
                 tapOrigin: nil,
                 progress: 0,
                 fadeProgress: 0,
-                persistedHighlights: annotation.highlightedVerses,
+                persistedHighlights: data.annotation.highlightedVerses,
                 opacity: 0.5)) // custom for this view only (default 1)
     }
 
@@ -280,20 +271,41 @@ struct LibraryRowView: View {
 // MARK: Xcode Canvas Previews
 
 #Preview {
-    VStack(spacing: 16) {
-        LibraryRowView(annotation: PreviewFixtures.sampleHighlightAnnotation,
-                       renderedPassageRuns: nil, // TBD
-                       passageLabel: "Genesis 1:1",
-                       translationLabel: "NIV")
-        LibraryRowView(annotation: PreviewFixtures.sampleNoteAnnotation,
-                       renderedPassageRuns: nil, // TBD
-                       passageLabel: "Genesis 1:1–2",
-                       translationLabel: "NIV")
-        LibraryRowView(annotation: PreviewFixtures.sampleTagsAnnotation,
-                       renderedPassageRuns: nil, // TBD
-                       passageLabel: "Genesis 1:1–3",
-                       translationLabel: "NIV")
+    let repository = FakeBibleRepository()
+    let passageStore = BiblePassageStore(repository: repository)
+    let libraryStore = LibraryStore(libraryRepository: InMemoryLibraryRepository(),
+                                    passageStore: passageStore)
+    let catalogStore = BibleCatalogStore(repository: repository)
+    LibraryRowViewPreviewHost(libraryStore: libraryStore,
+                              catalogStore: catalogStore)
+}
+
+/// Preview-only host: loads each sample's passage before building its `LibraryRowViewData`,
+/// mirroring the real load path in LibraryView
+private struct LibraryRowViewPreviewHost: View {
+    let libraryStore: LibraryStore
+    let catalogStore: BibleCatalogStore
+
+    private let annotations = [
+        PreviewFixtures.sampleHighlightAnnotation,
+        PreviewFixtures.sampleNoteAnnotation,
+        PreviewFixtures.sampleTagsAnnotation
+    ]
+
+    var body: some View {
+        VStack(spacing: 16) {
+            ForEach(annotations) { annotation in
+                LibraryRowView(data: LibraryRowViewData(annotation: annotation,
+                                                        catalogStore: catalogStore,
+                                                        libraryStore: libraryStore))
+            }
+        }
+        .padding()
+        .background(Color(.systemGroupedBackground))
+        .task {
+            for annotation in annotations {
+                await libraryStore.loadPassage(for: annotation)
+            }
+        }
     }
-    .padding()
-    .background(Color(.systemGroupedBackground))
 }
