@@ -41,6 +41,8 @@ nonisolated struct RenderedVerseRange: Identifiable, Equatable, Hashable {
         self.endVerse = range.upperBound == range.lowerBound ? nil : range.upperBound
     }
 
+    // MARK: Functions
+
     /// Does this instance's range overlap the inputted range?
     ///
     /// self start ≤ other end  AND  other start ≤ self end
