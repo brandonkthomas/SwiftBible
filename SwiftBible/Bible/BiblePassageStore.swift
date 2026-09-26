@@ -24,7 +24,7 @@ final class BiblePassageStore {
     private var loadedBiblePassageCache: [BiblePassageKey: LoadedBiblePassage] = [:]
 
     /// Stores HTML requests from network clientside (lives alongside above cache; they work in tandem)
-    private var passageCache: any PassageCache
+    private let passageCache: any PassageCache
 
     /// Tracks all currently-in-flight requests (if any) to prevent duplicate work
     private var inFlightRequests: [BiblePassageKey: Task<LoadedBiblePassage, Error>] = [:]

@@ -223,6 +223,40 @@ final class ReaderStore {
         await loadSelectedPassage()
     }
 
+    /// Selects a translation ID, book ID + chapter ID in one pass, then loads the passage
+    ///
+    /// Books are only reloaded if the translation changes. If the book/chapter doesn't
+    /// exist in the requested translation, the translation's default selection is kept.
+    func selectTranslationBookAndChapter(translationID: Translation.ID,
+                                         bookID: Book.ID,
+                                         chapterID: Chapter.ID) async {
+        Self.logger.debug("ENTRY ReaderStore.selectTranslationBookAndChapter(translationID: \(translationID, privacy: .public), bookID: \(bookID, privacy: .public), chapterID: \(chapterID, privacy: .public))")
+
+        guard let requestedTranslation = catalogStore.translation(for: translationID) else {
+            return
+        }
+
+        // Select Translation + refresh available Books/Chapters only when it changes
+        if self.selectedTranslation?.id != requestedTranslation.id {
+            self.selectedTranslation = requestedTranslation
+            await self.loadBooks()
+        }
+
+        // sanity check
+        guard self.loadState == .loaded else {
+            return
+        }
+
+        // Select Book/Chapter w/o reloading (falls back to current selection if missing)
+        await self.selectBookAndChapter(bookID: bookID,
+                                        chapterID: chapterID,
+                                        reloadPassage: false)
+
+        // Regardless of selection result, clear + load current passage
+        clearPassageStates()
+        await loadSelectedPassage()
+    }
+
     /// Selects a book ID + chapter ID if they exist
     func selectBookAndChapter(bookID: Book.ID,
                               chapterID: Chapter.ID,

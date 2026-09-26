@@ -28,7 +28,7 @@ struct ContentView: View {
                 ReaderView()
             }
             Tab("Saved", systemImage: "bookmark", value: CurrentTab.saved) {
-                LibraryView()
+                LibraryView(onShowInReader: { selectedTab = .read })
             }
             Tab("Customize", systemImage: "switch.2", value: CurrentTab.themes) {
                 SettingsView()

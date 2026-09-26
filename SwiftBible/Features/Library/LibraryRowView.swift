@@ -14,6 +14,12 @@ struct LibraryRowView: View {
     /// Consolidated entry point for required data
     var data: LibraryRowViewData
 
+    /// What should we do when we need to delete this row?
+    let onDeleteRequested: () -> Void
+
+    /// What should we do when we need to delete this row?
+    let onPassageViewRequested: () async -> Void
+
     // MARK: Properties (Passage Truncation, Private)
 
     /// Same value used in ReaderPassageView
@@ -34,6 +40,9 @@ struct LibraryRowView: View {
     /// TODO: move up a layer to LibraryView; state that outlives the row's LazyVStack life
     /// should NOT live inside the row itself (is lost on row recycle)
     @State private var isPassageExpanded: Bool = false
+
+    /// Have we selected the Delete option for this row + need to show confirmation?
+    @State private var isDeleteConfirmationVisible: Bool = false
 
     /// Does the passage need more lines than we display?
     ///
@@ -157,6 +166,16 @@ struct LibraryRowView: View {
         .background(Color(.secondarySystemGroupedBackground),
                     in: RoundedRectangle(cornerRadius: 16, style: .continuous))
         .shadow(color: .black.opacity(0.08), radius: 4, y: 2)
+        // Outside a List, only takes effect inside swipeActionsContainer() (iOS 27+)
+        // Opens the same per-row confirmation as the menu's Delete, so the dialog is
+        // anchored to this card and driven by this card's own state
+        .swipeActions {
+            Button(role: .destructive) {
+                isDeleteConfirmationVisible = true
+            } label: {
+                Image(systemName: "trash.fill")
+            }
+        }
     }
 
     /// VoiceOver hint describing what a tap will do (empty when the passage can't expand)
@@ -243,27 +262,35 @@ struct LibraryRowView: View {
                 opacity: 0.5)) // custom for this view only (default 1)
     }
 
+    /// All items in annotation submenu
     private var annotationItemMenu: some View {
         Menu {
             Button {
-
+                Task {
+                    await onPassageViewRequested()
+                }
             } label: {
-                Label("Test", systemImage: "plus")
+                Label("View Passage", systemImage: "book")
             }
-            Button {
-
+            Button(role: .destructive) {
+                isDeleteConfirmationVisible = true
             } label: {
-                Label("Test", systemImage: "plus")
-            }
-            Button {
-
-            } label: {
-                Label("Test", systemImage: "plus")
+                Label("Delete", systemImage: "trash")
             }
         } label: {
             Image(systemName: "ellipsis")
                 .font(.system(size: UIFontMetrics(forTextStyle: .body).scaledValue(for: 20)))
                 .foregroundStyle(Color(.label))
+        }
+        // Shared by the menu's Delete and the swipe action; on iOS 26+ it presents as a
+        // popover pointing at the view it's attached to (this card's "..." button)
+        .confirmationDialog("Delete Annotation",
+                            isPresented: $isDeleteConfirmationVisible) {
+            Button("Delete Annotation", role: .destructive) {
+                onDeleteRequested()
+            }
+        } message: {
+            Text("This annotation will be permanently deleted.")
         }
     }
 }
@@ -296,9 +323,12 @@ private struct LibraryRowViewPreviewHost: View {
     var body: some View {
         VStack(spacing: 16) {
             ForEach(annotations) { annotation in
-                LibraryRowView(data: LibraryRowViewData(annotation: annotation,
-                                                        catalogStore: catalogStore,
-                                                        libraryStore: libraryStore))
+                LibraryRowView(
+                    data: LibraryRowViewData(annotation: annotation,
+                                             catalogStore: catalogStore,
+                                             libraryStore: libraryStore),
+                    onDeleteRequested: {},
+                    onPassageViewRequested: {})
             }
         }
         .padding()

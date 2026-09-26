@@ -189,7 +189,6 @@ struct PassagePickerView: View {
             set: { isSelected in
                 guard isSelected,
                       readerStore.selectedTranslation?.id != translation.id else { return }
-
                 Task {
                     await readerStore.selectTranslationAndReloadAll(id: translation.id)
                 }

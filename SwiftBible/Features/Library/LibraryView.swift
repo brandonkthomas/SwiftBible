@@ -10,9 +10,15 @@ import OSLog
 
 struct LibraryView: View {
 
+    /// Called after the reader has been pointed at an annotation's passage
+    var onShowInReader: () -> Void = {}
+
     // MARK: Properties (Proj Env, Private)
 
     /// Read appEnvironment.readerStore environment value from current view environment
+    @Environment(ReaderStore.self) private var readerStore: ReaderStore
+
+    /// Read appEnvironment.libraryStore environment value from current view environment
     ///
     /// Don't need "\." here because this is a type-based lookup for an observable instance
     /// placed into the environment: .environment(readerStore))
@@ -98,27 +104,34 @@ struct LibraryView: View {
                                                                 libraryStore: libraryStore)
 
                     // Build actual single annotation view
-                    LibraryRowView(data: libraryRowViewData)
+                    LibraryRowView(
+                        data: libraryRowViewData,
+                        onDeleteRequested: {
+                            withAnimation(.snappy(duration: 0.35)) {
+                                libraryStore.delete(annotation.id)
+                            }
+                        },
+                        onPassageViewRequested: {
+                            await readerStore.selectTranslationBookAndChapter(
+                                translationID: annotation.translationID,
+                                bookID: annotation.bookCode,
+                                chapterID: "\(annotation.bookCode).\(annotation.chapter)"
+                            )
+                            onShowInReader()
+                        }
+                    )
                     .task {
                         // Required for annotation to load its associated passage
                         // Prereq for rendering this card's verse
                         await libraryStore.loadPassage(for: annotation)
-                    }
-                    // Outside a List, only takes effect inside swipeActionsContainer() (iOS 27+)
-                    .swipeActions {
-                        Button(role: .destructive) {
-                            // TODO: define onDelete behavior
-                            // TODO: popover delete model confirmation; wire actual delete
-                            // TODO: iOS 26 has no swipe here; offer delete in the card's menu
-                        } label: {
-                            Image(systemName: "trash.fill")
-                        }
                     }
                 }
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 8)
         }
+        // Delete confirmation lives in each LibraryRowView (menu + swipe share it) so the
+        // popover anchors to the card being deleted rather than the whole ScrollView
         .swipeActionsContainerIfAvailable()
         .background(Color(.systemGroupedBackground))
     }
@@ -128,54 +141,73 @@ struct LibraryView: View {
     ///
     @ToolbarContentBuilder
     private var filterOptionsToolbarItem: some ToolbarContent {
-        ToolbarItem(placement: .primaryAction) {
-            Button {
+        // Filter By: Translation, Book, Highlight Color, Tag
+        ToolbarItem(placement: .automatic) {
+            Menu {
+                Text("Filter By")
+                Button {
 
+                } label: {
+                    Label("Translation", systemImage: "text.book.closed")
+                }
+                Button {
+
+                } label: {
+                    Label("Book", systemImage: "books.vertical")
+                }
+                Button {
+
+                } label: {
+                    Label("Highlight Color", systemImage: "pencil.line")
+                }
+                Button {
+
+                } label: {
+                    Label("Tag", systemImage: "tag")
+                }
             } label: {
-                Image(systemName: "magnifyingglass")
+                Image(systemName: "line.3.horizontal.decrease")
             }
         }
 
-        ToolbarItem(placement: .primaryAction) {
+        // Ellipsis: Sort By, Group By, Select Annotations
+        ToolbarItem(placement: .automatic) {
             Menu {
+                // Sort By
                 Menu {
                     Button {
-
+                        // TODO
                     } label: {
-                        Label("Test", systemImage: "plus")
+                        Label("Date Added", systemImage: "calendar")
                     }
                     Button {
-
+                        // TODO
                     } label: {
-                        Label("Test", systemImage: "plus")
-                    }
-                    Button {
-
-                    } label: {
-                        Label("Test", systemImage: "plus")
+                        Label("Book Order", systemImage: "calendar.day.timeline.leading")
                     }
                 } label: {
                     Label("Sort By", systemImage: "arrow.up.arrow.down")
                 }
 
+                // Group By
                 Menu {
                     Button {
 
                     } label: {
-                        Label("Test", systemImage: "plus")
+                        Label("Date Added", systemImage: "calendar")
                     }
                     Button {
 
                     } label: {
-                        Label("Test", systemImage: "plus")
+                        Label("Translation", systemImage: "text.book.closed")
                     }
                     Button {
 
                     } label: {
-                        Label("Test", systemImage: "plus")
+                        Label("Book", systemImage: "books.vertical")
                     }
                 } label: {
-                    Label("Filter By", systemImage: "line.3.horizontal.decrease")
+                    Label("Group By", systemImage: "rectangle.3.group")
                 }
 
                 Divider()
@@ -183,12 +215,12 @@ struct LibraryView: View {
                 // can you not change EditButton appearance/label?
                 // TODO: EditButton only drives List's built-in edit mode; since the switch to
                 // LazyVStack it toggles editMode but nothing responds. Replace with custom selection.
-                EditButton()
-//                Button {
-//
-//                } label: {
-//                    Label("Select", systemImage: "checkmark.circle")
-//                }
+//                EditButton()
+                Button {
+
+                } label: {
+                    Label("Select Annotations", systemImage: "checkmark.circle")
+                }
             } label: {
                 Image(systemName: "ellipsis")
             }

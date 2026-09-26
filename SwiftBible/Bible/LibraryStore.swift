@@ -103,6 +103,16 @@ final class LibraryStore {
         return nil
     }
 
+    /// Request deletion of an annotation
+    func delete(_ id: VerseAnnotation.ID) {
+        do {
+            try libraryRepository.delete(id)
+            load()
+        } catch {
+            Self.logger.error("Unable to delete annotation: \(error.localizedDescription)")
+        }
+    }
+
     // MARK: Functions (Private)
 
     /// Map VerseAnnotation -> BiblePassageKey

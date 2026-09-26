@@ -305,6 +305,41 @@ struct BiblePassageStoreTests {
 
         #expect(try await diskCache.passage(for: key) == nil)
     }
+
+    @Test func saveFailureDoesNotFailTheRequest() async throws {
+        let repository = PassageCountingBibleRepository()
+        let store = BiblePassageStore(repository: repository,
+                                      passageCache: ThrowingSavePassageCache())
+        let key = BiblePassageKey(translationID: 1234,
+                                  bookCode: "GEN",
+                                  chapter: 1)
+        let expectedPassage = try #require(
+            FakeBibleRepository.defaultPassages.first {
+                $0.translationID == key.translationID
+            }?.passage
+        )
+
+        let loadedPassage = try await store.passage(for: key)
+
+        #expect(loadedPassage.passage == expectedPassage)
+        #expect(repository.passageRequestCount == 1)
+    }
+}
+
+/// PassageCache whose save() always fails; used to prove that a failed cache write is
+/// swallowed (BiblePassageStore only logs it) rather than failing the caller's request
+private struct ThrowingSavePassageCache: PassageCache {
+    enum SaveError: Error {
+        case intentionalFailure
+    }
+
+    func passage(for key: BiblePassageKey) async throws -> Passage? {
+        nil
+    }
+
+    func save(_ passage: Passage, for key: BiblePassageKey) async throws {
+        throw SaveError.intentionalFailure
+    }
 }
 
 @MainActor
