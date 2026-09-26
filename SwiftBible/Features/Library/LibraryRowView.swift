@@ -170,11 +170,12 @@ struct LibraryRowView: View {
         // Opens the same per-row confirmation as the menu's Delete, so the dialog is
         // anchored to this card and driven by this card's own state
         .swipeActions {
-            Button(role: .destructive) {
+            Button {
                 isDeleteConfirmationVisible = true
             } label: {
                 Image(systemName: "trash.fill")
             }
+            .tint(Color(.systemRed))
         }
     }
 
