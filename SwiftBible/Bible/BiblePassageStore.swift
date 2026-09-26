@@ -20,7 +20,7 @@ final class BiblePassageStore {
     private let repository: any BibleRepository
 
     /// Stores any cached values; NOT externally readable (must use public overloads)
-    private var cache: [BiblePassageKey: LoadedBiblePassage] = [:]
+    private var passageCache: [BiblePassageKey: LoadedBiblePassage] = [:]
 
     /// Tracks all currently-in-flight requests (if any) to prevent duplicate work
     private var inFlightRequests: [BiblePassageKey: Task<LoadedBiblePassage, Error>] = [:]
@@ -37,7 +37,7 @@ final class BiblePassageStore {
     /// If it exists in cache, return; else, load + persist to cache + return
     func passage(for key: BiblePassageKey) async throws -> LoadedBiblePassage {
         // BiblePassageKey is Hashable, so we can use it in dict lookup like this
-        if let existingCacheHit = cache[key] {
+        if let existingCacheHit = passageCache[key] {
             // we have a cached match; return it immediately
             return existingCacheHit
         }
@@ -85,7 +85,7 @@ final class BiblePassageStore {
 
         // no need to use "await task.result" because this func already throws
         let loadedBiblePassage = try await task.value
-        cache[key] = loadedBiblePassage
+        passageCache[key] = loadedBiblePassage
 
         return loadedBiblePassage
     }
