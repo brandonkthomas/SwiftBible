@@ -16,7 +16,8 @@ struct LibraryStoreTests {
     @Test func loadPassageLoadsOnePassageForAnnotationsInSameChapter() async throws {
         let libraryRepository = InMemoryLibraryRepository()
         let passageRepository = LibraryPassageCountingRepository()
-        let passageStore = BiblePassageStore(repository: passageRepository)
+        let passageStore = BiblePassageStore(repository: passageRepository,
+                                             passageCache: InMemoryPassageCache())
         let libraryStore = LibraryStore(libraryRepository: libraryRepository,
                                         passageStore: passageStore)
         let firstAnnotation = makeAnnotation(translationID: 1234,
@@ -45,7 +46,8 @@ struct LibraryStoreTests {
     @Test func loadPassagesLoadsDistinctTranslationChapterKeys() async throws {
         let libraryRepository = InMemoryLibraryRepository()
         let passageRepository = LibraryPassageCountingRepository()
-        let passageStore = BiblePassageStore(repository: passageRepository)
+        let passageStore = BiblePassageStore(repository: passageRepository,
+                                             passageCache: InMemoryPassageCache())
         let libraryStore = LibraryStore(libraryRepository: libraryRepository,
                                         passageStore: passageStore)
         let firstTranslationAnnotation = makeAnnotation(translationID: 1234,
@@ -80,7 +82,8 @@ struct LibraryStoreTests {
     @Test func loadedPassageResolvesUsingAnnotationIdentity() async throws {
         let libraryRepository = InMemoryLibraryRepository()
         let passageRepository = LibraryPassageCountingRepository()
-        let passageStore = BiblePassageStore(repository: passageRepository)
+        let passageStore = BiblePassageStore(repository: passageRepository,
+                                             passageCache: InMemoryPassageCache())
         let libraryStore = LibraryStore(libraryRepository: libraryRepository,
                                         passageStore: passageStore)
         let firstAnnotation = makeAnnotation(translationID: 1234,
@@ -114,7 +117,8 @@ struct LibraryStoreTests {
     @Test func loadPassageMakesPassageAvailableForAnnotation() async throws {
         let libraryRepository = InMemoryLibraryRepository()
         let passageRepository = LibraryPassageCountingRepository()
-        let passageStore = BiblePassageStore(repository: passageRepository)
+        let passageStore = BiblePassageStore(repository: passageRepository,
+                                             passageCache: InMemoryPassageCache())
         let libraryStore = LibraryStore(libraryRepository: libraryRepository,
                                         passageStore: passageStore)
         let annotation = makeAnnotation(translationID: 1234,

@@ -74,7 +74,13 @@ final class AppEnvironment {
                                                    baseURL: appConfiguration.youVersionBaseURL,
                                                    urlSession: .shared)
 
-        self.passageStore = BiblePassageStore(repository: bibleRepository)
+        do {
+            self.passageStore = BiblePassageStore(repository: bibleRepository,
+                                                  passageCache: try DiskPassageCache())
+        } catch {
+            preconditionFailure("Failed to initialize PassageStore: \(error.localizedDescription)")
+        }
+
         self.catalogStore = BibleCatalogStore(repository: bibleRepository)
 
         // ReaderStore 2 - API requests, Reader state, etc

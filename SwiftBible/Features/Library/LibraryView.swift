@@ -277,7 +277,8 @@ private extension View {
 
 #Preview {
     let repository = FakeBibleRepository()
-    let passageStore = BiblePassageStore(repository: repository)
+    let passageStore = BiblePassageStore(repository: repository,
+                                         passageCache: InMemoryPassageCache())
     let libraryStore = LibraryStore(libraryRepository: PreviewFixtures.seededLibraryRepository(),
                                     passageStore: passageStore)
     let catalogStore = BibleCatalogStore(repository: repository)

@@ -20,15 +20,20 @@ final class BiblePassageStore {
     private let repository: any BibleRepository
 
     /// Stores any cached values; NOT externally readable (must use public overloads)
-    private var passageCache: [BiblePassageKey: LoadedBiblePassage] = [:]
+    private var loadedBiblePassageCache: [BiblePassageKey: LoadedBiblePassage] = [:]
+
+    /// Stores HTML requests from network clientside (lives alongside above cache; they work in tandem)
+    private var passageCache: any PassageCache
 
     /// Tracks all currently-in-flight requests (if any) to prevent duplicate work
     private var inFlightRequests: [BiblePassageKey: Task<LoadedBiblePassage, Error>] = [:]
 
     // MARK: Init
 
-    init(repository: any BibleRepository) {
+    init(repository: any BibleRepository,
+         passageCache: any PassageCache) {
         self.repository = repository
+        self.passageCache = passageCache
     }
 
     // MARK: Functions
@@ -37,7 +42,7 @@ final class BiblePassageStore {
     /// If it exists in cache, return; else, load + persist to cache + return
     func passage(for key: BiblePassageKey) async throws -> LoadedBiblePassage {
         // BiblePassageKey is Hashable, so we can use it in dict lookup like this
-        if let existingCacheHit = passageCache[key] {
+        if let existingCacheHit = loadedBiblePassageCache[key] {
             // we have a cached match; return it immediately
             return existingCacheHit
         }
@@ -63,8 +68,17 @@ final class BiblePassageStore {
         //   We do NOT need to wire this up though because other cards may be waiting on this
         //   We may need to cancel per-URL-request and only when no one wants the chapter anymore...
         let task = Task<LoadedBiblePassage, Error> {
-            // retrieve passage
-            let passage = try await repository.passage(for: reference)
+            // retrieve passage (check network cache first; else send network request + add
+            // cache entry later)
+            let passage: Passage
+            var needsPassageCacheEntry: Bool = false
+
+            if let cached = try await passageCache.passage(for: key) {
+                passage = cached
+            } else {
+                passage = try await repository.passage(for: reference)
+                needsPassageCacheEntry = true
+            }
 
             // parse HTML
             let parser = PassageHTMLParser()
@@ -73,6 +87,12 @@ final class BiblePassageStore {
             // build LoadedBiblePassage; store @ in-memory cache; return
             let loadedBiblePassage = LoadedBiblePassage(passage: passage,
                                                         renderedPassage: renderedPassage)
+
+            // cache network request we just made to disk if necessary
+            if needsPassageCacheEntry {
+                try await passageCache.save(passage, for: key)
+            }
+
             return loadedBiblePassage
         }
 
@@ -85,7 +105,7 @@ final class BiblePassageStore {
 
         // no need to use "await task.result" because this func already throws
         let loadedBiblePassage = try await task.value
-        passageCache[key] = loadedBiblePassage
+        loadedBiblePassageCache[key] = loadedBiblePassage
 
         return loadedBiblePassage
     }

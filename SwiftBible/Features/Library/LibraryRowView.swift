@@ -272,7 +272,8 @@ struct LibraryRowView: View {
 
 #Preview {
     let repository = FakeBibleRepository()
-    let passageStore = BiblePassageStore(repository: repository)
+    let passageStore = BiblePassageStore(repository: repository,
+                                         passageCache: InMemoryPassageCache())
     let libraryStore = LibraryStore(libraryRepository: InMemoryLibraryRepository(),
                                     passageStore: passageStore)
     let catalogStore = BibleCatalogStore(repository: repository)

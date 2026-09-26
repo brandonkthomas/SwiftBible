@@ -90,7 +90,8 @@ struct LibraryRowViewDataTests {
         libraryRepository: any LibraryRepository = InMemoryLibraryRepository()
     ) -> LibraryStore {
         LibraryStore(libraryRepository: libraryRepository,
-                    passageStore: BiblePassageStore(repository: FakeBibleRepository()))
+                     passageStore: BiblePassageStore(repository: FakeBibleRepository(),
+                                                     passageCache: InMemoryPassageCache()))
     }
 
     private func makeAnnotation(

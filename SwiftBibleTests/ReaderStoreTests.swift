@@ -46,7 +46,8 @@ struct ReaderStoreTests {
     /// Loading a book without chapters should stop in the empty chapters state.
     @Test func loadTranslationsWithBookWithoutChaptersStopsAtEmptyChapters() async {
         let repository = FakeBibleRepository(books: FakeBibleRepository.booksWithoutChapters)
-        let passageStore = BiblePassageStore(repository: repository)
+        let passageStore = BiblePassageStore(repository: repository,
+                                             passageCache: InMemoryPassageCache())
         let readerStore = ReaderStore(passageStore: passageStore,
                                 catalogStore: BibleCatalogStore(repository: repository),
                                 libraryRepository: InMemoryLibraryRepository())
@@ -63,7 +64,8 @@ struct ReaderStoreTests {
     /// no selected translation/book/chapter
     @Test func noTranslationsReturned() async {
         let repository = FakeBibleRepository(translations: [])
-        let passageStore = BiblePassageStore(repository: repository)
+        let passageStore = BiblePassageStore(repository: repository,
+                                             passageCache: InMemoryPassageCache())
         let readerStore = ReaderStore(passageStore: passageStore,
                                 catalogStore: BibleCatalogStore(repository: repository),
                                 libraryRepository: InMemoryLibraryRepository())
@@ -80,7 +82,8 @@ struct ReaderStoreTests {
     /// no selected book/chapter
     @Test func noBooksReturned() async {
         let repository = FakeBibleRepository(books: [])
-        let passageStore = BiblePassageStore(repository: repository)
+        let passageStore = BiblePassageStore(repository: repository,
+                                             passageCache: InMemoryPassageCache())
         let readerStore = ReaderStore(passageStore: passageStore,
                                 catalogStore: BibleCatalogStore(repository: repository),
                                 libraryRepository: InMemoryLibraryRepository())
@@ -97,7 +100,8 @@ struct ReaderStoreTests {
     /// and clear data
     @Test func selectionsClearedOnLoadTranslationsThrow() async {
         let repository = FakeBibleRepository(throwWhenLoadingTranslations: true)
-        let passageStore = BiblePassageStore(repository: repository)
+        let passageStore = BiblePassageStore(repository: repository,
+                                             passageCache: InMemoryPassageCache())
         let readerStore = ReaderStore(passageStore: passageStore,
                                 catalogStore: BibleCatalogStore(repository: repository),
                                 libraryRepository: InMemoryLibraryRepository())
@@ -256,7 +260,8 @@ struct ReaderStoreTests {
     /// if book load fails, old passage information should be cleared
     @Test func failedBookReloadClearsStalePassageState() async {
         let repository = FakeBibleRepository()
-        let passageStore = BiblePassageStore(repository: repository)
+        let passageStore = BiblePassageStore(repository: repository,
+                                             passageCache: InMemoryPassageCache())
         let readerStore = ReaderStore(passageStore: passageStore,
                                 catalogStore: BibleCatalogStore(repository: repository),
                                 libraryRepository: InMemoryLibraryRepository())
@@ -299,7 +304,8 @@ struct ReaderStoreTests {
 
     private func readerStore() -> ReaderStore {
         let repository = FakeBibleRepository()
-        let passageStore = BiblePassageStore(repository: repository)
+        let passageStore = BiblePassageStore(repository: repository,
+                                             passageCache: InMemoryPassageCache())
         return ReaderStore(passageStore: passageStore,
                            catalogStore: BibleCatalogStore(repository: repository),
                            libraryRepository: InMemoryLibraryRepository())

@@ -13,7 +13,8 @@ struct BiblePassageStoreTests {
 
     @Test func cacheMissFetchesParsesAndStores() async throws {
         let repository = PassageCountingBibleRepository()
-        let store = BiblePassageStore(repository: repository)
+        let store = BiblePassageStore(repository: repository,
+                                      passageCache: InMemoryPassageCache())
         let key = BiblePassageKey(translationID: 1234,
                                   bookCode: "GEN",
                                   chapter: 1)
@@ -39,7 +40,8 @@ struct BiblePassageStoreTests {
 
     @Test func cacheHitAvoidsAnotherRequest() async throws {
         let repository = PassageCountingBibleRepository()
-        let store = BiblePassageStore(repository: repository)
+        let store = BiblePassageStore(repository: repository,
+                                      passageCache: InMemoryPassageCache())
         let key = BiblePassageKey(translationID: 1234,
                                   bookCode: "GEN",
                                   chapter: 1)
@@ -59,7 +61,8 @@ struct BiblePassageStoreTests {
 
     @Test func translationIdentityIsolatesCacheEntries() async throws {
         let repository = PassageCountingBibleRepository()
-        let store = BiblePassageStore(repository: repository)
+        let store = BiblePassageStore(repository: repository,
+                                      passageCache: InMemoryPassageCache())
         let firstKey = BiblePassageKey(translationID: 1234,
                                        bookCode: "GEN",
                                        chapter: 1)
@@ -87,7 +90,8 @@ struct BiblePassageStoreTests {
 
     @Test func invalidChapterKeyThrowsWithoutFetching() async {
         let repository = PassageCountingBibleRepository()
-        let store = BiblePassageStore(repository: repository)
+        let store = BiblePassageStore(repository: repository,
+                                      passageCache: InMemoryPassageCache())
         let invalidKey = BiblePassageKey(translationID: 1234,
                                          bookCode: "GEN",
                                          chapter: 0)
@@ -100,7 +104,8 @@ struct BiblePassageStoreTests {
 
     @Test func simultaneousRequestsForSameKeyShareOneRepositoryRequest() async throws {
         let repository = ControllablePassageRepository()
-        let store = BiblePassageStore(repository: repository)
+        let store = BiblePassageStore(repository: repository,
+                                      passageCache: InMemoryPassageCache())
         let key = BiblePassageKey(translationID: 1234,
                                   bookCode: "GEN",
                                   chapter: 1)
@@ -128,7 +133,8 @@ struct BiblePassageStoreTests {
 
     @Test func simultaneousRequestsForDifferentKeysRemainIndependent() async throws {
         let repository = ControllablePassageRepository()
-        let store = BiblePassageStore(repository: repository)
+        let store = BiblePassageStore(repository: repository,
+                                      passageCache: InMemoryPassageCache())
         let firstKey = BiblePassageKey(translationID: 1234,
                                        bookCode: "GEN",
                                        chapter: 1)
@@ -158,7 +164,8 @@ struct BiblePassageStoreTests {
 
     @Test func failedRequestIsRemovedAndCanBeRetried() async throws {
         let repository = ControllablePassageRepository()
-        let store = BiblePassageStore(repository: repository)
+        let store = BiblePassageStore(repository: repository,
+                                      passageCache: InMemoryPassageCache())
         let key = BiblePassageKey(translationID: 1234,
                                   bookCode: "GEN",
                                   chapter: 1)
