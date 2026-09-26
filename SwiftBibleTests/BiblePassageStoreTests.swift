@@ -6,10 +6,16 @@
 //
 
 import Testing
+import Foundation
 @testable import SwiftBible
 
 @MainActor
 struct BiblePassageStoreTests {
+
+    /// Fresh, empty directory for one test; caller deletes it when done
+    private func makeTempDirectory() -> URL {
+        FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+    }
 
     @Test func cacheMissFetchesParsesAndStores() async throws {
         let repository = PassageCountingBibleRepository()
@@ -195,6 +201,109 @@ struct BiblePassageStoreTests {
 
         #expect(retriedResult.passage == expectedPassage)
         #expect(repository.passageRequestCount == 2)
+    }
+
+    @Test func diskCacheHitAvoidsNetworkRequest() async throws {
+        let tempDirectory = makeTempDirectory()
+        defer { try? FileManager.default.removeItem(at: tempDirectory) }
+
+        let key = BiblePassageKey(translationID: 1234,
+                                  bookCode: "GEN",
+                                  chapter: 1)
+        let expectedPassage = try #require(
+            FakeBibleRepository.defaultPassages.first {
+                $0.translationID == key.translationID
+            }?.passage
+        )
+
+        let diskCache = try DiskPassageCache(baseDirectory: tempDirectory)
+        try await diskCache.save(expectedPassage, for: key)
+
+        let repository = PassageCountingBibleRepository()
+        let store = BiblePassageStore(repository: repository,
+                                      passageCache: diskCache)
+
+        let loadedPassage = try await store.passage(for: key)
+
+        #expect(loadedPassage.passage == expectedPassage)
+        #expect(repository.passageRequestCount == 0)
+    }
+
+    @Test func cacheMissFetchesAndSavesToDiskCache() async throws {
+        let tempDirectory = makeTempDirectory()
+        defer { try? FileManager.default.removeItem(at: tempDirectory) }
+
+        let diskCache = try DiskPassageCache(baseDirectory: tempDirectory)
+        let repository = PassageCountingBibleRepository()
+        let store = BiblePassageStore(repository: repository,
+                                      passageCache: diskCache)
+        let key = BiblePassageKey(translationID: 1234,
+                                  bookCode: "GEN",
+                                  chapter: 1)
+        let expectedPassage = try #require(
+            FakeBibleRepository.defaultPassages.first {
+                $0.translationID == key.translationID
+            }?.passage
+        )
+
+        let loadedPassage = try await store.passage(for: key)
+
+        #expect(loadedPassage.passage == expectedPassage)
+        #expect(repository.passageRequestCount == 1)
+        #expect(try await diskCache.passage(for: key) == expectedPassage)
+    }
+
+    @Test func secondStoreSharingDiskCacheReadsFirstStoresWrite() async throws {
+        let tempDirectory = makeTempDirectory()
+        defer { try? FileManager.default.removeItem(at: tempDirectory) }
+
+        let sharedCache = try DiskPassageCache(baseDirectory: tempDirectory)
+        let key = BiblePassageKey(translationID: 1234,
+                                  bookCode: "GEN",
+                                  chapter: 1)
+        let expectedPassage = try #require(
+            FakeBibleRepository.defaultPassages.first {
+                $0.translationID == key.translationID
+            }?.passage
+        )
+
+        let firstStore = BiblePassageStore(repository: PassageCountingBibleRepository(),
+                                           passageCache: sharedCache)
+        _ = try await firstStore.passage(for: key)
+
+        // second store has its own repository so we can prove it never gets used
+        let secondRepository = PassageCountingBibleRepository()
+        let secondStore = BiblePassageStore(repository: secondRepository,
+                                            passageCache: sharedCache)
+        let secondResult = try await secondStore.passage(for: key)
+
+        #expect(secondResult.passage == expectedPassage)
+        #expect(secondRepository.passageRequestCount == 0)
+    }
+
+    @Test func failedFetchSavesNothingToDiskCache() async throws {
+        let tempDirectory = makeTempDirectory()
+        defer { try? FileManager.default.removeItem(at: tempDirectory) }
+
+        let diskCache = try DiskPassageCache(baseDirectory: tempDirectory)
+        let repository = ControllablePassageRepository()
+        let store = BiblePassageStore(repository: repository,
+                                      passageCache: diskCache)
+        let key = BiblePassageKey(translationID: 1234,
+                                  bookCode: "GEN",
+                                  chapter: 1)
+
+        let failedRequest = Task {
+            try await store.passage(for: key)
+        }
+        await repository.waitForPassageRequestCount(1)
+        try repository.failPassageRequest(for: key)
+
+        await #expect(throws: ControllablePassageRepository.RepositoryError.intentionalFailure) {
+            try await failedRequest.value
+        }
+
+        #expect(try await diskCache.passage(for: key) == nil)
     }
 }
 
