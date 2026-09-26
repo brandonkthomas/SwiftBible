@@ -5,7 +5,8 @@
 //  Created by Brandon Thomas on 6/30/26.
 //
 
-nonisolated struct Passage: Identifiable, Equatable {
+// Codable used for DiskPassageCache
+nonisolated struct Passage: Identifiable, Equatable, Codable {
     /// i.e. "GEN.1"
     let id: String
     /// i.e. "Genesis 1"
