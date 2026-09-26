@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import OSLog
 
 /// Ownership model/cache for loaded Passages
 ///
@@ -27,6 +28,8 @@ final class BiblePassageStore {
 
     /// Tracks all currently-in-flight requests (if any) to prevent duplicate work
     private var inFlightRequests: [BiblePassageKey: Task<LoadedBiblePassage, Error>] = [:]
+
+    private static let logger = Logger(subsystem: "SwiftBible", category: "BiblePassageStore")
 
     // MARK: Init
 
@@ -90,7 +93,11 @@ final class BiblePassageStore {
 
             // cache network request we just made to disk if necessary
             if needsPassageCacheEntry {
-                try await passageCache.save(passage, for: key)
+                do {
+                    try await passageCache.save(passage, for: key)
+                } catch {
+                    Self.logger.error("Unable to cache passage: \(error.localizedDescription)")
+                }
             }
 
             return loadedBiblePassage
