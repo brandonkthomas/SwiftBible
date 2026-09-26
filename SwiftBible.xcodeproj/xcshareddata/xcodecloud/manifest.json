@@ -1,0 +1,9 @@
+{
+  "id" : "d0d40d1b-4c7c-4d17-8467-3e6b279518bb",
+  "targets" : [
+    {
+      "id" : "f5602227-6a0a-4a12-a00f-f2d99a20bf6a",
+      "name" : "SwiftBible"
+    }
+  ]
+}
