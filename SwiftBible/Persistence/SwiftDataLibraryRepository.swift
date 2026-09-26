@@ -104,7 +104,12 @@ final class SwiftDataLibraryRepository: LibraryRepository {
     
     // MARK: Functions (Private)
     
-    private func storageContent(for content: AnnotationContent) -> (highlightColor: VerseAnnotationHighlightColor?, note: String?, tags: [String]?) {
+    private func storageContent(for content: AnnotationContent)
+    -> (
+        highlightColor: VerseAnnotationHighlightColor?,
+        note: String?,
+        tags: [String]?
+    ) {
         switch content {
         case .highlight(let color):
             return (color, nil, nil)
