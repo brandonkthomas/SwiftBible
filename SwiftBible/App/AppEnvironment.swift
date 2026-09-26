@@ -7,6 +7,7 @@
 
 import Foundation
 import Observation
+import OSLog
 import SwiftData // for PersistentModel/ModelContainer/ModelConfiguration/Schema
 
 /// App-wide owner of various repositories (AppConfiguration, ReaderStore, LibraryRepository)
@@ -33,6 +34,8 @@ final class AppEnvironment {
     
     /// System: Manages app-wide model storage
     let modelContainer: ModelContainer
+
+    private static let logger = Logger(subsystem: "SwiftBible", category: "AppEnvironment")
 
     // MARK: Init
 
@@ -74,12 +77,16 @@ final class AppEnvironment {
                                                    baseURL: appConfiguration.youVersionBaseURL,
                                                    urlSession: .shared)
 
+        var passageCache: any PassageCache
         do {
-            self.passageStore = BiblePassageStore(repository: bibleRepository,
-                                                  passageCache: try DiskPassageCache())
+            passageCache = try DiskPassageCache()
         } catch {
-            preconditionFailure("Failed to initialize PassageStore: \(error.localizedDescription)")
+            Self.logger.error("Failed to initialize DiskPassageCache: \(error.localizedDescription)")
+            passageCache = InMemoryPassageCache()
         }
+
+        self.passageStore = BiblePassageStore(repository: bibleRepository,
+                                              passageCache: passageCache)
 
         self.catalogStore = BibleCatalogStore(repository: bibleRepository)
 

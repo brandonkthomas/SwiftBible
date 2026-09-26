@@ -76,7 +76,8 @@ final class BiblePassageStore {
             let passage: Passage
             var needsPassageCacheEntry: Bool = false
 
-            if let cached = try await passageCache.passage(for: key) {
+            // swallow throws here
+            if let cached = try? await passageCache.passage(for: key) {
                 passage = cached
             } else {
                 passage = try await repository.passage(for: reference)
