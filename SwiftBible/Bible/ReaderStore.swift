@@ -441,9 +441,8 @@ final class ReaderStore {
         self.selectedVerses = nil
     }
 
-    func selectAdjacentChapter(
-            _ direction: ChapterNavigationDirection
-        ) async {
+    /// Select the next/prev chapter
+    func selectAdjacentChapter(_ direction: ChapterNavigationDirection) async {
         guard let selectedBook,
               let selectedChapter,
               let bookIndex = books.firstIndex(where: {
@@ -493,6 +492,14 @@ final class ReaderStore {
             selectedVerses: verses,
             libraryRepository: self.libraryRepository
         )
+    }
+
+    /// Refresh current highlights cache for current selectedReference
+    func refreshPassageHighlights() {
+        guard let selectedReference else {
+            return
+        }
+        loadPassageHighlights(for: selectedReference)
     }
 
     // MARK: Functions (Load; Private)

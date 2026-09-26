@@ -32,6 +32,8 @@ struct LibraryView: View {
 
     @State private var isInEditMode: Bool = false
 
+    @State private var didDeleteFail: Bool = false
+
     @Namespace private var chipBarNamespace
 
     // MARK: Properties (Local, Private)
@@ -63,9 +65,9 @@ struct LibraryView: View {
                     // List of items
                     libraryListView
                         // Filter bar
-                        .safeAreaInset(edge: .top, spacing: 5) {
-                            filterBarChipsView
-                        }
+//                        .safeAreaInset(edge: .top, spacing: 5) {
+//                            filterBarChipsView
+//                        }
                 }
             }
             // Navigation view modifiers
@@ -75,6 +77,13 @@ struct LibraryView: View {
             .toolbar {
                 filterOptionsToolbarItem
             }
+        }
+        // Deletion failure popup
+        .alert("Unable to Delete Annotation",
+               isPresented: $didDeleteFail) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text("Please try again.")
         }
         .task {
             // First load all annotations
@@ -107,8 +116,13 @@ struct LibraryView: View {
                     LibraryRowView(
                         data: libraryRowViewData,
                         onDeleteRequested: {
-                            withAnimation(.snappy(duration: 0.35)) {
+                            let didDelete = withAnimation {
                                 libraryStore.delete(annotation.id)
+                            }
+                            if didDelete {
+                                readerStore.refreshPassageHighlights()
+                            } else {
+                                didDeleteFail = true
                             }
                         },
                         onPassageViewRequested: {
@@ -145,25 +159,61 @@ struct LibraryView: View {
         ToolbarItem(placement: .automatic) {
             Menu {
                 Text("Filter By")
-                Button {
-
+                // Translations
+                // TODO: toggle state
+                Menu {
+                    ForEach(Set(libraryStore.annotations.map(\.translationID)).sorted(), id: \.self) { translationID in
+                        Button {
+                            libraryStore.filter.translationID = translationID
+                        } label: {
+                            Text("\(translationID)")
+                        }
+                    }
                 } label: {
                     Label("Translation", systemImage: "text.book.closed")
                 }
-                Button {
-
+                // Books
+                // TODO: toggle state
+                Menu {
+                    ForEach(Set(libraryStore.annotations.map(\.bookCode)).sorted(), id: \.self) { bookCode in
+                        Button {
+                            libraryStore.filter.bookCode = bookCode
+                        } label: {
+                            Text(bookCode)
+                        }
+                    }
                 } label: {
                     Label("Book", systemImage: "books.vertical")
                 }
-                Button {
-
+                // Highlight Colors
+                // TODO: toggle state; color icons
+                Menu {
+                    ForEach(VerseAnnotationHighlightColor.allCases.filter { color in
+                        libraryStore.annotations.contains { $0.highlightColor == color }
+                    }, id: \.self) { highlightColor in
+                        Button {
+                            libraryStore.filter.highlightColor = highlightColor
+                        } label: {
+                            let text = highlightColor.rawValue.prefix(1).capitalized
+                                + highlightColor.rawValue.dropFirst()
+                            Label(text, systemImage: "circle.fill")
+                                .foregroundStyle(highlightColor.uiColor)
+                        }
+                    }
                 } label: {
                     Label("Highlight Color", systemImage: "pencil.line")
                 }
+                // Tags
                 Button {
-
+                    // TODO
                 } label: {
                     Label("Tag", systemImage: "tag")
+                }
+                // Notes
+                Button {
+                    // TODO
+                } label: {
+                    Label("Notes", systemImage: "text.alignleft")
                 }
             } label: {
                 Image(systemName: "line.3.horizontal.decrease")
@@ -230,48 +280,48 @@ struct LibraryView: View {
     // MARK: Views (Filter Bar)
 
     /// Filter bar chips view
-    private var filterBarChipsView: some View {
-        GlassEffectContainer(spacing: 8) {
-            HStack {
-                chipButtonView(for: .highlight,
-                               text: "Highlights",
-                               systemImage: "pencil.line")
-                chipButtonView(for: .tags,
-                               text: "Tags",
-                               systemImage: "tag.fill")
-                chipButtonView(for: .note,
-                               text: "Notes",
-                               systemImage: "text.alignleft")
-            }
-            .shadow(color: Color.gray.opacity(0.1), radius: 5)
-        }
-    }
+//    private var filterBarChipsView: some View {
+//        GlassEffectContainer(spacing: 8) {
+//            HStack {
+//                chipButtonView(for: .highlight,
+//                               text: "Highlights",
+//                               systemImage: "pencil.line")
+//                chipButtonView(for: .tags,
+//                               text: "Tags",
+//                               systemImage: "tag.fill")
+//                chipButtonView(for: .note,
+//                               text: "Notes",
+//                               systemImage: "text.alignleft")
+//            }
+//            .shadow(color: Color.gray.opacity(0.1), radius: 5)
+//        }
+//    }
 
     /// Individual builder for a single filter bar button
-    private func chipButtonView(for contentType: AnnotationContentType,
-                                text: String,
-                                systemImage: String) -> some View {
-        let isSelected = libraryStore.filter.contentType == contentType
-
-        return Toggle(text,
-                      systemImage: systemImage, // isSelected ? "xmark" : systemImage
-                      isOn: Binding(
-                          get: {
-                              libraryStore.filter.contentType == contentType
-                          },
-                          set: { newValue in
-                              libraryStore.filter.contentType = newValue ? contentType : nil
-                          }
-                      ))
-        .toggleStyle(.button)
-        .buttonStyle(.glass)
-        .glassEffectID(text, in: chipBarNamespace)
-        .animation(
-            .timingCurve(0.25, 1, 0.67, 0.93, duration: 0.15),
-            value: isSelected
-        )
-        .font(.system(size: 12, weight: .semibold))
-    }
+//    private func chipButtonView(for contentType: AnnotationContentType,
+//                                text: String,
+//                                systemImage: String) -> some View {
+//        let isSelected = libraryStore.filter.contentType == contentType
+//
+//        return Toggle(text,
+//                      systemImage: systemImage, // isSelected ? "xmark" : systemImage
+//                      isOn: Binding(
+//                          get: {
+//                              libraryStore.filter.contentType == contentType
+//                          },
+//                          set: { newValue in
+//                              libraryStore.filter.contentType = newValue ? contentType : nil
+//                          }
+//                      ))
+//        .toggleStyle(.button)
+//        .buttonStyle(.glass)
+//        .glassEffectID(text, in: chipBarNamespace)
+//        .animation(
+//            .timingCurve(0.25, 1, 0.67, 0.93, duration: 0.15),
+//            value: isSelected
+//        )
+//        .font(.system(size: 12, weight: .semibold))
+//    }
 
     // MARK: Functions
 

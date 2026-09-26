@@ -104,12 +104,14 @@ final class LibraryStore {
     }
 
     /// Request deletion of an annotation
-    func delete(_ id: VerseAnnotation.ID) {
+    func delete(_ id: VerseAnnotation.ID) -> Bool {
         do {
             try libraryRepository.delete(id)
             load()
+            return true
         } catch {
             Self.logger.error("Unable to delete annotation: \(error.localizedDescription)")
+            return false
         }
     }
 
