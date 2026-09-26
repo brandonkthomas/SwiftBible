@@ -63,9 +63,9 @@ struct LibraryView: View {
                 }
             }
             // Navigation view modifiers
-            .navigationTitle("Saved")
-            .navigationSubtitle("\(libraryStore.annotations.count) Annotation\(libraryStore.annotations.count == 1 ? "" : "s")")
-            .navigationBarTitleDisplayMode(.inline)
+//            .navigationTitle("Saved")
+//            .navigationSubtitle("\(libraryStore.annotations.count) Annotation\(libraryStore.annotations.count == 1 ? "" : "s")")
+//            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 filterOptionsToolbarItem
             }
