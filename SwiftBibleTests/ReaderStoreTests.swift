@@ -5,6 +5,7 @@
 //  Created by Brandon Thomas on 6/27/26.
 //
 
+import Foundation
 import Testing
 @testable import SwiftBible
 
@@ -300,14 +301,71 @@ struct ReaderStoreTests {
         #expect(readerStore.passageHighlightColors.isEmpty)
     }
 
+    /// A highlight deleted outside ReaderStore (i.e. from LibraryView) disappears
+    /// from passageHighlightColors after refreshPassageHighlights()
+    @Test func externallyDeletedHighlightDisappearsAfterRefresh() async throws {
+        let libraryRepository = InMemoryLibraryRepository()
+        let store = readerStore(libraryRepository: libraryRepository)
+        await store.loadTranslationsAndBooks()
+
+        store.selectedVerses = 1...1
+        store.save(.highlight(.yellow))
+        #expect(store.passageHighlightColors[1] == .yellow)
+
+        // delete directly through the repository, bypassing ReaderStore
+        let annotation = try #require(try libraryRepository.allAnnotations().first)
+        try libraryRepository.delete(annotation.id)
+
+        store.refreshPassageHighlights()
+
+        #expect(store.passageHighlightColors[1] == nil)
+        #expect(store.passageHighlightColors.isEmpty)
+    }
+
+    /// Deleting an annotation from another chapter, then refreshing, leaves the
+    /// current chapter's highlight colors unchanged
+    @Test func refreshAfterUnrelatedDeleteLeavesCurrentColorsUnchanged() async throws {
+        let libraryRepository = InMemoryLibraryRepository()
+        let store = readerStore(libraryRepository: libraryRepository)
+        await store.loadTranslationsAndBooks()
+
+        store.selectedVerses = 1...1
+        store.save(.highlight(.yellow))
+        store.selectedVerses = 2...3
+        store.save(.highlight(.green))
+
+        // unrelated highlight in a different chapter of the same book
+        let reference = try #require(store.selectedReference)
+        let unrelatedAnnotation = VerseAnnotation(id: UUID(),
+                                                  translationID: reference.translationID,
+                                                  bookCode: reference.bookCode,
+                                                  chapter: reference.chapter + 1,
+                                                  startVerse: 1,
+                                                  endVerse: nil,
+                                                  content: .highlight(.pink),
+                                                  createdAt: .now)
+        try libraryRepository.save(unrelatedAnnotation)
+
+        store.refreshPassageHighlights()
+        let colorsBeforeDelete = store.passageHighlightColors
+        #expect(colorsBeforeDelete == [1: .yellow, 2: .green, 3: .green])
+
+        try libraryRepository.delete(unrelatedAnnotation.id)
+        store.refreshPassageHighlights()
+
+        #expect(store.passageHighlightColors == colorsBeforeDelete)
+    }
+
     // MARK: Functions (Private)
 
-    private func readerStore() -> ReaderStore {
+    private func readerStore(
+        libraryRepository: any LibraryRepository = InMemoryLibraryRepository()
+    ) -> ReaderStore {
         let repository = FakeBibleRepository()
         let passageStore = BiblePassageStore(repository: repository,
                                              passageCache: InMemoryPassageCache())
         return ReaderStore(passageStore: passageStore,
                            catalogStore: BibleCatalogStore(repository: repository),
-                           libraryRepository: InMemoryLibraryRepository())
+                           libraryRepository: libraryRepository)
     }
 }

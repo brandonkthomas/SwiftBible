@@ -143,6 +143,32 @@ struct LibraryStoreTests {
         #expect(libraryStore.passage(for: annotation)?.passage == expectedPassage)
     }
 
+    /// delete(_:) reports success and removes the annotation from `annotations`
+    @Test func deleteReportsSuccessAndRemovesAnnotation() throws {
+        let libraryRepository = InMemoryLibraryRepository()
+        let passageStore = BiblePassageStore(repository: LibraryPassageCountingRepository(),
+                                             passageCache: InMemoryPassageCache())
+        let libraryStore = LibraryStore(libraryRepository: libraryRepository,
+                                        passageStore: passageStore)
+        let deletedAnnotation = makeAnnotation(translationID: 1234,
+                                               startVerse: 1,
+                                               content: .highlight(.yellow))
+        let keptAnnotation = makeAnnotation(translationID: 1234,
+                                            startVerse: 2,
+                                            content: .note("Kept note"))
+
+        try libraryRepository.save(deletedAnnotation)
+        try libraryRepository.save(keptAnnotation)
+        libraryStore.load()
+        #expect(libraryStore.annotations.count == 2)
+
+        let didDelete = libraryStore.delete(deletedAnnotation.id)
+
+        #expect(didDelete)
+        #expect(!libraryStore.annotations.contains { $0.id == deletedAnnotation.id })
+        #expect(libraryStore.annotations == [keptAnnotation])
+    }
+
     /// Genesis 2 is absent from the default fixtures; tests needing a second chapter add it
     private static let secondChapterPassage = FakeBibleRepository.PassageFixture(
         translationID: 1234,
