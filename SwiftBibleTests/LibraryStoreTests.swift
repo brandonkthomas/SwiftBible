@@ -202,9 +202,7 @@ struct LibraryStoreTests {
         #expect(editor.tags == ["Creation", "Light"])
     }
 
-    /// An editor built from a saved annotation matches the one ReaderStore builds for the same
-    /// selection: chapter-scoped reference (nil start/end verses) with the range in selectedVerses.
-    /// A mismatch here would make AnnotationEditor.load() miss annotations saved from the reader
+    /// Guards convention that both entry points build editors the same way
     @Test func annotationEditorReferenceMatchesReaderStoreEditor() async throws {
         let libraryRepository = InMemoryLibraryRepository()
         let bibleRepository = FakeBibleRepository()
