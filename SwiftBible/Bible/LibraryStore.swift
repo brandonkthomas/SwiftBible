@@ -19,6 +19,9 @@ final class LibraryStore {
 
     // MARK: Properties
 
+    // TODO
+//    var sort = LibrarySort()
+
     /// Active user-selected filter
     /// Mutating it automatically changes `filteredAnnotations` for observing views
     var filter = LibraryFilter()
@@ -101,6 +104,25 @@ final class LibraryStore {
             return loadedPassage
         }
         return nil
+    }
+
+    /// Request change of a highlight annotation's color
+    func changeHighlightColor(_ id: VerseAnnotation.ID,
+                              color: VerseAnnotationHighlightColor) -> Bool {
+        do {
+            guard var annotation = annotations.first(where: { $0.id == id }) else {
+                Self.logger.error("Unable to locate annotation ID '\(id)'")
+                return false
+            }
+            annotation.content = .highlight(color)
+            annotation.updatedAt = Date()
+            try libraryRepository.save(annotation)
+            load()
+            return true
+        } catch {
+            Self.logger.error("Unable to change annotation color for ID '\(id)': \(error.localizedDescription)")
+            return false
+        }
     }
 
     /// Request deletion of an annotation

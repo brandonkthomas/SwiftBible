@@ -35,11 +35,22 @@ struct VerseActionsView: View {
     /// if non-nil, we have an existing session and need to open AnnotationEditorSheetView
     @State private var annotationEditor: AnnotationEditor?
 
-    /// Triggered when a highlight popover button is tapped
-    @State private var highlightHapticTrigger: Bool = false
-
     @State private var isHighlightPopoverPresented: Bool = false
-    @State private var showEraser: Bool = false
+
+    /// Eraser state as of the last live selection; only displayed while there is no selection
+    /// (the deselect closing animation), so the icon doesn't flash on the way out
+    @State private var lastSelectionShowedEraser: Bool = false
+
+    /// Live store value while a selection exists; remembered value while deselecting
+    ///
+    /// Reading the store directly means a reused view (quick reselect during the removal
+    /// transition, where .onAppear/.onChange may not fire) can't show a stale icon
+    private var showEraser: Bool {
+        guard readerStore.selectedVerses != nil else {
+            return lastSelectionShowedEraser
+        }
+        return readerStore.selectionContainsHighlight
+    }
 
     private var isExpandedPlacement: Bool {
         placement == .expanded || placement == nil
@@ -135,17 +146,19 @@ struct VerseActionsView: View {
         // TODO: Disabled for now as this causes extra animation overlap + stutter on the 4
         // rightmost buttons
 //        .animation(.default, value: placement)
-        // Seed showEraser up front to prevent flash on deselect
-        // Update showEraser on selection change (NOT deselect)
-        // Do not update showEraser on deselect to persist prev state through the closing animation
+        // Remember the eraser state while a selection exists (NOT on deselect) so the
+        // closing animation keeps the previous icon
+        // Both values are observed: either can change without the other
         .onAppear {
-            showEraser = readerStore.selectionContainsHighlight
+            rememberEraserState()
         }
-        .onChange(of: readerStore.selectedVerses) { _, newValue in
-            guard newValue != nil else {
-                return
-            }
-            showEraser = readerStore.selectionContainsHighlight
+        .onChange(of: readerStore.selectedVerses) {
+            // A popover belongs to one selection; never carry it into another
+            isHighlightPopoverPresented = false
+            rememberEraserState()
+        }
+        .onChange(of: readerStore.selectionContainsHighlight) {
+            rememberEraserState()
         }
         // Fire AnnotationEditorSheetView when $annotationEditor instance is assigned
         .sheet(item: $annotationEditor) { editor in
@@ -182,46 +195,31 @@ struct VerseActionsView: View {
                  attachmentAnchor: .point(.top),
                  arrowEdge: .bottom,
                  content: {
-            GlassEffectContainer(spacing: 15) {
-                HStack(spacing: 15) {
-                    // show 1 button for each public color
-                    ForEach(VerseAnnotationHighlightColor.allCases, id: \.rawValue) { item in
-                        highlightColorButton(for: item)
-                    }
-                }
-                // popover padding on L/R
-                .padding(EdgeInsets(top: 0, leading: 10, bottom: 0, trailing: 10))
-                // open minimal popover view
-                .presentationCompactAdaptation(.none)
-            }
+            // Close the popover before saving/deleting: both deselect, which starts removing this
+            // view; if that removal is cancelled by a quick reselect, the view (and its @State)
+            // is reused, so a still-true flag would re-present the popover
+            HighlightPickerView(
+                onCreateRequested: { color in
+                    isHighlightPopoverPresented = false
+                    readerStore.save(.highlight(color))
+                },
+                onDeleteRequested: {
+                    isHighlightPopoverPresented = false
+                    readerStore.deleteHighlights()
+                },
+                existingHighlightColors: readerStore.selectionHighlightColors
+            )
         })
     }
 
-    /// Produces a selectable circle button for a given highlight color
-    private func highlightColorButton(for color: VerseAnnotationHighlightColor) -> some View {
-        var highlightFeedback: SensoryFeedback = .success
+    // MARK: Functions (Private)
 
-        return Button(action: {
-            withAnimation(.snappy(duration: 0.35)) {
-                if showEraser {
-                    readerStore.deleteHighlights()
-                } else {
-                    readerStore.save(.highlight(color))
-                }
-            }
-            // TODO: this is not playing the correct haptic pattern
-            highlightFeedback = showEraser ? .warning : .success
-            highlightHapticTrigger.toggle()
-        }) {
-            let size = UIFontMetrics(forTextStyle: .body).scaledValue(for: 30)
-            Text("") // color only
-                .frame(width: size, height: size)
-                .foregroundColor(Color.black)
+    /// Store the current eraser state for use during the deselect animation (ignored when deselected)
+    private func rememberEraserState() {
+        guard readerStore.selectedVerses != nil else {
+            return
         }
-        // blend in w/ surrounding elements; interactive; tint to correct color
-        .glassEffect(.regular.tint(color.uiColor).interactive(),in: .circle)
-        // haptic on selection
-        .sensoryFeedback(highlightFeedback, trigger: highlightHapticTrigger)
+        lastSelectionShowedEraser = readerStore.selectionContainsHighlight
     }
 }
 

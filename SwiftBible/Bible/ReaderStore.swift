@@ -93,6 +93,15 @@ final class ReaderStore {
         return selectedVerses.contains { passageHighlightColors[$0] != nil }
     }
 
+    /// Highlight colors present in the current selection (in verse order)
+    var selectionHighlightColors: [VerseAnnotationHighlightColor]? {
+        // do we have a selection?
+        guard let selectedVerses else {
+            return nil
+        }
+        return selectedVerses.compactMap { passageHighlightColors[$0] }
+    }
+
     /// Can we navigate backward by 1 chapter right now given the current selection + loaded collections?
     var previousAdjacentChapterExists: Bool {
         guard let selectedChapterNumber = self.selectedChapter?.number else {

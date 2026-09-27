@@ -169,6 +169,62 @@ struct LibraryStoreTests {
         #expect(libraryStore.annotations == [keptAnnotation])
     }
 
+    /// changeHighlightColor(_:color:) persists the new color, stamps updatedAt, and refreshes `annotations`
+    @Test func changeHighlightColorPersistsNewColorAndRefreshesAnnotations() throws {
+        let libraryRepository = InMemoryLibraryRepository()
+        let passageStore = BiblePassageStore(repository: LibraryPassageCountingRepository(),
+                                             passageCache: InMemoryPassageCache())
+        let libraryStore = LibraryStore(libraryRepository: libraryRepository,
+                                        passageStore: passageStore)
+        let highlightAnnotation = makeAnnotation(translationID: 1234,
+                                                 startVerse: 1,
+                                                 content: .highlight(.yellow))
+        let otherAnnotation = makeAnnotation(translationID: 1234,
+                                             startVerse: 2,
+                                             content: .highlight(.yellow))
+
+        try libraryRepository.save(highlightAnnotation)
+        try libraryRepository.save(otherAnnotation)
+        libraryStore.load()
+
+        let didChange = libraryStore.changeHighlightColor(highlightAnnotation.id, color: .green)
+
+        let storedAnnotation = try #require(
+            libraryRepository.allAnnotations().first { $0.id == highlightAnnotation.id }
+        )
+        let publishedAnnotation = try #require(
+            libraryStore.annotations.first { $0.id == highlightAnnotation.id }
+        )
+
+        #expect(didChange)
+        #expect(storedAnnotation.highlightColor == .green)
+        #expect(storedAnnotation.updatedAt != nil)
+        #expect(publishedAnnotation == storedAnnotation)
+        // unrelated annotations are untouched
+        #expect(libraryStore.annotations.first { $0.id == otherAnnotation.id } == otherAnnotation)
+    }
+
+    /// changeHighlightColor(_:color:) reports failure and leaves state unchanged for an unknown ID
+    @Test func changeHighlightColorReportsFailureForUnknownID() throws {
+        let libraryRepository = InMemoryLibraryRepository()
+        let passageStore = BiblePassageStore(repository: LibraryPassageCountingRepository(),
+                                             passageCache: InMemoryPassageCache())
+        let libraryStore = LibraryStore(libraryRepository: libraryRepository,
+                                        passageStore: passageStore)
+        let annotation = makeAnnotation(translationID: 1234,
+                                        startVerse: 1,
+                                        content: .highlight(.yellow))
+
+        try libraryRepository.save(annotation)
+        libraryStore.load()
+
+        let didChange = libraryStore.changeHighlightColor(UUID(), color: .green)
+
+        #expect(!didChange)
+        #expect(try libraryRepository.allAnnotations() == [annotation])
+        #expect(libraryStore.annotations == [annotation])
+    }
+
     /// annotationEditor(for:) builds an editor that loads the note and tags saved for the same verse range
     @Test func annotationEditorLoadsNoteAndTagsForSameVerseRange() throws {
         let libraryRepository = InMemoryLibraryRepository()

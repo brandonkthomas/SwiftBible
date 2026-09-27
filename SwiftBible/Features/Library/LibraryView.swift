@@ -33,6 +33,9 @@ struct LibraryView: View {
     /// Are we editing all the rows?
     @State private var isInEditMode: Bool = false
 
+    /// Did changing a specific row's highlight color fail?
+    @State private var didHighlightColorChangeFail: Bool = false
+
     /// Did deleting a specific row fail?
     @State private var didDeleteFail: Bool = false
 
@@ -88,6 +91,14 @@ struct LibraryView: View {
         } message: {
             Text("Please try again.")
         }
+        // Highlight change failure popup
+        .alert("Unable to Change Highlight Color",
+               isPresented: $didHighlightColorChangeFail) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text("Please try again.")
+        }
+        // Load data
         .task {
             // First load all annotations
             // Passages are loaded as-needed by LibraryRowView instances below
@@ -132,6 +143,18 @@ struct LibraryView: View {
                     // Build actual single annotation view
                     LibraryRowView(
                         data: libraryRowViewData,
+                        onHighlightColorChangeRequested: { color in
+                            let didChange = withAnimation {
+                                libraryStore.changeHighlightColor(annotation.id,
+                                                                  color: color)
+                            }
+                            if didChange {
+                                readerStore.refreshPassageHighlights()
+                                didHighlightColorChangeFail = false // reset state
+                            } else {
+                                didHighlightColorChangeFail = true
+                            }
+                        },
                         onDeleteRequested: {
                             let didDelete = withAnimation {
                                 libraryStore.delete(annotation.id)
@@ -151,12 +174,8 @@ struct LibraryView: View {
                             )
                             onShowInReader()
                         },
-                        onAnnotationEditRequested: {
-                            if annotation.content.type == .highlight {
-                                // popover
-                            } else {
-                                annotationEditor = libraryStore.annotationEditor(for: annotation)
-                            }
+                        onAnnotationEditorRequested: {
+                            annotationEditor = libraryStore.annotationEditor(for: annotation)
                         }
                     )
                     .task {
@@ -170,7 +189,7 @@ struct LibraryView: View {
             .padding(.vertical, 8)
         }
         // Delete confirmation lives in each LibraryRowView (menu + swipe share it) so the
-        // popover anchors to the card being deleted rather than the whole ScrollView
+        //   popover anchors to the card being deleted rather than the whole ScrollView
         .swipeActionsContainerIfAvailable()
         .background(Color(.systemGroupedBackground))
     }

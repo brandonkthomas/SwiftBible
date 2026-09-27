@@ -14,16 +14,19 @@ struct LibraryRowView: View {
     /// Consolidated entry point for required data
     var data: LibraryRowViewData
 
-    /// What should we do when we need to delete this row?
+    /// What should we do when we need to change this row (annotation)'s highlight color?
+    let onHighlightColorChangeRequested: (VerseAnnotationHighlightColor) -> Void
+
+    /// What should we do when we need to delete this row (annotation)?
     let onDeleteRequested: () -> Void
 
     /// What should we do when we need to delete this row?
     let onPassageViewRequested: () async -> Void
 
     /// What should we do when we need to open the Annotation Editor sheet?
-    let onAnnotationEditRequested: () -> Void
+    let onAnnotationEditorRequested: () -> Void
 
-    // MARK: Properties (Passage Truncation, Private)
+    // MARK: Properties (Private, Passage Truncation)
 
     /// Same value used in ReaderPassageView
     /// TODO: Consolidate in central location
@@ -31,6 +34,10 @@ struct LibraryRowView: View {
 
     /// Passage text collapses to this many lines; overflow fades out
     private let passageLineLimit = 3
+
+    // MARK: Properties (Private, State)
+
+    @State private var isHighlightPopoverPresented: Bool = false
 
     /// Full (unclamped) height of the passage text, measured directly
     @State private var unclampedPassageHeight: CGFloat = 0
@@ -47,6 +54,8 @@ struct LibraryRowView: View {
     /// Have we selected the Delete option for this row + need to show confirmation?
     @State private var isDeleteConfirmationVisible: Bool = false
 
+    // MARK: Properties (Computed)
+
     /// Does the passage need more lines than we display?
     ///
     /// Line height is fixed, so height / lineHeight is the real line count
@@ -58,6 +67,36 @@ struct LibraryRowView: View {
     /// Fade the bottom edge only while overflowing text is hidden
     private var isPassageFaded: Bool {
         isPassageTruncated && !isPassageExpanded
+    }
+
+    /// VoiceOver hint describing what a tap will do (empty when the passage can't expand)
+    private var passageAccessibilityHint: String {
+        guard isPassageTruncated else {
+            return ""
+        }
+        return isPassageExpanded ? "Collapses the passage" : "Shows the full passage"
+    }
+
+    /// Height of the collapsed passage (also used by the loading placeholder)
+    private var collapsedPassageHeight: CGFloat {
+        passageLineHeight * CGFloat(passageLineLimit)
+    }
+
+    /// Height the passage is clipped to
+    ///
+    /// Collapsed is the default *before* measuring too: rows that first appeared at full
+    /// height then snapped to 3 lines would shift everything below it, and LazyVStack
+    /// re-creates rows while scrolling up, so the list would jump repeatedly
+    private var visiblePassageHeight: CGFloat {
+        // not measured yet (0): assume collapsed
+        guard unclampedPassageHeight > 0 else {
+            return collapsedPassageHeight
+        }
+        // short passages and expanded passages show their full height
+        guard isPassageTruncated, !isPassageExpanded else {
+            return unclampedPassageHeight
+        }
+        return collapsedPassageHeight
     }
 
     // MARK: Views
@@ -180,42 +219,31 @@ struct LibraryRowView: View {
             }
             .tint(Color(.systemRed))
             Button {
-                onAnnotationEditRequested()
+                if data.annotation.content.type == .highlight {
+                    isHighlightPopoverPresented = true
+                } else {
+                    onAnnotationEditorRequested()
+                }
             } label: {
                 Image(systemName: "pencil")
             }
             .tint(Color(.systemGray))
         }
-    }
-
-    /// VoiceOver hint describing what a tap will do (empty when the passage can't expand)
-    private var passageAccessibilityHint: String {
-        guard isPassageTruncated else {
-            return ""
-        }
-        return isPassageExpanded ? "Collapses the passage" : "Shows the full passage"
-    }
-
-    /// Height of the collapsed passage (also used by the loading placeholder)
-    private var collapsedPassageHeight: CGFloat {
-        passageLineHeight * CGFloat(passageLineLimit)
-    }
-
-    /// Height the passage is clipped to
-    ///
-    /// Collapsed is the default *before* measuring too: rows that first appeared at full
-    /// height then snapped to 3 lines would shift everything below it, and LazyVStack
-    /// re-creates rows while scrolling up, so the list would jump repeatedly
-    private var visiblePassageHeight: CGFloat {
-        // not measured yet (0): assume collapsed
-        guard unclampedPassageHeight > 0 else {
-            return collapsedPassageHeight
-        }
-        // short passages and expanded passages show their full height
-        guard isPassageTruncated, !isPassageExpanded else {
-            return unclampedPassageHeight
-        }
-        return collapsedPassageHeight
+        // highlight popover
+        .popover(isPresented: $isHighlightPopoverPresented,
+                 attachmentAnchor: .point(.trailing),
+                 arrowEdge: .trailing,
+                 content: {
+            HighlightPickerView(
+                onCreateRequested: { color in
+                    onHighlightColorChangeRequested(color)
+                },
+                onDeleteRequested: {
+                    onDeleteRequested()
+                },
+                existingHighlightColors: data.annotation.highlightColor.map { [$0] }
+            )
+        })
     }
 
     /// Visible passage: clipped to 3 lines unless expanded, with a bottom fade while clipped
@@ -283,7 +311,11 @@ struct LibraryRowView: View {
                 Label("View Passage", systemImage: "book")
             }
             Button {
-                onAnnotationEditRequested()
+                if data.annotation.content.type == .highlight {
+                    isHighlightPopoverPresented = true
+                } else {
+                    onAnnotationEditorRequested()
+                }
             } label: {
                 Label("Edit Annotation", systemImage: "pencil")
             }
@@ -342,9 +374,10 @@ private struct LibraryRowViewPreviewHost: View {
                     data: LibraryRowViewData(annotation: annotation,
                                              bibleCatalogStore: catalogStore,
                                              libraryStore: libraryStore),
+                    onHighlightColorChangeRequested: { color in },
                     onDeleteRequested: {},
                     onPassageViewRequested: {},
-                    onAnnotationEditRequested: {})
+                    onAnnotationEditorRequested: {})
             }
         }
         .padding()
