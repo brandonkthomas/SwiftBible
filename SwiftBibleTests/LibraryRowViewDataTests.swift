@@ -23,11 +23,11 @@ struct LibraryRowViewDataTests {
                                         startVerse: 1)
 
         let viewData = LibraryRowViewData(annotation: annotation,
-                                          catalogStore: catalogStore,
+                                          bibleCatalogStore: catalogStore,
                                           libraryStore: libraryStore)
 
         #expect(viewData.passageLabel == "XYZ 1:1")
-        #expect(viewData.translationLabel == "9999")
+        #expect(viewData.translationLabel == "")
     }
 
     /// A multi-verse annotation's label shows the range; a single-verse one shows one number
@@ -38,10 +38,10 @@ struct LibraryRowViewDataTests {
         let singleVerseAnnotation = makeAnnotation(startVerse: 5, endVerse: nil)
 
         let multiVerseViewData = LibraryRowViewData(annotation: multiVerseAnnotation,
-                                                     catalogStore: catalogStore,
+                                                     bibleCatalogStore: catalogStore,
                                                      libraryStore: libraryStore)
         let singleVerseViewData = LibraryRowViewData(annotation: singleVerseAnnotation,
-                                                      catalogStore: catalogStore,
+                                                      bibleCatalogStore: catalogStore,
                                                       libraryStore: libraryStore)
 
         #expect(multiVerseViewData.passageLabel == "GEN 1:1–3")
@@ -58,7 +58,7 @@ struct LibraryRowViewDataTests {
         // deliberately not calling libraryStore.loadPassage(for:) here
 
         let viewData = LibraryRowViewData(annotation: annotation,
-                                          catalogStore: catalogStore,
+                                          bibleCatalogStore: catalogStore,
                                           libraryStore: libraryStore)
 
         #expect(viewData.renderedPassageRuns == nil)
@@ -77,7 +77,7 @@ struct LibraryRowViewDataTests {
         await libraryStore.loadPassage(for: annotation)
 
         let viewData = LibraryRowViewData(annotation: annotation,
-                                          catalogStore: catalogStore,
+                                          bibleCatalogStore: catalogStore,
                                           libraryStore: libraryStore)
 
         let runs = try #require(viewData.renderedPassageRuns)

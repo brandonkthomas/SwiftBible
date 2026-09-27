@@ -169,6 +169,39 @@ struct LibraryStoreTests {
         #expect(libraryStore.annotations == [keptAnnotation])
     }
 
+    /// annotationEditor(for:) builds an editor that loads the note and tags saved for the same verse range
+    @Test func annotationEditorLoadsNoteAndTagsForSameVerseRange() throws {
+        let libraryRepository = InMemoryLibraryRepository()
+        let passageStore = BiblePassageStore(repository: LibraryPassageCountingRepository(),
+                                             passageCache: InMemoryPassageCache())
+        let libraryStore = LibraryStore(libraryRepository: libraryRepository,
+                                        passageStore: passageStore)
+        let noteAnnotation = makeAnnotation(translationID: 1234,
+                                            startVerse: 1,
+                                            endVerse: 3,
+                                            content: .note("Range note"))
+        let tagsAnnotation = makeAnnotation(translationID: 1234,
+                                            startVerse: 1,
+                                            endVerse: 3,
+                                            content: .tags(["Creation", "Light"]))
+        // Same chapter, different range; must not leak into the editor
+        let otherRangeAnnotation = makeAnnotation(translationID: 1234,
+                                                  startVerse: 4,
+                                                  content: .note("Other range note"))
+
+        try libraryRepository.save(noteAnnotation)
+        try libraryRepository.save(tagsAnnotation)
+        try libraryRepository.save(otherRangeAnnotation)
+        libraryStore.load()
+
+        let editor = try #require(libraryStore.annotationEditor(for: noteAnnotation))
+        editor.load()
+
+        #expect(editor.selectedVerses == 1...3)
+        #expect(editor.noteText == "Range note")
+        #expect(editor.tags == ["Creation", "Light"])
+    }
+
     /// Genesis 2 is absent from the default fixtures; tests needing a second chapter add it
     private static let secondChapterPassage = FakeBibleRepository.PassageFixture(
         translationID: 1234,
@@ -187,6 +220,7 @@ struct LibraryStoreTests {
         translationID: Translation.ID,
         chapter: Int = 1,
         startVerse: Int,
+        endVerse: Int? = nil,
         content: AnnotationContent
     ) -> VerseAnnotation {
         VerseAnnotation(id: UUID(),
@@ -194,7 +228,7 @@ struct LibraryStoreTests {
                         bookCode: "GEN",
                         chapter: chapter,
                         startVerse: startVerse,
-                        endVerse: nil,
+                        endVerse: endVerse,
                         content: content,
                         createdAt: .now)
     }

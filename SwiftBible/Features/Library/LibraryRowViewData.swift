@@ -22,30 +22,17 @@ struct LibraryRowViewData {
     let translationLabel: String
 
     init(annotation: VerseAnnotation,
-         catalogStore: BibleCatalogStore,
+         bibleCatalogStore: BibleCatalogStore,
          libraryStore: LibraryStore) {
-        // Translation
-        let translation = catalogStore.translation(for: annotation.translationID)
-
-        // Book
-        let book = catalogStore.book(for: annotation.translationID,
-                                     bookCode: annotation.bookCode)
-
-        // Verse range
-        let verseRange = RenderedVerseRange(range: annotation.verseRange)
-
-        // Passage label
-        let passageLabel = "\(book?.displayName ?? annotation.bookCode) \(annotation.chapter):\(verseRange.displayText)"
-
-        // RenderedPassageRuns
+        // Required calculations for self.renderedPassageRuns
         let passageForAnnotation = libraryStore.passage(for: annotation)
-
+        let verseRange = RenderedVerseRange(range: annotation.verseRange)
         let renderedPassageRunsForAnnotation = passageForAnnotation?.renderedPassage.runs(for: verseRange)
 
         // Done -- assign and leave
         self.annotation = annotation
         self.renderedPassageRuns = renderedPassageRunsForAnnotation
-        self.passageLabel = passageLabel
-        self.translationLabel = translation?.abbreviation ?? annotation.translationID.description
+        self.passageLabel = bibleCatalogStore.friendlyPassageName(for: annotation)
+        self.translationLabel = bibleCatalogStore.translation(for: annotation.translationID)?.abbreviation ?? ""
     }
 }

@@ -36,14 +36,14 @@ final class AnnotationEditor: Identifiable {
         || existingNoteID != nil
         || existingTagsID != nil
     }
+    
+    // MARK: Properties (Private)
 
     /// Is there any non-empty note text or tag right now?
     private var hasMeaningfulContent: Bool {
         !noteText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         || tags.contains { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
     }
-
-    // MARK: Properties (Private)
 
     private let libraryRepository: any LibraryRepository
 

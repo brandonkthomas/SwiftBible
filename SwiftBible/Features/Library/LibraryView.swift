@@ -28,13 +28,20 @@ struct LibraryView: View {
 
     @Environment(\.editMode) private var editMode
 
-    // MARK: Properties (State, Private)
+    // MARK: Properties (Private, State)
 
+    /// Are we editing all the rows?
     @State private var isInEditMode: Bool = false
 
+    /// Did deleting a specific row fail?
     @State private var didDeleteFail: Bool = false
 
     @Namespace private var chipBarNamespace
+
+    /// AnnotationEditor session:
+    /// if nil, nothing selected;
+    /// if non-nil, we have an existing session and need to open AnnotationEditorSheetView
+    @State private var annotationEditor: AnnotationEditor?
 
     // MARK: Properties (Local, Private)
 
@@ -70,10 +77,6 @@ struct LibraryView: View {
 //                        }
                 }
             }
-            // Navigation view modifiers
-//            .navigationTitle("Saved")
-//            .navigationSubtitle("\(libraryStore.annotations.count) Annotation\(libraryStore.annotations.count == 1 ? "" : "s")")
-//            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 filterOptionsToolbarItem
             }
@@ -93,6 +96,20 @@ struct LibraryView: View {
             // Load book names for each annotation
             await loadMissingBookMetadata()
         }
+        // Fire AnnotationEditorSheetView when $annotationEditor instance is assigned
+        .sheet(
+            item: $annotationEditor,
+            onDismiss: {
+                withAnimation {
+                    libraryStore.load()
+                }
+            },
+            content: { editor in
+                AnnotationEditorSheetView(editor: editor,
+                                          bibleCatalogStore: catalogStore)
+                .presentationDragIndicator(.visible)
+            }
+        )
     }
 
     /// List of annotations
@@ -109,7 +126,7 @@ struct LibraryView: View {
                 ForEach(libraryStore.filteredAnnotations) { annotation in
                     // Retrieve data
                     let libraryRowViewData = LibraryRowViewData(annotation: annotation,
-                                                                catalogStore: catalogStore,
+                                                                bibleCatalogStore: catalogStore,
                                                                 libraryStore: libraryStore)
 
                     // Build actual single annotation view
@@ -121,6 +138,7 @@ struct LibraryView: View {
                             }
                             if didDelete {
                                 readerStore.refreshPassageHighlights()
+                                didDeleteFail = false // reset state
                             } else {
                                 didDeleteFail = true
                             }
@@ -132,6 +150,13 @@ struct LibraryView: View {
                                 chapterID: "\(annotation.bookCode).\(annotation.chapter)"
                             )
                             onShowInReader()
+                        },
+                        onAnnotationEditRequested: {
+                            if annotation.content.type == .highlight {
+                                // popover
+                            } else {
+                                annotationEditor = libraryStore.annotationEditor(for: annotation)
+                            }
                         }
                     )
                     .task {

@@ -20,6 +20,11 @@ struct VerseActionsView: View {
     /// placed into the environment: .environment(readerStore))
     @Environment(ReaderStore.self) private var readerStore: ReaderStore
 
+    /// Read appEnvironment.bibleCatalogStore environment value from current view environment
+    ///
+    /// Required for AnnotationEditorSheetView
+    @Environment(BibleCatalogStore.self) private var bibleCatalogStore: BibleCatalogStore
+
     /// Used for Liquid Glass effects in highlight popover
     @Namespace private var highlightColorPopoverNamespace
 
@@ -145,8 +150,7 @@ struct VerseActionsView: View {
         // Fire AnnotationEditorSheetView when $annotationEditor instance is assigned
         .sheet(item: $annotationEditor) { editor in
             AnnotationEditorSheetView(editor: editor,
-                                      sheetTitle: readerStore.selectedVerseReferenceFriendlyName ?? "Notes & Tags",
-                                      translationAbbreviation: readerStore.selectedTranslation?.abbreviation ?? "")
+                                      bibleCatalogStore: bibleCatalogStore)
                 .presentationDragIndicator(.visible)
         }
     }

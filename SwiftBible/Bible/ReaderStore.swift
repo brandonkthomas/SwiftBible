@@ -112,18 +112,6 @@ final class ReaderStore {
         || self.selectedBook != self.books.last
     }
 
-    /// i.e. "Genesis 1:1-3"
-    var selectedVerseReferenceFriendlyName: String? {
-        guard let selectedReferenceFriendlyName,
-              let selectedVerses else {
-            return nil
-        }
-
-        let range = RenderedVerseRange(range: selectedVerses)
-
-        return "\(selectedReferenceFriendlyName):\(range.displayText)"
-    }
-
     // MARK: Properties (Private)
 
     /// Authority for all cached/loaded Passages

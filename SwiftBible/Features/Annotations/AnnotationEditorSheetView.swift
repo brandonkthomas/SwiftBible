@@ -15,13 +15,18 @@ struct AnnotationEditorSheetView: View {
     // @State is only used when this view would be creating the object
     @Bindable var editor: AnnotationEditor
 
-    let sheetTitle: String
-    let translationAbbreviation: String
+    /// Used for calculation of the sheet's title
+    let bibleCatalogStore: BibleCatalogStore
 
     // MARK: Properties (Private)
 
+    /// Shared animation for tag chip selection/reflow
+    private let glassMorph: Animation = .smooth(duration: 0.3)
+
     /// for sheet close button
     @Environment(\.dismiss) private var dismiss
+
+    // MARK: Properties (Private, State)
 
     private enum FocusedField: Hashable {
         case note
@@ -41,10 +46,16 @@ struct AnnotationEditorSheetView: View {
     /// to content while keeping native chrome
     @State private var contentHeight: CGFloat = 320
 
-    /// Shared animation for tag chip selection/reflow
-    private let glassMorph: Animation = .smooth(duration: 0.3)
+    // MARK: Properties (Private, Computed)
 
-    // MARK: Properties (Computed, Private)
+    private var sheetTitle: String {
+        return bibleCatalogStore.friendlyPassageName(for: editor.reference,
+                                                     selectedVerses: editor.selectedVerses)
+    }
+
+    private var sheetSubtitle: String {
+        return bibleCatalogStore.translation(for: editor.reference.translationID)?.abbreviation ?? ""
+    }
 
     /// Order: selected, vocab
     /// Filter by selection to avoid showing dupes
@@ -92,7 +103,7 @@ struct AnnotationEditorSheetView: View {
                 contentHeight = height + navigationBarAllowance
             }
             .navigationTitle(sheetTitle)
-            .navigationSubtitle(translationAbbreviation)
+            .navigationSubtitle(sheetSubtitle)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -350,6 +361,5 @@ private extension AnnotationEditor {
 
 #Preview {
     AnnotationEditorSheetView(editor: .previewEditor(),
-                              sheetTitle: "Sheet Title",
-                              translationAbbreviation: "ABC")
+                              bibleCatalogStore: BibleCatalogStore(repository: FakeBibleRepository()))
 }

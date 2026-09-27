@@ -64,4 +64,41 @@ final class BibleCatalogStore {
         }
         return books.first { $0.code == bookCode }
     }
+
+    /// Builds a friendly name (i.e. "Genesis 1:1-2") for a given ScriptureReference + range
+    /// (i.e. AnnotationEditor)
+    func friendlyPassageName(for reference: ScriptureReference,
+                             selectedVerses: ClosedRange<Int>?) -> String {
+        return passageFriendlyNameCalc(translationID: reference.translationID,
+                                       bookCode: reference.bookCode,
+                                       chapter: reference.chapter,
+                                       verseRange: selectedVerses)
+    }
+
+    /// Builds a friendly name (i.e. "Genesis 1:1-2") for a given VerseAnnotation
+    func friendlyPassageName(for annotation: VerseAnnotation) -> String {
+        return passageFriendlyNameCalc(translationID: annotation.translationID,
+                                       bookCode: annotation.bookCode,
+                                       chapter: annotation.chapter,
+                                       verseRange: annotation.verseRange)
+    }
+
+    // MARK: Functions (Private)
+
+    /// Builds a friendly name (i.e. "Genesis 1:1-2") -- SHARED LOGIC
+    private func passageFriendlyNameCalc(translationID: Translation.ID,
+                                         bookCode: String,
+                                         chapter: Int,
+                                         verseRange: ClosedRange<Int>?) -> String {
+        let book = book(for: translationID,
+                        bookCode: bookCode)
+
+        guard let verseRange else {
+            return "\(book?.displayName ?? bookCode) \(chapter)"
+        }
+
+        let verseRangeText = RenderedVerseRange(range: verseRange).displayText
+
+        return "\(book?.displayName ?? bookCode) \(chapter):\(verseRangeText)"
+    }
 }

@@ -20,6 +20,9 @@ struct LibraryRowView: View {
     /// What should we do when we need to delete this row?
     let onPassageViewRequested: () async -> Void
 
+    /// What should we do when we need to open the Annotation Editor sheet?
+    let onAnnotationEditRequested: () -> Void
+
     // MARK: Properties (Passage Truncation, Private)
 
     /// Same value used in ReaderPassageView
@@ -176,6 +179,12 @@ struct LibraryRowView: View {
                 Image(systemName: "trash.fill")
             }
             .tint(Color(.systemRed))
+            Button {
+                onAnnotationEditRequested()
+            } label: {
+                Image(systemName: "pencil")
+            }
+            .tint(Color(.systemGray))
         }
     }
 
@@ -273,6 +282,11 @@ struct LibraryRowView: View {
             } label: {
                 Label("View Passage", systemImage: "book")
             }
+            Button {
+                onAnnotationEditRequested()
+            } label: {
+                Label("Edit Annotation", systemImage: "pencil")
+            }
             Button(role: .destructive) {
                 isDeleteConfirmationVisible = true
             } label: {
@@ -326,10 +340,11 @@ private struct LibraryRowViewPreviewHost: View {
             ForEach(annotations) { annotation in
                 LibraryRowView(
                     data: LibraryRowViewData(annotation: annotation,
-                                             catalogStore: catalogStore,
+                                             bibleCatalogStore: catalogStore,
                                              libraryStore: libraryStore),
                     onDeleteRequested: {},
-                    onPassageViewRequested: {})
+                    onPassageViewRequested: {},
+                    onAnnotationEditRequested: {})
             }
         }
         .padding()
