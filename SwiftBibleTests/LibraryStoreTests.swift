@@ -202,6 +202,36 @@ struct LibraryStoreTests {
         #expect(editor.tags == ["Creation", "Light"])
     }
 
+    /// An editor built from a saved annotation matches the one ReaderStore builds for the same
+    /// selection: chapter-scoped reference (nil start/end verses) with the range in selectedVerses.
+    /// A mismatch here would make AnnotationEditor.load() miss annotations saved from the reader
+    @Test func annotationEditorReferenceMatchesReaderStoreEditor() async throws {
+        let libraryRepository = InMemoryLibraryRepository()
+        let bibleRepository = FakeBibleRepository()
+        let readerStore = ReaderStore(passageStore: BiblePassageStore(repository: bibleRepository,
+                                                                      passageCache: InMemoryPassageCache()),
+                                      catalogStore: BibleCatalogStore(repository: bibleRepository),
+                                      libraryRepository: libraryRepository)
+        let libraryStore = LibraryStore(libraryRepository: libraryRepository,
+                                        passageStore: BiblePassageStore(repository: bibleRepository,
+                                                                        passageCache: InMemoryPassageCache()))
+
+        // Reader defaults to translation 1234, GEN 1
+        await readerStore.loadTranslationsAndBooks(languageTag: "en")
+        readerStore.selectedVerses = 1...3
+        let readerEditor = try #require(readerStore.makeAnnotationEditor())
+
+        let annotation = makeAnnotation(translationID: 1234,
+                                        startVerse: 1,
+                                        endVerse: 3,
+                                        content: .note("Parity note"))
+        let libraryEditor = try #require(libraryStore.annotationEditor(for: annotation))
+
+        #expect(libraryEditor.reference == readerEditor.reference)
+        #expect(libraryEditor.selectedVerses == readerEditor.selectedVerses)
+        #expect(libraryEditor.reference.verseRange == nil)
+    }
+
     /// Genesis 2 is absent from the default fixtures; tests needing a second chapter add it
     private static let secondChapterPassage = FakeBibleRepository.PassageFixture(
         translationID: 1234,

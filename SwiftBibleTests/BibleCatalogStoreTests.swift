@@ -5,6 +5,7 @@
 //  Created by Brandon Thomas on 2026-08-13.
 //
 
+import Foundation
 import Testing
 @testable import SwiftBible
 
@@ -130,6 +131,73 @@ struct BibleCatalogStoreTests {
         }
 
         #expect(catalogStore.books(for: translationID) == expectedBooks)
+    }
+
+    // MARK: Friendly Passage Name
+
+    /// A loaded book resolves to its display name instead of the raw book code
+    @Test func friendlyPassageNameUsesBookDisplayName() async throws {
+        let catalogStore = BibleCatalogStore(repository: FakeBibleRepository())
+        try await catalogStore.loadBooks(for: 1234)
+        let annotation = makeAnnotation(startVerse: 1)
+
+        #expect(catalogStore.friendlyPassageName(for: annotation) == "Genesis 1:1")
+    }
+
+    /// An unloaded book falls back to the raw book code
+    @Test func friendlyPassageNameFallsBackToRawBookCode() {
+        // books never loaded, so book(for:bookCode:) returns nil
+        let catalogStore = BibleCatalogStore(repository: FakeBibleRepository())
+        let annotation = makeAnnotation(startVerse: 1)
+
+        #expect(catalogStore.friendlyPassageName(for: annotation) == "GEN 1:1")
+    }
+
+    /// A nil verse range produces a chapter-only name
+    @Test func friendlyPassageNameWithoutVersesIsChapterOnly() async throws {
+        let catalogStore = BibleCatalogStore(repository: FakeBibleRepository())
+        try await catalogStore.loadBooks(for: 1234)
+        let reference = try #require(ScriptureReference(translationID: 1234,
+                                                        bookCode: "GEN",
+                                                        chapter: 1))
+
+        #expect(catalogStore.friendlyPassageName(for: reference, selectedVerses: nil) == "Genesis 1")
+    }
+
+    /// A single-verse range shows one verse number
+    @Test func friendlyPassageNameShowsSingleVerse() async throws {
+        let catalogStore = BibleCatalogStore(repository: FakeBibleRepository())
+        try await catalogStore.loadBooks(for: 1234)
+        let reference = try #require(ScriptureReference(translationID: 1234,
+                                                        bookCode: "GEN",
+                                                        chapter: 1))
+
+        #expect(catalogStore.friendlyPassageName(for: reference, selectedVerses: 5...5) == "Genesis 1:5")
+    }
+
+    /// A multi-verse range shows both bounds
+    @Test func friendlyPassageNameShowsVerseRange() async throws {
+        let catalogStore = BibleCatalogStore(repository: FakeBibleRepository())
+        try await catalogStore.loadBooks(for: 1234)
+        let reference = try #require(ScriptureReference(translationID: 1234,
+                                                        bookCode: "GEN",
+                                                        chapter: 1))
+
+        #expect(catalogStore.friendlyPassageName(for: reference, selectedVerses: 1...3) == "Genesis 1:1–3")
+    }
+
+    // MARK: Functions (Private Helpers)
+
+    private func makeAnnotation(startVerse: Int,
+                                endVerse: Int? = nil) -> VerseAnnotation {
+        VerseAnnotation(id: UUID(),
+                        translationID: 1234,
+                        bookCode: "GEN",
+                        chapter: 1,
+                        startVerse: startVerse,
+                        endVerse: endVerse,
+                        content: .note("Test note"),
+                        createdAt: .now)
     }
 }
 

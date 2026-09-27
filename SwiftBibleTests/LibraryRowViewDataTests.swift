@@ -48,6 +48,35 @@ struct LibraryRowViewDataTests {
         #expect(singleVerseViewData.passageLabel == "GEN 1:5")
     }
 
+    /// A loaded translation's abbreviation becomes the translation label
+    @Test func translationLabelUsesAbbreviationWhenAvailable() async throws {
+        let catalogStore = BibleCatalogStore(repository: FakeBibleRepository())
+        try await catalogStore.loadTranslations()
+        let libraryStore = makeLibraryStore()
+        // translationID 1234 matches FakeBibleRepository.defaultTranslations ("NIV")
+        let annotation = makeAnnotation(startVerse: 1)
+
+        let viewData = LibraryRowViewData(annotation: annotation,
+                                          bibleCatalogStore: catalogStore,
+                                          libraryStore: libraryStore)
+
+        #expect(viewData.translationLabel == "NIV")
+    }
+
+    /// An unknown translation produces an empty label rather than the raw ID
+    @Test func translationLabelIsEmptyWhenTranslationUnavailable() async throws {
+        let catalogStore = BibleCatalogStore(repository: FakeBibleRepository())
+        try await catalogStore.loadTranslations()
+        let libraryStore = makeLibraryStore()
+        let annotation = makeAnnotation(translationID: 9999, startVerse: 1)
+
+        let viewData = LibraryRowViewData(annotation: annotation,
+                                          bibleCatalogStore: catalogStore,
+                                          libraryStore: libraryStore)
+
+        #expect(viewData.translationLabel == "")
+    }
+
     /// If the annotation's chapter hasn't been loaded into the LibraryStore yet,
     /// there are no runs to render
     @Test func unloadedChapterProducesNilRuns() throws {
