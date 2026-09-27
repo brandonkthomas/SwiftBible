@@ -59,10 +59,15 @@ struct HighlightPickerView: View {
             dismiss()
         }) {
             let size = UIFontMetrics(forTextStyle: .body).scaledValue(for: 30)
-            Image(systemName: selected ? "checkmark" : "")
-            //Text("") // color only
-                .frame(width: size, height: size)
-                .foregroundColor(Color.black.opacity(0.7))
+            Group {
+                if selected {
+                    Image(systemName: "checkmark")
+                } else {
+                    Text("")
+                }
+            }
+            .frame(width: size, height: size)
+            .foregroundColor(Color.primary)
         }
         // blend in w/ surrounding elements; interactive; tint to correct color
         .glassEffect(.regular.tint(color.uiColor).interactive(),in: .circle)
