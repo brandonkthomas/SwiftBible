@@ -13,6 +13,7 @@
     Native Swift Bible application w/ translations, highlights/notes, themes, and search.
     <br />
     <br />
+    <a href="https://swift.org"><img alt="Swift" src="https://img.shields.io/badge/Swift-F05138?logo=swift&logoColor=white"></a>
     <a href="https://apps.apple.com"><img alt="Apple App Store" src="https://img.shields.io/badge/Download-3579e9?logo=appstore&logoColor=white"></a>
   </p>
 </div>
