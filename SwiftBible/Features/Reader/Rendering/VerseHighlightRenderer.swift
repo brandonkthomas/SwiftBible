@@ -96,45 +96,61 @@ struct VerseHighlightRenderer: TextRenderer {
 
         // Text.Layout is a collection of lines; each line is a collection of runs
         for line in layout {
-            for run in line {
-                // Does this run carry our custom attribute?
-                if let number = run[VerseNumberAttribute.self]?.number {
-                    // persisted layer as base so that selections still draw over top
-                    if let highlightColor = persistedHighlights[number] {
-                        let shape = RoundedRectangle(cornerRadius: 4, style: .continuous)
-                            .path(in: run.typographicBounds.rect)
-                        ctx.fill(shape, with: .color(highlightColor.uiColor.opacity(opacity)))
-                    }
+            // 1. Backgrounds: one rounded rect per verse segment on this line
+            for segment in segments(in: line) {
+                let number = segment.number
+                let shape = RoundedRectangle(cornerRadius: 4, style: .continuous)
+                    .path(in: segment.rect)
 
-                    // Clip revealing verses to a mask
-                    if revealingVerses?.contains(number) == true {
-                        // Build a rounded rect matching the run's on-screen frame...
-                        let shape = RoundedRectangle(cornerRadius: 4, style: .continuous)
-                            .path(in: run.typographicBounds.rect)
-
-                        // ... masked to the calculated circlePath
-                        var masked = ctx
-                        masked.clip(to: circlePath)
-                        masked.fill(shape, with: .color(.readerVerseSelection))
-                    }
-
-                    // Keep settled verses filled (no clip)
-                    if settledVerses?.contains(number) == true {
-                        let shape = RoundedRectangle(cornerRadius: 4, style: .continuous)
-                            .path(in: run.typographicBounds.rect)
-                        ctx.fill(shape, with: .color(.readerVerseSelection))
-                    }
-
-                    if fadingVerses?.contains(number) == true {
-                        let shape = RoundedRectangle(cornerRadius: 4, style: .continuous)
-                            .path(in: run.typographicBounds.rect)
-                        ctx.fill(shape, with: .color(.readerVerseSelection.opacity(fadeProgress)))
-                    }
+                // persisted layer as base so that selections still draw over top
+                if let highlightColor = persistedHighlights[number] {
+                    ctx.fill(shape, with: .color(highlightColor.uiColor.opacity(opacity)))
                 }
 
-                // Always draw the run's glyphs (skip this and the text disappears)
+                // Clip revealing verses to the calculated circlePath
+                if revealingVerses?.contains(number) == true {
+                    // Build a rounded rect matching the run's on-screen frame...
+                    // ... masked to the calculated circlePath
+                    var masked = ctx
+                    masked.clip(to: circlePath)
+                    masked.fill(shape, with: .color(.readerVerseSelection))
+                }
+
+                // Keep settled verses filled (no clip)
+                if settledVerses?.contains(number) == true {
+                    ctx.fill(shape, with: .color(.readerVerseSelection))
+                }
+
+                if fadingVerses?.contains(number) == true {
+                    ctx.fill(shape, with: .color(.readerVerseSelection.opacity(fadeProgress)))
+                }
+            }
+
+            // 2. Glyphs drawn after all backgrounds so no fill covers text
+            for run in line {
                 ctx.draw(run)
             }
         }
+    }
+
+    /// Contiguous runs on one line sharing a verse number, merged into a single rect
+    private struct VerseSegment {
+        let number: Int
+        var rect: CGRect
+    }
+
+    private func segments(in line: Text.Layout.Line) -> [VerseSegment] {
+        var result: [VerseSegment] = []
+        for run in line {
+            // Unattributed runs (labels, markers) don't break a segment; a number change does
+            guard let number = run[VerseNumberAttribute.self]?.number else { continue }
+            let rect = run.typographicBounds.rect
+            if let last = result.last, last.number == number {
+                result[result.count - 1].rect = last.rect.union(rect)
+            } else {
+                result.append(VerseSegment(number: number, rect: rect))
+            }
+        }
+        return result
     }
 }
