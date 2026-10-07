@@ -46,6 +46,7 @@
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "8539B6882FEEE6C0007FC718"
                BuildableName = "SwiftBibleUITests.xctest"
+               BlueprintName = "SwiftBibleUITests"
                ReferencedContainer = "container:SwiftBible.xcodeproj">
             </BuildableReference>
          </TestableReference>
