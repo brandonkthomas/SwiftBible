@@ -150,9 +150,9 @@ struct LibraryView: View {
                 .padding(.trailing, 20)  // outside: margin from the screen edge
                 .disabled(!canDelete)
                 // Delete dialog for Edit mode
-                .confirmationDialog("Delete \(librarySelection.selectedIDCount ?? 0 == 1 ? "Annotations" : "Annotation")",
+                .confirmationDialog("Delete \(librarySelection.selectedIDCount ?? 0 == 1 ? "Annotation" : "Annotations")",
                                     isPresented: $isEditModeDeleteConfirmationVisible) {
-                    Button("Delete \(librarySelection.selectedIDCount ?? 0 == 1 ? "Annotations" : "Annotation")", role: .destructive) {
+                    Button("Delete \(librarySelection.selectedIDCount ?? 0 == 1 ? "Annotation" : "Annotations")", role: .destructive) {
                         guard let allIDs = librarySelection.allSelectedIDs else { return }
                         let didDelete = withAnimation(.snappy(duration: 0.35)) {
                             libraryStore.delete(allIDs)
