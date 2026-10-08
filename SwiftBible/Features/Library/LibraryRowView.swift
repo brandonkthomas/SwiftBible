@@ -14,17 +14,23 @@ struct LibraryRowView: View {
     /// Consolidated entry point for required data
     var data: LibraryRowViewData
 
+    /// Is this row selected? (nil = not selecting)
+    let isRowSelected: Bool?
+
     /// What should we do when we need to change this row (annotation)'s highlight color?
     let onHighlightColorChangeRequested: (VerseAnnotationHighlightColor) -> Void
 
     /// What should we do when we need to delete this row (annotation)?
     let onDeleteRequested: () -> Void
 
-    /// What should we do when we need to delete this row?
+    /// What should we do when we need to open this row's passage in the Read tab?
     let onPassageViewRequested: () async -> Void
 
     /// What should we do when we need to open the Annotation Editor sheet?
     let onAnnotationEditorRequested: () -> Void
+
+    /// What should we do when we need to mark this row as selected in Library's edit mode?
+    let onRowSelected: () -> Void
 
     // MARK: Properties (Private, Passage Truncation)
 
@@ -135,10 +141,20 @@ struct LibraryRowView: View {
 
                 Spacer()
 
-                // Action menu
-                annotationItemMenu
-                // TODO: hitbox is TINY
-//                .frame(maxHeight: )
+                // Action menu / select circle
+                // Animated by the withAnimation around the selection change in LibraryView;
+                //   withAnimation inside body runs while building views, so it animates nothing
+                if isRowSelected == true {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundStyle(.accent)
+                } else if isRowSelected == false {
+                    Image(systemName: "circle")
+                        .foregroundStyle(.accent)
+                } else {
+                    annotationItemMenu
+                    // TODO: hitbox is TINY
+                    //                .frame(maxHeight: )
+                }
             }
 
             // Row 2: Verse rendered text
@@ -146,7 +162,7 @@ struct LibraryRowView: View {
                 // Always a Button so view identity stays stable when truncation is first
                 // measured; short passages simply ignore taps
                 Button {
-                    withAnimation(.snappy) {
+                    withAnimation(.snappy(duration: 0.35)) {
                         isPassageExpanded.toggle()
                     }
                 } label: {
@@ -207,27 +223,37 @@ struct LibraryRowView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Color(.secondarySystemGroupedBackground),
                     in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        // Selected border: always present and faded with opacity (rather than inserted with
+        // `if`) so the change animates in place
+        // strokeBorder draws inside the shape, so the card's size never changes
+        .overlay {
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .strokeBorder(.accent, lineWidth: 2)
+                .opacity(isRowSelected == true ? 1 : 0)
+        }
         .shadow(color: .black.opacity(0.08), radius: 4, y: 2)
         // Outside a List, only takes effect inside swipeActionsContainer() (iOS 27+)
         // Opens the same per-row confirmation as the menu's Delete, so the dialog is
-        // anchored to this card and driven by this card's own state
+        //   anchored to this card and driven by this card's own state
         .swipeActions {
-            Button {
-                isDeleteConfirmationVisible = true
-            } label: {
-                Image(systemName: "trash.fill")
-            }
-            .tint(Color(.systemRed))
-            Button {
-                if data.annotation.content.type == .highlight {
-                    isHighlightPopoverPresented = true
-                } else {
-                    onAnnotationEditorRequested()
+            if isRowSelected == nil { // NOT in edit mode
+                Button {
+                    isDeleteConfirmationVisible = true
+                } label: {
+                    Image(systemName: "trash.fill")
                 }
-            } label: {
-                Image(systemName: "pencil")
+                .tint(Color(.systemRed))
+                Button {
+                    if data.annotation.content.type == .highlight {
+                        isHighlightPopoverPresented = true
+                    } else {
+                        onAnnotationEditorRequested()
+                    }
+                } label: {
+                    Image(systemName: "pencil")
+                }
+                .tint(Color(.systemGray))
             }
-            .tint(Color(.systemGray))
         }
         // highlight popover
         .popover(isPresented: $isHighlightPopoverPresented,
@@ -244,6 +270,30 @@ struct LibraryRowView: View {
                 existingHighlightColors: data.annotation.highlightColor.map { [$0] }
             )
         })
+        // Selection state
+        // In selection mode, one layer covers the whole card so taps toggle selection
+        // instead of reaching the expand button / menu underneath
+        .overlay {
+            if let isRowSelected {
+                // Color.clear fills the card (a Button would shrink to its label's size)
+                // Tap gesture rather than Button: a Button also fires at the end of a
+                // horizontal drag, so swiping a card would toggle it
+                Color.clear
+                    // include transparent areas
+                    .contentShape(.rect)
+                    .onTapGesture {
+                        onRowSelected()
+                    }
+                    // A tap gesture has no accessibility semantics; describe it as a
+                    // selectable button for VoiceOver
+                    .accessibilityElement()
+                    .accessibilityLabel(data.passageLabel)
+                    .accessibilityAddTraits(isRowSelected ? [.isButton, .isSelected] : .isButton)
+                    .accessibilityAction {
+                        onRowSelected()
+                    }
+            }
+        }
     }
 
     /// Visible passage: clipped to 3 lines unless expanded, with a bottom fade while clipped
@@ -374,10 +424,12 @@ private struct LibraryRowViewPreviewHost: View {
                     data: LibraryRowViewData(annotation: annotation,
                                              bibleCatalogStore: catalogStore,
                                              libraryStore: libraryStore),
+                    isRowSelected: nil,
                     onHighlightColorChangeRequested: { color in },
                     onDeleteRequested: {},
                     onPassageViewRequested: {},
-                    onAnnotationEditorRequested: {})
+                    onAnnotationEditorRequested: {},
+                    onRowSelected: {})
             }
         }
         .padding()

@@ -137,6 +137,22 @@ final class LibraryStore {
         }
     }
 
+    /// Request deletion of a set of annotations
+    func delete(_ ids: Set<VerseAnnotation.ID>) -> Bool {
+        var errorCount: Int = 0
+
+        for id in ids {
+            do {
+                try libraryRepository.delete(id)
+            } catch {
+                Self.logger.error("Unable to delete annotation: \(error.localizedDescription)")
+            }
+        }
+
+        load()
+        return errorCount == 0
+    }
+
     /// Build AnnotationEditor instance for a given VerseAnnotation (reuses LibraryStore.libraryRepository)
     func annotationEditor(for annotation: VerseAnnotation) -> AnnotationEditor? {
         guard let reference = ScriptureReference(

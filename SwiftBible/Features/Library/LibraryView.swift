@@ -16,28 +16,30 @@ struct LibraryView: View {
     // MARK: Properties (Proj Env, Private)
 
     /// Read appEnvironment.readerStore environment value from current view environment
-    @Environment(ReaderStore.self) private var readerStore: ReaderStore
-
-    /// Read appEnvironment.libraryStore environment value from current view environment
     ///
     /// Don't need "\." here because this is a type-based lookup for an observable instance
     /// placed into the environment: .environment(readerStore))
+    @Environment(ReaderStore.self) private var readerStore: ReaderStore
+
+    /// Read appEnvironment.libraryStore environment value from current view environment
     @Environment(LibraryStore.self) private var libraryStore: LibraryStore
 
+    /// Read appEnvironment.catalogStore environment value from current view environment
     @Environment(BibleCatalogStore.self) private var catalogStore: BibleCatalogStore
-
-    @Environment(\.editMode) private var editMode
 
     // MARK: Properties (Private, State)
 
-    /// Are we editing all the rows?
-    @State private var isInEditMode: Bool = false
+    /// Shared selection state
+    @State private var librarySelection: LibrarySelection = .init()
 
     /// Did changing a specific row's highlight color fail?
     @State private var didHighlightColorChangeFail: Bool = false
 
     /// Did deleting a specific row fail?
     @State private var didDeleteFail: Bool = false
+
+    /// Have we selected the Delete option for all selected rows in Edit mode + need to show confirmation?
+    @State private var isEditModeDeleteConfirmationVisible: Bool = false
 
     @Namespace private var chipBarNamespace
 
@@ -81,7 +83,11 @@ struct LibraryView: View {
                 }
             }
             .toolbar {
-                filterOptionsToolbarItem
+                if librarySelection.isSelecting {
+                    selectionOptionsToolbarItem
+                } else {
+                    filterOptionsToolbarItem
+                }
             }
         }
         // Deletion failure popup
@@ -121,6 +127,58 @@ struct LibraryView: View {
                 .presentationDragIndicator(.visible)
             }
         )
+        // Edit mode: floating Delete button + dialog
+        .safeAreaInset(edge: .bottom, alignment: .trailing) {
+            if librarySelection.isSelecting {
+                // .disabled only blocks taps: the explicit white foreground and the red glass
+                // tint are applied regardless, so the disabled look has to be drawn by hand
+                let canDelete = (librarySelection.selectedIDCount ?? 0) > 0
+
+                Button {
+                    isEditModeDeleteConfirmationVisible = true
+                } label: {
+                    Label("Delete", systemImage: "trash.fill")
+                        .labelStyle(.iconOnly)
+                        .font(.system(size: 24))
+                        .foregroundStyle(canDelete ? AnyShapeStyle(Color.white) : AnyShapeStyle(.tertiary))
+                }
+                .padding()  // inside the circle
+                // nil tint = plain glass
+                .glassEffect(.regular.interactive(canDelete).tint(canDelete ? Color(.systemRed) : nil),
+                             in: .circle)
+                .padding(.bottom, 5)  // outside: margin from the screen edge
+                .padding(.trailing, 20)  // outside: margin from the screen edge
+                .disabled(!canDelete)
+                // Shared by the menu's Delete and the swipe action; on iOS 26+ it presents as a
+                // popover pointing at the view it's attached to (this card's "..." button)
+                .confirmationDialog("Delete Annotation",
+                                    isPresented: $isEditModeDeleteConfirmationVisible) {
+                    Button("Delete Annotation", role: .destructive) {
+                        guard let allIDs = librarySelection.allSelectedIDs else { return }
+                        let didDelete = withAnimation(.snappy(duration: 0.35)) {
+                            libraryStore.delete(allIDs)
+                        }
+                        if didDelete {
+                            readerStore.refreshPassageHighlights()
+                            didDeleteFail = false // reset state
+                        } else {
+                            didDeleteFail = true
+                        }
+                        librarySelection.endSelection()
+                    }
+                } message: {
+                    let count = librarySelection.selectedIDCount ?? 0
+                    let noun = count == 1 ? "annotation" : "annotations"
+                    Text(
+                        "The \(count) selected \(noun) will be permanently deleted."
+                    )
+                }
+            }
+        }
+        // Visible list change: update selected items
+        .onChange(of: libraryStore.filteredAnnotations) {
+            librarySelection.deselectHidden(visibleIDs: Set(libraryStore.filteredAnnotations.map { $0.id }))
+        }
     }
 
     /// List of annotations
@@ -140,11 +198,20 @@ struct LibraryView: View {
                                                                 bibleCatalogStore: catalogStore,
                                                                 libraryStore: libraryStore)
 
+                    var isRowSelected: Bool? {
+                        guard librarySelection.isSelecting else {
+                            return nil
+                        }
+                        return librarySelection.isSelected(annotation.id)
+                    }
+
+
                     // Build actual single annotation view
                     LibraryRowView(
                         data: libraryRowViewData,
+                        isRowSelected: isRowSelected,
                         onHighlightColorChangeRequested: { color in
-                            let didChange = withAnimation {
+                            let didChange = withAnimation(.snappy(duration: 0.35)) {
                                 libraryStore.changeHighlightColor(annotation.id,
                                                                   color: color)
                             }
@@ -156,7 +223,7 @@ struct LibraryView: View {
                             }
                         },
                         onDeleteRequested: {
-                            let didDelete = withAnimation {
+                            let didDelete = withAnimation(.snappy(duration: 0.35)) {
                                 libraryStore.delete(annotation.id)
                             }
                             if didDelete {
@@ -176,6 +243,17 @@ struct LibraryView: View {
                         },
                         onAnnotationEditorRequested: {
                             annotationEditor = libraryStore.annotationEditor(for: annotation)
+                        },
+                        onRowSelected: {
+                            // Animates the row's checkmark + border and the Delete button
+                            withAnimation(.smooth(duration: 0.35)) {
+                                let isSelected = librarySelection.isSelected(annotation.id)
+                                if isSelected {
+                                    librarySelection.removeFromSelection(annotation.id)
+                                } else {
+                                    librarySelection.addToSelection(annotation.id)
+                                }
+                            }
                         }
                     )
                     .task {
@@ -203,6 +281,7 @@ struct LibraryView: View {
         ToolbarItem(placement: .automatic) {
             Menu {
                 Text("Filter By")
+                
                 // Translations
                 // TODO: toggle state
                 Menu {
@@ -216,6 +295,7 @@ struct LibraryView: View {
                 } label: {
                     Label("Translation", systemImage: "text.book.closed")
                 }
+
                 // Books
                 // TODO: toggle state
                 Menu {
@@ -229,6 +309,7 @@ struct LibraryView: View {
                 } label: {
                     Label("Book", systemImage: "books.vertical")
                 }
+
                 // Highlight Colors
                 // TODO: toggle state; color icons
                 Menu {
@@ -247,14 +328,16 @@ struct LibraryView: View {
                 } label: {
                     Label("Highlight Color", systemImage: "pencil.line")
                 }
+
                 // Tags
                 Button {
                     // TODO
                 } label: {
                     Label("Tag", systemImage: "tag")
                 }
+
                 // Notes
-                Button {
+                Menu {
                     // TODO
                 } label: {
                     Label("Notes", systemImage: "text.alignleft")
@@ -286,17 +369,17 @@ struct LibraryView: View {
                 // Group By
                 Menu {
                     Button {
-
+                        // TODO
                     } label: {
                         Label("Date Added", systemImage: "calendar")
                     }
                     Button {
-
+                        // TODO
                     } label: {
                         Label("Translation", systemImage: "text.book.closed")
                     }
                     Button {
-
+                        // TODO
                     } label: {
                         Label("Book", systemImage: "books.vertical")
                     }
@@ -304,14 +387,13 @@ struct LibraryView: View {
                     Label("Group By", systemImage: "rectangle.3.group")
                 }
 
+                // Select Annotations
                 Divider()
 
-                // can you not change EditButton appearance/label?
-                // TODO: EditButton only drives List's built-in edit mode; since the switch to
-                // LazyVStack it toggles editMode but nothing responds. Replace with custom selection.
-//                EditButton()
                 Button {
-
+                    withAnimation(.snappy(duration: 0.35)) {
+                        librarySelection.beginSelection()
+                    }
                 } label: {
                     Label("Select Annotations", systemImage: "checkmark.circle")
                 }
@@ -319,6 +401,29 @@ struct LibraryView: View {
                 Image(systemName: "ellipsis")
             }
         }
+    }
+
+    ///
+    @ToolbarContentBuilder
+    private var selectionOptionsToolbarItem: some ToolbarContent {
+        ToolbarItem(placement: .automatic) {
+            Button {
+                withAnimation(.snappy(duration: 0.35)) {
+                    librarySelection.endSelection()
+                }
+            } label: {
+                Label("Done", systemImage: "checkmark")
+                    .labelStyle(.iconOnly)
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .frame(width: 44, height: 44)
+                    .glassEffect(.regular.tint(.accent).interactive(), in: .circle)
+            }
+            .buttonStyle(.plain)
+        }
+        // The toolbar applies a prominent (tinted) style only after its glass morph finishes,
+        // so the tint snapped in; drawing our own tinted glass lets it fade in with the item
+        .sharedBackgroundVisibility(.hidden)
     }
 
     // MARK: Views (Filter Bar)
@@ -405,20 +510,27 @@ private extension View {
     let repository = FakeBibleRepository()
     let passageStore = BiblePassageStore(repository: repository,
                                          passageCache: InMemoryPassageCache())
-    let libraryStore = LibraryStore(libraryRepository: PreviewFixtures.seededLibraryRepository(),
+    let libraryRepository = PreviewFixtures.seededLibraryRepository()
+    let libraryStore = LibraryStore(libraryRepository: libraryRepository,
                                     passageStore: passageStore)
     let catalogStore = BibleCatalogStore(repository: repository)
-    LibraryPreviewHost(libraryStore: libraryStore,
+    let readerStore = ReaderStore(passageStore: passageStore,
+                                  catalogStore: catalogStore,
+                                  libraryRepository: libraryRepository)
+    LibraryPreviewHost(readerStore: readerStore,
+                       libraryStore: libraryStore,
                        catalogStore: catalogStore)
 }
 
 /// Preview-only host
 private struct LibraryPreviewHost: View {
+    let readerStore: ReaderStore
     let libraryStore: LibraryStore
     let catalogStore: BibleCatalogStore
 
     var body: some View {
         LibraryView()
+        .environment(readerStore)
         .environment(libraryStore)
         .environment(catalogStore)
         .task {
