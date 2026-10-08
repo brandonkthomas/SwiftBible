@@ -169,6 +169,62 @@ struct LibraryStoreTests {
         #expect(libraryStore.annotations == [keptAnnotation])
     }
 
+    /// delete(_:) with a set removes exactly those annotations, keeps the rest, and reports success
+    @Test func deleteSetRemovesOnlySelectedAnnotations() throws {
+        let libraryRepository = InMemoryLibraryRepository()
+        let passageStore = BiblePassageStore(repository: LibraryPassageCountingRepository(),
+                                             passageCache: InMemoryPassageCache())
+        let libraryStore = LibraryStore(libraryRepository: libraryRepository,
+                                        passageStore: passageStore)
+        let firstDeleted = makeAnnotation(translationID: 1234,
+                                          startVerse: 1,
+                                          content: .highlight(.yellow))
+        let secondDeleted = makeAnnotation(translationID: 1234,
+                                           startVerse: 2,
+                                           content: .note("Deleted note"))
+        let firstKept = makeAnnotation(translationID: 1234,
+                                       startVerse: 3,
+                                       content: .note("Kept note"))
+        let secondKept = makeAnnotation(translationID: 1849,
+                                        startVerse: 1,
+                                        content: .tags(["Kept tag"]))
+
+        for annotation in [firstDeleted, secondDeleted, firstKept, secondKept] {
+            try libraryRepository.save(annotation)
+        }
+        libraryStore.load()
+        #expect(libraryStore.annotations.count == 4)
+
+        let didDelete = libraryStore.delete([firstDeleted.id, secondDeleted.id])
+
+        // Compare as sets; repository ordering is not part of this contract
+        let expectedIDs: Set<VerseAnnotation.ID> = [firstKept.id, secondKept.id]
+        #expect(didDelete)
+        #expect(Set(libraryStore.annotations.map(\.id)) == expectedIDs)
+        #expect(Set(try libraryRepository.allAnnotations().map(\.id)) == expectedIDs)
+    }
+
+    /// delete(_:) with an empty set reports success and leaves state unchanged
+    @Test func deleteEmptySetReportsSuccessAndChangesNothing() throws {
+        let libraryRepository = InMemoryLibraryRepository()
+        let passageStore = BiblePassageStore(repository: LibraryPassageCountingRepository(),
+                                             passageCache: InMemoryPassageCache())
+        let libraryStore = LibraryStore(libraryRepository: libraryRepository,
+                                        passageStore: passageStore)
+        let annotation = makeAnnotation(translationID: 1234,
+                                        startVerse: 1,
+                                        content: .highlight(.yellow))
+
+        try libraryRepository.save(annotation)
+        libraryStore.load()
+
+        let didDelete = libraryStore.delete(Set<VerseAnnotation.ID>())
+
+        #expect(didDelete)
+        #expect(try libraryRepository.allAnnotations() == [annotation])
+        #expect(libraryStore.annotations == [annotation])
+    }
+
     /// changeHighlightColor(_:color:) persists the new color, stamps updatedAt, and refreshes `annotations`
     @Test func changeHighlightColorPersistsNewColorAndRefreshesAnnotations() throws {
         let libraryRepository = InMemoryLibraryRepository()

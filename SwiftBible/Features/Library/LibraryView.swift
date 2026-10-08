@@ -149,21 +149,16 @@ struct LibraryView: View {
                 .padding(.bottom, 5)  // outside: margin from the screen edge
                 .padding(.trailing, 20)  // outside: margin from the screen edge
                 .disabled(!canDelete)
-                // Shared by the menu's Delete and the swipe action; on iOS 26+ it presents as a
-                // popover pointing at the view it's attached to (this card's "..." button)
-                .confirmationDialog("Delete Annotation",
+                // Delete dialog for Edit mode
+                .confirmationDialog("Delete \(librarySelection.selectedIDCount ?? 0 == 1 ? "Annotations" : "Annotation")",
                                     isPresented: $isEditModeDeleteConfirmationVisible) {
-                    Button("Delete Annotation", role: .destructive) {
+                    Button("Delete \(librarySelection.selectedIDCount ?? 0 == 1 ? "Annotations" : "Annotation")", role: .destructive) {
                         guard let allIDs = librarySelection.allSelectedIDs else { return }
                         let didDelete = withAnimation(.snappy(duration: 0.35)) {
                             libraryStore.delete(allIDs)
                         }
-                        if didDelete {
-                            readerStore.refreshPassageHighlights()
-                            didDeleteFail = false // reset state
-                        } else {
-                            didDeleteFail = true
-                        }
+                        didDeleteFail = !didDelete
+                        readerStore.refreshPassageHighlights()
                         librarySelection.endSelection()
                     }
                 } message: {
@@ -274,7 +269,7 @@ struct LibraryView: View {
 
     // MARK: Views (Toolbar)
 
-    ///
+    /// Options for filtering the library (not visible in edit mode)
     @ToolbarContentBuilder
     private var filterOptionsToolbarItem: some ToolbarContent {
         // Filter By: Translation, Book, Highlight Color, Tag
@@ -403,7 +398,7 @@ struct LibraryView: View {
         }
     }
 
-    ///
+    /// Options for Edit mode
     @ToolbarContentBuilder
     private var selectionOptionsToolbarItem: some ToolbarContent {
         ToolbarItem(placement: .automatic) {

@@ -146,6 +146,7 @@ final class LibraryStore {
                 try libraryRepository.delete(id)
             } catch {
                 Self.logger.error("Unable to delete annotation: \(error.localizedDescription)")
+                errorCount += 1
             }
         }
 
