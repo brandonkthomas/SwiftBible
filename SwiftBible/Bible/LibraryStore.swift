@@ -31,8 +31,14 @@ final class LibraryStore {
 
     /// view-facing projection of `annotations`; the stored collection remains.
     /// unchanged when the user changes a filter
-    var filteredAnnotations: [VerseAnnotation] {
-        annotations.filter(filter.matches)
+    var filteredAndSortedAnnotations: [VerseAnnotation] {
+        let filtered = annotations.filter(filter.matches)
+        return sortAndGroup.sorted(
+            annotations: filtered,
+            bookPosition: { annotation in
+                catalogStore.books(for: annotation.translationID)?.firstIndex { $0.code == annotation.bookCode }
+            }
+        )
     }
 
     /// All unique tags across all annotations

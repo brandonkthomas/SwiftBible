@@ -151,8 +151,6 @@ struct LibraryRowView: View {
                         .foregroundStyle(.accent)
                 } else {
                     annotationItemMenu
-                    // TODO: hitbox is TINY
-                    //                .frame(maxHeight: )
                 }
             }
 
@@ -361,6 +359,7 @@ struct LibraryRowView: View {
             Image(systemName: "ellipsis")
                 .font(.system(size: UIFontMetrics(forTextStyle: .body).scaledValue(for: 20)))
                 .foregroundStyle(Color(.label))
+                // touch target optimization
                 .frame(width: 32, height: 18)
                 .contentShape(.rect.inset(by: -14))
         }
@@ -379,6 +378,9 @@ struct LibraryRowView: View {
     /// Item group; reused by annotationItemMenu wrapper + contextMenu for whole row
     private var annotationItems: some View {
         Group {
+            Text("Created on \(data.annotation.createdAt.formatted(date: .long, time: .shortened))")
+            Divider()
+
             // View Passage
             Button {
                 Task {

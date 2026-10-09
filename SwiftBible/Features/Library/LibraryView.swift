@@ -82,7 +82,7 @@ struct LibraryView: View {
                         systemImage: "bookmark",
                         description: Text("Tap verses to annotate them.")
                     )
-                } else if !libraryStore.annotations.isEmpty && libraryStore.filteredAnnotations.isEmpty {
+                } else if !libraryStore.annotations.isEmpty && libraryStore.filteredAndSortedAnnotations.isEmpty {
                     ContentUnavailableView(
                         "No Annotations",
                         systemImage: "bookmark",
@@ -186,8 +186,8 @@ struct LibraryView: View {
             }
         }
         // Visible list change: update selected items
-        .onChange(of: libraryStore.filteredAnnotations) {
-            librarySelection.deselectHidden(visibleIDs: Set(libraryStore.filteredAnnotations.map { $0.id }))
+        .onChange(of: libraryStore.filteredAndSortedAnnotations) {
+            librarySelection.deselectHidden(visibleIDs: Set(libraryStore.filteredAndSortedAnnotations.map { $0.id }))
         }
     }
 
@@ -202,7 +202,7 @@ struct LibraryView: View {
             LazyVStack(spacing: 16) {
                 // VerseAnnotation is stable Identifiable; required so ForEach doesnt continually
                 // delete and re-insert the same rows if IDs were to change mid-life
-                ForEach(libraryStore.filteredAnnotations) { annotation in
+                ForEach(libraryStore.filteredAndSortedAnnotations) { annotation in
                     // Retrieve data
                     let libraryRowViewData = LibraryRowViewData(annotation: annotation,
                                                                 bibleCatalogStore: catalogStore,
@@ -420,11 +420,11 @@ struct LibraryView: View {
                     Text("Sort By")
 
                     Picker(selection: $store.sortAndGroup.sort) {
-                        Text("Descending")
-                        .tag(Optional(LibraryOrderSort.dateAddedDescending))
-
                         Text("Ascending")
-                        .tag(Optional(LibraryOrderSort.dateAddedAscending))
+                            .tag(LibraryOrderSort.dateAddedAscending)
+
+                        Text("Descending")
+                            .tag(LibraryOrderSort.dateAddedDescending)
                     } label: {
                         Label("Date Added", systemImage: "calendar")
                         if libraryStore.sortAndGroup.sort == .dateAddedAscending {
@@ -436,11 +436,11 @@ struct LibraryView: View {
                     .pickerStyle(.menu)
 
                     Picker(selection: $store.sortAndGroup.sort) {
-                        Text("Descending")
-                            .tag(Optional(LibraryOrderSort.bookOrderDescending))
-
                         Text("Ascending")
-                            .tag(Optional(LibraryOrderSort.bookOrderAscending))
+                            .tag(LibraryOrderSort.bookOrderAscending)
+
+                        Text("Descending")
+                            .tag(LibraryOrderSort.bookOrderDescending)
                     } label: {
                         Label("Book Order", systemImage: "calendar.day.timeline.leading")
                         if libraryStore.sortAndGroup.sort == .bookOrderAscending {
@@ -527,29 +527,6 @@ struct LibraryView: View {
         .sharedBackgroundVisibility(.hidden)
     }
 
-    /// Options for Edit mode
-//    @ToolbarContentBuilder
-//    private var selectionOptionsToolbarItem: some ToolbarContent {
-//        ToolbarItem(placement: .topBarLeading) {
-//            Button {
-//                withAnimation(.snappy(duration: 0.35)) {
-//                    librarySelection.endSelection()
-//                }
-//            } label: {
-//                Label("Done", systemImage: "checkmark")
-//                    .labelStyle(.iconOnly)
-//                    .font(.system(size: 17, weight: .semibold))
-//                    .foregroundStyle(.white)
-//                    .frame(width: 44, height: 44)
-//                    .glassEffect(.regular.tint(.accent).interactive(), in: .circle)
-//            }
-//            .buttonStyle(.plain)
-//        }
-//        // The toolbar applies a prominent (tinted) style only after its glass morph finishes,
-//        // so the tint snapped in; drawing our own tinted glass lets it fade in with the item
-//        .sharedBackgroundVisibility(.hidden)
-//    }
-
     // MARK: Views (Filter Bar)
 
     /// Filter bar chips view
@@ -598,6 +575,7 @@ struct LibraryView: View {
 
     // MARK: Functions
 
+    /// Called on view load; gets missing book display names
     private func loadMissingBookMetadata() async {
         let unloadedIDs = unloadedCatalogStoreTranslationIDs
         for translationID in unloadedIDs {
@@ -610,7 +588,7 @@ struct LibraryView: View {
     }
 
     /// Menus render SF Symbols as templates and drop foreground styles, so bake the
-    /// color into a UIImage with `.alwaysOriginal` to keep it.
+    /// color into a UIImage with `.alwaysOriginal` to keep it
     private func highlightSwatch(_ color: VerseAnnotationHighlightColor) -> Image {
         let image = UIImage(systemName: "circle.fill")?
             .withTintColor(UIColor(color.uiColor), renderingMode: .alwaysOriginal)
