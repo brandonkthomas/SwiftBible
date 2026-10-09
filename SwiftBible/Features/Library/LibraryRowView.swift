@@ -361,6 +361,8 @@ struct LibraryRowView: View {
             Image(systemName: "ellipsis")
                 .font(.system(size: UIFontMetrics(forTextStyle: .body).scaledValue(for: 20)))
                 .foregroundStyle(Color(.label))
+                .frame(width: 32, height: 18)
+                .contentShape(.rect.inset(by: -14))
         }
         // Shared by the menu's Delete and the swipe action; on iOS 26+ it presents as a
         // popover pointing at the view it's attached to (this card's "..." button)
