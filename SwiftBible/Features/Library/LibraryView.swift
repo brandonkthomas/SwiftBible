@@ -41,7 +41,7 @@ struct LibraryView: View {
     /// Have we selected the Delete option for all selected rows in Edit mode + need to show confirmation?
     @State private var isEditModeDeleteConfirmationVisible: Bool = false
 
-    @Namespace private var chipBarNamespace
+//    @Namespace private var chipBarNamespace
 
     /// AnnotationEditor session:
     /// if nil, nothing selected;
@@ -56,6 +56,15 @@ struct LibraryView: View {
             .filter { catalogStore.books(for: $0.translationID) == nil } // not in memory
             .map { $0.translationID } // only need the ID
         )
+    }
+
+    /// First annotation for each unique book code
+    private var uniqueBookCodeAnnotations: [VerseAnnotation] {
+        let annotationsGroupedByBookCode = Dictionary(grouping: libraryStore.annotations,
+                                                      by: \.bookCode)
+        return annotationsGroupedByBookCode
+            .compactMap { $0.value.first }
+            .sorted(by: { $0.bookCode < $1.bookCode })
     }
 
     /// OS Logging
@@ -272,70 +281,126 @@ struct LibraryView: View {
     /// Options for filtering the library (not visible in edit mode)
     @ToolbarContentBuilder
     private var filterOptionsToolbarItem: some ToolbarContent {
+        @Bindable var store: LibraryStore = libraryStore
+
         // Filter By: Translation, Book, Highlight Color, Tag
         ToolbarItem(placement: .automatic) {
             Menu {
                 Text("Filter By")
-                
+
                 // Translations
-                // TODO: toggle state
-                Menu {
+                Picker(selection: $store.filter.translationID) {
+                    // "All" row: tag type must be String? to match the binding
+                    Text("All Translations")
+                        .tag(Translation.ID?.none) // aka nil
+
                     ForEach(Set(libraryStore.annotations.map(\.translationID)).sorted(), id: \.self) { translationID in
-                        Button {
-                            libraryStore.filter.translationID = translationID
-                        } label: {
-                            Text("\(translationID)")
-                        }
+                        let label = catalogStore.translation(for: translationID)?.abbreviation ?? translationID.description
+                        Text(label)
+                            .tag(Optional(translationID)) // ID?, not ID
                     }
                 } label: {
                     Label("Translation", systemImage: "text.book.closed")
+                    if let translationID = libraryStore.filter.translationID {
+                        let label = catalogStore.translation(for: translationID)?.abbreviation
+                        ?? translationID.description
+                        Text(label)
+                            .foregroundStyle(Color.secondary)
+                    }
                 }
+                .pickerStyle(.menu)
 
                 // Books
-                // TODO: toggle state
-                Menu {
-                    ForEach(Set(libraryStore.annotations.map(\.bookCode)).sorted(), id: \.self) { bookCode in
-                        Button {
-                            libraryStore.filter.bookCode = bookCode
-                        } label: {
-                            Text(bookCode)
-                        }
+                Picker(selection: $store.filter.bookCode) {
+                    // "All" row: tag type must be String? to match the binding
+                    Text("All Books")
+                        .tag(String?.none) // aka nil
+
+                    // Group by unique book code; only take first one; sort
+                    // TODO: sort according to Bible ordering (may need to hardcode as API doesnt return this...?)
+                    ForEach(uniqueBookCodeAnnotations) { annotation in
+                        let label = catalogStore.book(for: annotation.translationID,
+                                                      bookCode: annotation.bookCode)?.displayName ?? annotation.bookCode
+                        Text(label)
+                            .tag(Optional(annotation.bookCode)) // String?, not String
                     }
                 } label: {
                     Label("Book", systemImage: "books.vertical")
+                    if let bookCode = libraryStore.filter.bookCode,
+                       let translationID = uniqueBookCodeAnnotations.first(where: { $0.bookCode == bookCode })?.translationID {
+                        let label = catalogStore.book(for: translationID,
+                                                      bookCode: bookCode)?.displayName ?? bookCode
+                        Text(label)
+                            .foregroundStyle(Color.secondary)
+                    }
                 }
+                .pickerStyle(.menu)
+
+                Divider()
+
+                // Annotation Type
+                Picker(selection: $store.filter.contentType) {
+//                    Text("All Types")
+                    Label("All", systemImage: "circle.dotted")
+                        .tag(AnnotationContentType?.none) // aka nil
+                    Label("Highlights", systemImage: "pencil.line")
+                        .tag(Optional(AnnotationContentType.highlight))
+                    Label("Tags", systemImage: "tag")
+                        .tag(Optional(AnnotationContentType.tags))
+                    Label("Notes", systemImage: "text.alignleft")
+                        .tag(Optional(AnnotationContentType.note))
+                } label: {
+                    Label("Annotation Type", systemImage: "square.3.layers.3d.top.filled")
+                }
+                .pickerStyle(.palette)
 
                 // Highlight Colors
-                // TODO: toggle state; color icons
-                Menu {
+                Picker(selection: $store.filter.highlightColor) {
+                    // "All" row: tag type must match the binding (VerseAnnotationHighlightColor?)
+//                    Text("All Colors")
+                    Label("All", systemImage: "circle.dotted")
+                        .tag(VerseAnnotationHighlightColor?.none)
+
                     ForEach(VerseAnnotationHighlightColor.allCases.filter { color in
-                        libraryStore.annotations.contains { $0.highlightColor == color }
+                        store.annotations.contains { $0.highlightColor == color }
                     }, id: \.self) { highlightColor in
-                        Button {
-                            libraryStore.filter.highlightColor = highlightColor
-                        } label: {
-                            let text = highlightColor.rawValue.prefix(1).capitalized
-                                + highlightColor.rawValue.dropFirst()
-                            Label(text, systemImage: "circle.fill")
-                                .foregroundStyle(highlightColor.uiColor)
+                        Label {
+                            Text(highlightColor.rawValue.capitalized)
+                        } icon: {
+                            highlightSwatch(highlightColor)
                         }
+                        .tag(Optional(highlightColor))
                     }
                 } label: {
                     Label("Highlight Color", systemImage: "pencil.line")
                 }
+                .pickerStyle(.palette)
+//                .disabled(libraryStore.filter.contentType == .tags || libraryStore.filter.contentType == .note)
 
                 // Tags
-                Button {
-                    // TODO
+                Picker(selection: $store.filter.tag) {
+                    // "All" row: tag type must be String? to match the binding
+                    Text("All Tags")
+                        .tag(String?.none) // aka nil
+
+                    ForEach(store.allTags.sorted(), id: \.self) { tag in
+                        Text(tag)
+                            .tag(Optional(tag))   // String?, not String
+                    }
                 } label: {
                     Label("Tag", systemImage: "tag")
                 }
+                .pickerStyle(.menu)
+//                .disabled(libraryStore.filter.contentType == .highlight || libraryStore.filter.contentType == .note)
 
-                // Notes
-                Menu {
-                    // TODO
-                } label: {
-                    Label("Notes", systemImage: "text.alignleft")
+                // Clear All Filters
+                if libraryStore.filter.isAnyFilterActive {
+                    Divider()
+                    Button {
+                        store.filter.clearAllFilters()
+                    } label: {
+                        Label("Clear All Filters", systemImage: "trash") // TODO: better symbol
+                    }
                 }
             } label: {
                 Image(systemName: "line.3.horizontal.decrease")
@@ -478,6 +543,14 @@ struct LibraryView: View {
                 Self.logger.error("loadMissingBookMetadata(): load for ID \(translationID) failed: \(error.localizedDescription)")
             }
         }
+    }
+
+    /// Menus render SF Symbols as templates and drop foreground styles, so bake the
+    /// color into a UIImage with `.alwaysOriginal` to keep it.
+    private func highlightSwatch(_ color: VerseAnnotationHighlightColor) -> Image {
+        let image = UIImage(systemName: "circle.fill")?
+            .withTintColor(UIColor(color.uiColor), renderingMode: .alwaysOriginal)
+        return Image(uiImage: image ?? UIImage())
     }
 }
 

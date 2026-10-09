@@ -96,6 +96,7 @@ struct PassagePickerView: View {
     private var booksAndTranslationsMenuView: some View {
         Menu {
             // Books + Chapters nested menus
+            // TODO: Change to Picker
             Menu {
                 ForEach(readerStore.books) { book in
                     Menu {
@@ -128,6 +129,7 @@ struct PassagePickerView: View {
             .menuOrder(.fixed)
 
             // Translations menu
+            // TODO: Change to Picker
             Menu {
                 ForEach(readerStore.translations.sorted { $0.title < $1.title }) { translation in
                     Toggle(isOn: translationSelectionBinding(for: translation)) {

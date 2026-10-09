@@ -19,17 +19,21 @@ final class LibraryStore {
 
     // MARK: Properties
 
-    // TODO
-//    var sort = LibrarySort()
-
     /// Active user-selected filter
     /// Mutating it automatically changes `filteredAnnotations` for observing views
     var filter = LibraryFilter()
+
+    // MARK: Properties (Computed)
 
     /// view-facing projection of `annotations`; the stored collection remains
     /// unchanged when the user changes a filter
     var filteredAnnotations: [VerseAnnotation] {
         annotations.filter(filter.matches)
+    }
+
+    /// All unique tags across all annotations
+    var allTags: Set<String> {
+        Set(annotations.flatMap(\.tagNames))
     }
 
     // MARK: Properties (Private)

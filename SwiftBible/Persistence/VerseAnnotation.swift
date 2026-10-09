@@ -59,6 +59,14 @@ nonisolated struct VerseAnnotation: Identifiable, Equatable {
         return [:]
     }
 
+    // VerseAnnotation.swift
+    var tagNames: [String] {
+        if case .tags(let names) = content {
+            return names
+        }
+        return []
+    }
+
     // MARK: Init
     
     /// Direct-field-reference non-failable init that bypasses field validation;
