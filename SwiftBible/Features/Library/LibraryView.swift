@@ -76,11 +76,17 @@ struct LibraryView: View {
     var body: some View {
         NavigationStack {
             Group {
-                if libraryStore.annotations.count == 0 {
+                if libraryStore.annotations.isEmpty {
                     ContentUnavailableView(
                         "No Annotations",
                         systemImage: "bookmark",
                         description: Text("Tap verses to annotate them.")
+                    )
+                } else if !libraryStore.annotations.isEmpty && libraryStore.filteredAnnotations.isEmpty {
+                    ContentUnavailableView(
+                        "No Annotations",
+                        systemImage: "bookmark",
+                        description: Text("Try adjusting your filters.")
                     )
                 } else {
                     // List of items
@@ -403,7 +409,13 @@ struct LibraryView: View {
                     }
                 }
             } label: {
+//                Image(systemName: "line.3.horizontal.decrease")
+//                Image(systemName: "line.3.horizontal.decrease\(libraryStore.filter.isAnyFilterActive ? ".circle.fill" : "")")
                 Image(systemName: "line.3.horizontal.decrease")
+                    .foregroundStyle(
+                        Color(libraryStore.filter.isAnyFilterActive ? .accent : .label)
+                    )
+                    .fontWeight(libraryStore.filter.isAnyFilterActive ? .heavy : .regular)
             }
         }
 
