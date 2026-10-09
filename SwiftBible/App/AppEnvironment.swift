@@ -97,6 +97,7 @@ final class AppEnvironment {
 
         // LibraryStore 2 - presentation view for annotations
         self.libraryStore = LibraryStore(libraryRepository: libraryRepository,
+                                         catalogStore: catalogStore,
                                          passageStore: passageStore)
     }
 }

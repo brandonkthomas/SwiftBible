@@ -112,19 +112,18 @@ struct LibraryRowView: View {
             // Row 1: Annotation summary
             HStack {
                 // Annotation type icon
-                // TODO: enforce width & normalize size
+                // TODO: normalize size
                 Group {
                     switch data.annotation.content {
                     case .highlight(_):
                         Image(systemName: "pencil.line")
-                            .symbolRenderingMode(.palette)
-//                            .foregroundStyle(.primary, color.uiColor)
                     case .note(_):
                         Image(systemName: "text.alignleft")
                     case .tags(_):
                         Image(systemName: "tag")
                     }
                 }
+                .frame(width: 16, height: 16)
                 .font(.system(size: 16, weight: .regular, design: .serif))
                 .foregroundStyle(.secondary)
 
@@ -294,6 +293,10 @@ struct LibraryRowView: View {
                     }
             }
         }
+        // Haptic Touch (context) menu
+        .contextMenu {
+            annotationItems
+        }
     }
 
     /// Visible passage: clipped to 3 lines unless expanded, with a bottom fade while clipped
@@ -353,6 +356,28 @@ struct LibraryRowView: View {
     /// All items in annotation submenu
     private var annotationItemMenu: some View {
         Menu {
+            annotationItems
+        } label: {
+            Image(systemName: "ellipsis")
+                .font(.system(size: UIFontMetrics(forTextStyle: .body).scaledValue(for: 20)))
+                .foregroundStyle(Color(.label))
+        }
+        // Shared by the menu's Delete and the swipe action; on iOS 26+ it presents as a
+        // popover pointing at the view it's attached to (this card's "..." button)
+        .confirmationDialog("Delete Annotation",
+                            isPresented: $isDeleteConfirmationVisible) {
+            Button("Delete Annotation", role: .destructive) {
+                onDeleteRequested()
+            }
+        } message: {
+            Text("This annotation will be permanently deleted.")
+        }
+    }
+
+    /// Item group; reused by annotationItemMenu wrapper + contextMenu for whole row
+    private var annotationItems: some View {
+        Group {
+            // View Passage
             Button {
                 Task {
                     await onPassageViewRequested()
@@ -360,6 +385,8 @@ struct LibraryRowView: View {
             } label: {
                 Label("View Passage", systemImage: "book")
             }
+
+            // Edit Annotation
             Button {
                 if data.annotation.content.type == .highlight {
                     isHighlightPopoverPresented = true
@@ -369,15 +396,13 @@ struct LibraryRowView: View {
             } label: {
                 Label("Edit Annotation", systemImage: "pencil")
             }
+
+            // Delete
             Button(role: .destructive) {
                 isDeleteConfirmationVisible = true
             } label: {
                 Label("Delete", systemImage: "trash")
             }
-        } label: {
-            Image(systemName: "ellipsis")
-                .font(.system(size: UIFontMetrics(forTextStyle: .body).scaledValue(for: 20)))
-                .foregroundStyle(Color(.label))
         }
         // Shared by the menu's Delete and the swipe action; on iOS 26+ it presents as a
         // popover pointing at the view it's attached to (this card's "..." button)
@@ -398,9 +423,10 @@ struct LibraryRowView: View {
     let repository = FakeBibleRepository()
     let passageStore = BiblePassageStore(repository: repository,
                                          passageCache: InMemoryPassageCache())
-    let libraryStore = LibraryStore(libraryRepository: InMemoryLibraryRepository(),
-                                    passageStore: passageStore)
     let catalogStore = BibleCatalogStore(repository: repository)
+    let libraryStore = LibraryStore(libraryRepository: InMemoryLibraryRepository(),
+                                    catalogStore: catalogStore,
+                                    passageStore: passageStore)
     LibraryRowViewPreviewHost(libraryStore: libraryStore,
                               catalogStore: catalogStore)
 }

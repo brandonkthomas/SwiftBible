@@ -19,13 +19,17 @@ final class LibraryStore {
 
     // MARK: Properties
 
-    /// Active user-selected filter
+    /// Active user-selected filter preferences.
     /// Mutating it automatically changes `filteredAnnotations` for observing views
     var filter = LibraryFilter()
 
+    /// Active user-selected sorting + grouping preferences.
+    /// Mutating it automatically changes `filteredAnnotations` for observing views
+    var sortAndGroup = LibraryOrder()
+
     // MARK: Properties (Computed)
 
-    /// view-facing projection of `annotations`; the stored collection remains
+    /// view-facing projection of `annotations`; the stored collection remains.
     /// unchanged when the user changes a filter
     var filteredAnnotations: [VerseAnnotation] {
         annotations.filter(filter.matches)
@@ -41,16 +45,19 @@ final class LibraryStore {
     /// Persistence boundary for loading and mutating app-owned annotations
     private let libraryRepository: any LibraryRepository
 
+    /// Authority for all available Translations / Books
+    private let catalogStore: BibleCatalogStore
+
     /// Authority for all cached/loaded Passages
     ///
     /// Also contains BibleRepository API (Bible passage) command implementations
     private let passageStore: BiblePassageStore
 
-    /// Last successfully loaded annotation snapshots
+    /// Last successfully loaded annotation snapshots.
     /// External consumers may read this collection but only the store replaces it
     private(set) var annotations: [VerseAnnotation] = []
 
-    /// Annotations are verse-scoped BUT cache is chapter-scoped; allow N annotations in
+    /// Annotations are verse-scoped BUT cache is chapter-scoped; allow N annotations in.
     /// LibraryStore to produce 1 passage request
     private(set) var loadedPassages: [BiblePassageKey: LoadedBiblePassage] = [:]
 
@@ -61,8 +68,10 @@ final class LibraryStore {
 
     /// Creates Library feature state backed by the supplied persistence implementation
     init(libraryRepository: LibraryRepository,
+         catalogStore: BibleCatalogStore,
          passageStore: BiblePassageStore) {
         self.libraryRepository = libraryRepository
+        self.catalogStore = catalogStore
         self.passageStore = passageStore
     }
 
