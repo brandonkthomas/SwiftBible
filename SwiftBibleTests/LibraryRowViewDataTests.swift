@@ -119,6 +119,7 @@ struct LibraryRowViewDataTests {
         libraryRepository: any LibraryRepository = InMemoryLibraryRepository()
     ) -> LibraryStore {
         LibraryStore(libraryRepository: libraryRepository,
+                     catalogStore: BibleCatalogStore(repository: FakeBibleRepository()),
                      passageStore: BiblePassageStore(repository: FakeBibleRepository(),
                                                      passageCache: InMemoryPassageCache()))
     }

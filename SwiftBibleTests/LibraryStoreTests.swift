@@ -19,6 +19,7 @@ struct LibraryStoreTests {
         let passageStore = BiblePassageStore(repository: passageRepository,
                                              passageCache: InMemoryPassageCache())
         let libraryStore = LibraryStore(libraryRepository: libraryRepository,
+                                        catalogStore: BibleCatalogStore(repository: FakeBibleRepository()),
                                         passageStore: passageStore)
         let firstAnnotation = makeAnnotation(translationID: 1234,
                                              startVerse: 1,
@@ -49,6 +50,7 @@ struct LibraryStoreTests {
         let passageStore = BiblePassageStore(repository: passageRepository,
                                              passageCache: InMemoryPassageCache())
         let libraryStore = LibraryStore(libraryRepository: libraryRepository,
+                                        catalogStore: BibleCatalogStore(repository: FakeBibleRepository()),
                                         passageStore: passageStore)
         let firstTranslationAnnotation = makeAnnotation(translationID: 1234,
                                                         startVerse: 1,
@@ -85,6 +87,7 @@ struct LibraryStoreTests {
         let passageStore = BiblePassageStore(repository: passageRepository,
                                              passageCache: InMemoryPassageCache())
         let libraryStore = LibraryStore(libraryRepository: libraryRepository,
+                                        catalogStore: BibleCatalogStore(repository: FakeBibleRepository()),
                                         passageStore: passageStore)
         let firstAnnotation = makeAnnotation(translationID: 1234,
                                              startVerse: 1,
@@ -120,6 +123,7 @@ struct LibraryStoreTests {
         let passageStore = BiblePassageStore(repository: passageRepository,
                                              passageCache: InMemoryPassageCache())
         let libraryStore = LibraryStore(libraryRepository: libraryRepository,
+                                        catalogStore: BibleCatalogStore(repository: FakeBibleRepository()),
                                         passageStore: passageStore)
         let annotation = makeAnnotation(translationID: 1234,
                                         startVerse: 1,
@@ -149,6 +153,7 @@ struct LibraryStoreTests {
         let passageStore = BiblePassageStore(repository: LibraryPassageCountingRepository(),
                                              passageCache: InMemoryPassageCache())
         let libraryStore = LibraryStore(libraryRepository: libraryRepository,
+                                        catalogStore: BibleCatalogStore(repository: FakeBibleRepository()),
                                         passageStore: passageStore)
         let deletedAnnotation = makeAnnotation(translationID: 1234,
                                                startVerse: 1,
@@ -175,6 +180,7 @@ struct LibraryStoreTests {
         let passageStore = BiblePassageStore(repository: LibraryPassageCountingRepository(),
                                              passageCache: InMemoryPassageCache())
         let libraryStore = LibraryStore(libraryRepository: libraryRepository,
+                                        catalogStore: BibleCatalogStore(repository: FakeBibleRepository()),
                                         passageStore: passageStore)
         let firstDeleted = makeAnnotation(translationID: 1234,
                                           startVerse: 1,
@@ -210,6 +216,7 @@ struct LibraryStoreTests {
         let passageStore = BiblePassageStore(repository: LibraryPassageCountingRepository(),
                                              passageCache: InMemoryPassageCache())
         let libraryStore = LibraryStore(libraryRepository: libraryRepository,
+                                        catalogStore: BibleCatalogStore(repository: FakeBibleRepository()),
                                         passageStore: passageStore)
         let annotation = makeAnnotation(translationID: 1234,
                                         startVerse: 1,
@@ -231,6 +238,7 @@ struct LibraryStoreTests {
         let passageStore = BiblePassageStore(repository: LibraryPassageCountingRepository(),
                                              passageCache: InMemoryPassageCache())
         let libraryStore = LibraryStore(libraryRepository: libraryRepository,
+                                        catalogStore: BibleCatalogStore(repository: FakeBibleRepository()),
                                         passageStore: passageStore)
         let highlightAnnotation = makeAnnotation(translationID: 1234,
                                                  startVerse: 1,
@@ -266,6 +274,7 @@ struct LibraryStoreTests {
         let passageStore = BiblePassageStore(repository: LibraryPassageCountingRepository(),
                                              passageCache: InMemoryPassageCache())
         let libraryStore = LibraryStore(libraryRepository: libraryRepository,
+                                        catalogStore: BibleCatalogStore(repository: FakeBibleRepository()),
                                         passageStore: passageStore)
         let annotation = makeAnnotation(translationID: 1234,
                                         startVerse: 1,
@@ -287,6 +296,7 @@ struct LibraryStoreTests {
         let passageStore = BiblePassageStore(repository: LibraryPassageCountingRepository(),
                                              passageCache: InMemoryPassageCache())
         let libraryStore = LibraryStore(libraryRepository: libraryRepository,
+                                        catalogStore: BibleCatalogStore(repository: FakeBibleRepository()),
                                         passageStore: passageStore)
         let noteAnnotation = makeAnnotation(translationID: 1234,
                                             startVerse: 1,
@@ -323,6 +333,7 @@ struct LibraryStoreTests {
                                       catalogStore: BibleCatalogStore(repository: bibleRepository),
                                       libraryRepository: libraryRepository)
         let libraryStore = LibraryStore(libraryRepository: libraryRepository,
+                                        catalogStore: BibleCatalogStore(repository: FakeBibleRepository()),
                                         passageStore: BiblePassageStore(repository: bibleRepository,
                                                                         passageCache: InMemoryPassageCache()))
 
