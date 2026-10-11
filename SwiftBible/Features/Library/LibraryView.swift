@@ -41,6 +41,9 @@ struct LibraryView: View {
     /// Have we selected the Delete option for all selected rows in Edit mode + need to show confirmation?
     @State private var isEditModeDeleteConfirmationVisible: Bool = false
 
+    /// IDs of groups whose sections are collapsed
+    @State private var collapsedGroupIDs: Set<LibraryOrderGroup.ID> = []
+
 //    @Namespace private var chipBarNamespace
 
     /// AnnotationEditor session:
@@ -85,7 +88,7 @@ struct LibraryView: View {
                 } else if !libraryStore.annotations.isEmpty && libraryStore.filteredAndSortedAnnotations.isEmpty {
                     ContentUnavailableView(
                         "No Annotations",
-                        systemImage: "bookmark",
+                        systemImage: "bookmark.slash",
                         description: Text("Try adjusting your filters.")
                     )
                 } else {
@@ -98,11 +101,7 @@ struct LibraryView: View {
                 }
             }
             .toolbar {
-//                if librarySelection.isSelecting {
-//                    selectionOptionsToolbarItem
-//                } else {
-                    filterOptionsToolbarItem
-//                }
+                filterOptionsToolbarItem
             }
         }
         // Deletion failure popup
@@ -199,77 +198,22 @@ struct LibraryView: View {
     /// Rows are still created lazily as they scroll into view.
     var libraryListView: some View {
         ScrollView {
+//            LazyVStack(spacing: 16, pinnedViews: [.sectionHeaders]) {
             LazyVStack(spacing: 16) {
-                // VerseAnnotation is stable Identifiable; required so ForEach doesnt continually
-                // delete and re-insert the same rows if IDs were to change mid-life
-                ForEach(libraryStore.filteredAndSortedAnnotations) { annotation in
-                    // Retrieve data
-                    let libraryRowViewData = LibraryRowViewData(annotation: annotation,
-                                                                bibleCatalogStore: catalogStore,
-                                                                libraryStore: libraryStore)
-
-                    var isRowSelected: Bool? {
-                        guard librarySelection.isSelecting else {
-                            return nil
-                        }
-                        return librarySelection.isSelected(annotation.id)
-                    }
-
-
-                    // Build actual single annotation view
-                    LibraryRowView(
-                        data: libraryRowViewData,
-                        isRowSelected: isRowSelected,
-                        onHighlightColorChangeRequested: { color in
-                            let didChange = withAnimation(.snappy(duration: 0.35)) {
-                                libraryStore.changeHighlightColor(annotation.id,
-                                                                  color: color)
-                            }
-                            if didChange {
-                                readerStore.refreshPassageHighlights()
-                                didHighlightColorChangeFail = false // reset state
-                            } else {
-                                didHighlightColorChangeFail = true
-                            }
-                        },
-                        onDeleteRequested: {
-                            let didDelete = withAnimation(.snappy(duration: 0.35)) {
-                                libraryStore.delete(annotation.id)
-                            }
-                            if didDelete {
-                                readerStore.refreshPassageHighlights()
-                                didDeleteFail = false // reset state
-                            } else {
-                                didDeleteFail = true
-                            }
-                        },
-                        onPassageViewRequested: {
-                            await readerStore.selectTranslationBookAndChapter(
-                                translationID: annotation.translationID,
-                                bookID: annotation.bookCode,
-                                chapterID: "\(annotation.bookCode).\(annotation.chapter)"
-                            )
-                            onShowInReader()
-                        },
-                        onAnnotationEditorRequested: {
-                            annotationEditor = libraryStore.annotationEditor(for: annotation)
-                        },
-                        onRowSelected: {
-                            // Animates the row's checkmark + border and the Delete button
-                            withAnimation(.smooth(duration: 0.35)) {
-                                let isSelected = librarySelection.isSelected(annotation.id)
-                                if isSelected {
-                                    librarySelection.removeFromSelection(annotation.id)
-                                } else {
-                                    librarySelection.addToSelection(annotation.id)
-                                }
+                // Two loops: outer Groups; inner Filtered/Sorted annotations per-group
+                ForEach(libraryStore.filteredSortedGroupedAnnotations) { group in
+                    Section {
+                        if !collapsedGroupIDs.contains(group.id) {
+                            // VerseAnnotation is stable Identifiable; required so ForEach doesnt continually
+                            // delete and re-insert the same rows if IDs were to change mid-life
+                            ForEach(group.annotations) { annotation in
+                                libraryRowView(annotation: annotation)
                             }
                         }
-                    )
-                    .task {
-                        // Required for annotation to load its associated passage
-                        // Prereq for rendering this card's verse
-                        await libraryStore.loadPassage(for: annotation)
+                    } header: {
+                        if let title = group.title {
+                            groupHeaderView(title: title, groupID: group.id)
+                        }
                     }
                 }
             }
@@ -280,6 +224,106 @@ struct LibraryView: View {
         //   popover anchors to the card being deleted rather than the whole ScrollView
         .swipeActionsContainerIfAvailable()
         .background(Color(.systemGroupedBackground))
+    }
+
+    /// Tappable group header; toggles the group's collapsed state
+    private func groupHeaderView(title: String, groupID: LibraryOrderGroup.ID) -> some View {
+        let isCollapsed = collapsedGroupIDs.contains(groupID)
+
+        return Button {
+            withAnimation(.snappy(duration: 0.35)) {
+                if isCollapsed {
+                    collapsedGroupIDs.remove(groupID)
+                } else {
+                    collapsedGroupIDs.insert(groupID)
+                }
+            }
+        } label: {
+            HStack {
+                Text(title)
+                    .font(.system(.title3, design: .serif, weight: .semibold))
+                Spacer()
+                Image(systemName: "chevron.down")
+                    .font(.system(.subheadline, weight: .semibold))
+                    .foregroundStyle(.secondary)
+                    .rotationEffect(.degrees(isCollapsed ? -90 : 0))
+            }
+            .contentShape(.rect)
+//            .background(.bar)
+        }
+        .buttonStyle(.plain)
+    }
+
+    /// Shared row builder used by libraryListView
+    private func libraryRowView(annotation: VerseAnnotation) -> some View {
+        // Retrieve data
+        let libraryRowViewData = LibraryRowViewData(annotation: annotation,
+                                                    bibleCatalogStore: catalogStore,
+                                                    libraryStore: libraryStore)
+
+        var isRowSelected: Bool? {
+            guard librarySelection.isSelecting else {
+                return nil
+            }
+            return librarySelection.isSelected(annotation.id)
+        }
+
+
+        // Build actual single annotation view
+        return LibraryRowView(
+            data: libraryRowViewData,
+            isRowSelected: isRowSelected,
+            onHighlightColorChangeRequested: { color in
+                let didChange = withAnimation(.snappy(duration: 0.35)) {
+                    libraryStore.changeHighlightColor(annotation.id,
+                                                      color: color)
+                }
+                if didChange {
+                    readerStore.refreshPassageHighlights()
+                    didHighlightColorChangeFail = false // reset state
+                } else {
+                    didHighlightColorChangeFail = true
+                }
+            },
+            onDeleteRequested: {
+                let didDelete = withAnimation(.snappy(duration: 0.35)) {
+                    libraryStore.delete(annotation.id)
+                }
+                if didDelete {
+                    readerStore.refreshPassageHighlights()
+                    didDeleteFail = false // reset state
+                } else {
+                    didDeleteFail = true
+                }
+            },
+            onPassageViewRequested: {
+                await readerStore.selectTranslationBookAndChapter(
+                    translationID: annotation.translationID,
+                    bookID: annotation.bookCode,
+                    chapterID: "\(annotation.bookCode).\(annotation.chapter)"
+                )
+                onShowInReader()
+            },
+            onAnnotationEditorRequested: {
+                annotationEditor = libraryStore.annotationEditor(for: annotation)
+            },
+            onRowSelected: {
+                // Animates the row's checkmark + border and the Delete button
+                withAnimation(.smooth(duration: 0.35)) {
+                    let isSelected = librarySelection.isSelected(annotation.id)
+                    if isSelected {
+                        librarySelection.removeFromSelection(annotation.id)
+                    } else {
+                        librarySelection.addToSelection(annotation.id)
+                    }
+                }
+            }
+        )
+        .task {
+            // Required for annotation to load its associated passage
+            // Prereq for rendering this card's verse
+            await libraryStore.loadPassage(for: annotation)
+        }
     }
 
     // MARK: Views (Toolbar)
@@ -393,13 +437,17 @@ struct LibraryView: View {
                         }
                     } label: {
                         Label("Tag", systemImage: "tag")
+                        if let tag = libraryStore.filter.tag {
+                            Text(tag)
+                                .foregroundStyle(Color.secondary)
+                        }
                     }
                     .pickerStyle(.menu)
 
                     // Clear All Filters
                     if libraryStore.filter.isAnyFilterActive {
                         Divider()
-                        Button {
+                        Button(role: .destructive) {
                             store.filter.clearAllFilters()
                         } label: {
                             Label("Clear All Filters", systemImage: "trash") // TODO: better symbol
@@ -419,33 +467,33 @@ struct LibraryView: View {
                 Menu {
                     Text("Sort By")
 
-                    Picker(selection: $store.sortAndGroup.sort) {
+                    Picker(selection: $store.order.sortOption) {
                         Text("Ascending")
-                            .tag(LibraryOrderSort.dateAddedAscending)
+                            .tag(LibraryOrderSortOption.dateAddedAscending)
 
                         Text("Descending")
-                            .tag(LibraryOrderSort.dateAddedDescending)
+                            .tag(LibraryOrderSortOption.dateAddedDescending)
                     } label: {
                         Label("Date Added", systemImage: "calendar")
-                        if libraryStore.sortAndGroup.sort == .dateAddedAscending {
+                        if libraryStore.order.sortOption == .dateAddedAscending {
                             Text("Ascending")
-                        } else if libraryStore.sortAndGroup.sort == .dateAddedDescending {
+                        } else if libraryStore.order.sortOption == .dateAddedDescending {
                             Text("Descending")
                         }
                     }
                     .pickerStyle(.menu)
 
-                    Picker(selection: $store.sortAndGroup.sort) {
+                    Picker(selection: $store.order.sortOption) {
                         Text("Ascending")
-                            .tag(LibraryOrderSort.bookOrderAscending)
+                            .tag(LibraryOrderSortOption.bookOrderAscending)
 
                         Text("Descending")
-                            .tag(LibraryOrderSort.bookOrderDescending)
+                            .tag(LibraryOrderSortOption.bookOrderDescending)
                     } label: {
                         Label("Book Order", systemImage: "calendar.day.timeline.leading")
-                        if libraryStore.sortAndGroup.sort == .bookOrderAscending {
+                        if libraryStore.order.sortOption == .bookOrderAscending {
                             Text("Ascending")
-                        } else if libraryStore.sortAndGroup.sort == .bookOrderDescending {
+                        } else if libraryStore.order.sortOption == .bookOrderDescending {
                             Text("Descending")
                         }
                     }
@@ -453,9 +501,9 @@ struct LibraryView: View {
                 } label: {
                     Label("Sort By", systemImage: "arrow.up.arrow.down")
                         .foregroundStyle(
-                            Color(libraryStore.sortAndGroup.isAnySortActive ? .accent : .label)
+                            Color(libraryStore.order.isAnySortActive ? .accent : .label)
                         )
-                        .fontWeight(libraryStore.sortAndGroup.isAnySortActive ? .heavy : .regular)
+                        .fontWeight(libraryStore.order.isAnySortActive ? .heavy : .regular)
                 }
             }
 
@@ -482,9 +530,9 @@ struct LibraryView: View {
                 } label: {
                     Label("Group By", systemImage: "rectangle.3.group")
                         .foregroundStyle(
-                            Color(libraryStore.sortAndGroup.isAnyGroupActive ? .accent : .label)
+                            Color(libraryStore.order.isAnyGroupActive ? .accent : .label)
                         )
-                        .fontWeight(libraryStore.sortAndGroup.isAnyGroupActive ? .heavy : .regular)
+                        .fontWeight(libraryStore.order.isAnyGroupActive ? .heavy : .regular)
                 }
             }
         }

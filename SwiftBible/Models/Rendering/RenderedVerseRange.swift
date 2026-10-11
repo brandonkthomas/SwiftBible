@@ -11,12 +11,14 @@ import Foundation
 nonisolated struct RenderedVerseRange: Identifiable, Equatable, Hashable {
 
     // MARK: Properties
-
-    /// Computed ID (pulls from Hashable implementation)
-    var id: Self { self }
     
     let startVerse: Int
     let endVerse: Int?
+
+    // MARK: Properties (Computed)
+
+    /// Computed ID (pulls from Hashable implementation)
+    var id: Self { self }
 
     /// Computed verse range display string
     ///

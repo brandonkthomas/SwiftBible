@@ -25,7 +25,7 @@ final class LibraryStore {
 
     /// Active user-selected sorting + grouping preferences.
     /// Mutating it automatically changes `filteredAnnotations` for observing views
-    var sortAndGroup = LibraryOrder()
+    var order = LibraryOrder()
 
     // MARK: Properties (Computed)
 
@@ -33,12 +33,17 @@ final class LibraryStore {
     /// unchanged when the user changes a filter
     var filteredAndSortedAnnotations: [VerseAnnotation] {
         let filtered = annotations.filter(filter.matches)
-        return sortAndGroup.sorted(
+        return order.sorted(
             annotations: filtered,
             bookPosition: { annotation in
                 catalogStore.books(for: annotation.translationID)?.firstIndex { $0.code == annotation.bookCode }
             }
         )
+    }
+
+    /// Collection of grouped annotations; filters & sorts are also applied
+    var filteredSortedGroupedAnnotations: [LibraryOrderGroup] {
+        order.grouped(annotations: filteredAndSortedAnnotations)
     }
 
     /// All unique tags across all annotations

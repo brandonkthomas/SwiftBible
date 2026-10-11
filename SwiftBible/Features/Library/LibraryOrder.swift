@@ -12,21 +12,21 @@ struct LibraryOrder: Equatable {
     // MARK: Properties
 
     /// Sorting preferences
-    var sort: LibraryOrderSort = .dateAddedDescending
+    var sortOption: LibraryOrderSortOption = .dateAddedDescending
 
     /// Grouping preferences
-    var group: LibraryOrderGroup = .none
+    var groupOption: LibraryOrderGroupOption = .none
 
     // MARK: Properties (Computed)
 
     /// True if we're not using strictly defaults
     var isAnySortActive: Bool {
-        sort != .dateAddedDescending
+        sortOption != .dateAddedDescending
     }
 
     /// True if we're not using strictly defaults
     var isAnyGroupActive: Bool {
-        group != .none
+        groupOption != .none
     }
 
     // MARK: Functions
@@ -37,7 +37,7 @@ struct LibraryOrder: Equatable {
     /// this prevents dependency bloat on BibleCatalogStore
     func sorted(annotations: [VerseAnnotation],
                 bookPosition: (VerseAnnotation) -> Int?) -> [VerseAnnotation] {
-        switch sort {
+        switch sortOption {
             // bookCode is fallback for annotations created at the same instant (sanity check)
             // ideally we check content.type, but this is not measurable
             case .dateAddedDescending:
@@ -64,10 +64,36 @@ struct LibraryOrder: Equatable {
             }
         }
     }
+
+    /// Reusable grouping function
+    ///
+    /// TODO
+    func grouped(annotations: [VerseAnnotation]) -> [LibraryOrderGroup] {
+        var groups: [LibraryOrderGroup] = []
+
+        groups.append(LibraryOrderGroup(id: "all",
+                                        title: nil,
+                                        annotations: annotations))
+
+        return groups
+    }
+}
+
+///
+///
+/// Equatable is required since LibraryOrder inherits & is Equatable
+struct LibraryOrderGroup: Identifiable, Equatable {
+    /// Represents whatever this is grouped by; i.e. a specific Translation.ID  or bookCode
+    /// (stringified for reusability)
+    let id: String
+    /// Optional header text for this group
+    let title: String?
+    /// All annotations in this group
+    let annotations: [VerseAnnotation]
 }
 
 /// Library sorting preferences used by LibraryOrder
-enum LibraryOrderSort {
+enum LibraryOrderSortOption {
     case dateAddedDescending
     case dateAddedAscending
     case bookOrderDescending
@@ -75,7 +101,7 @@ enum LibraryOrderSort {
 }
 
 /// Library grouping preferences used by LibraryOrder
-enum LibraryOrderGroup {
+enum LibraryOrderGroupOption {
     case none
     case dateAdded
     case translation
