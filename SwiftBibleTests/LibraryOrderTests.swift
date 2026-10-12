@@ -19,7 +19,7 @@ struct LibraryOrderTests {
         let oldest = makeAnnotation(createdAt: Date(timeIntervalSince1970: 100))
         let middle = makeAnnotation(createdAt: Date(timeIntervalSince1970: 200))
         let newest = makeAnnotation(createdAt: Date(timeIntervalSince1970: 300))
-        let order = LibraryOrder(sort: .dateAddedDescending)
+        let order = LibraryOrder(sortOption: .dateAddedDescending)
 
         let sorted = order.sorted(annotations: [middle, oldest, newest],
                                   bookPosition: { positions[$0.bookCode] })
@@ -32,7 +32,7 @@ struct LibraryOrderTests {
         let oldest = makeAnnotation(createdAt: Date(timeIntervalSince1970: 100))
         let middle = makeAnnotation(createdAt: Date(timeIntervalSince1970: 200))
         let newest = makeAnnotation(createdAt: Date(timeIntervalSince1970: 300))
-        let order = LibraryOrder(sort: .dateAddedAscending)
+        let order = LibraryOrder(sortOption: .dateAddedAscending)
 
         let sorted = order.sorted(annotations: [middle, newest, oldest],
                                   bookPosition: { positions[$0.bookCode] })
@@ -45,7 +45,7 @@ struct LibraryOrderTests {
         let genesis = makeAnnotation(bookCode: "GEN")
         let exodus = makeAnnotation(bookCode: "EXO")
         let revelation = makeAnnotation(bookCode: "REV")
-        let order = LibraryOrder(sort: .bookOrderAscending)
+        let order = LibraryOrder(sortOption: .bookOrderAscending)
 
         let sorted = order.sorted(annotations: [revelation, exodus, genesis],
                                   bookPosition: { positions[$0.bookCode] })
@@ -58,7 +58,7 @@ struct LibraryOrderTests {
         let genesis = makeAnnotation(bookCode: "GEN")
         let exodus = makeAnnotation(bookCode: "EXO")
         let revelation = makeAnnotation(bookCode: "REV")
-        let order = LibraryOrder(sort: .bookOrderDescending)
+        let order = LibraryOrder(sortOption: .bookOrderDescending)
 
         let sorted = order.sorted(annotations: [genesis, revelation, exodus],
                                   bookPosition: { positions[$0.bookCode] })
@@ -71,7 +71,7 @@ struct LibraryOrderTests {
         let chapterOne = makeAnnotation(chapter: 1)
         let chapterTwo = makeAnnotation(chapter: 2)
         let chapterThree = makeAnnotation(chapter: 3)
-        let order = LibraryOrder(sort: .bookOrderAscending)
+        let order = LibraryOrder(sortOption: .bookOrderAscending)
 
         let sorted = order.sorted(annotations: [chapterThree, chapterOne, chapterTwo],
                                   bookPosition: { positions[$0.bookCode] })
@@ -84,7 +84,7 @@ struct LibraryOrderTests {
         let verseOne = makeAnnotation(startVerse: 1)
         let verseFive = makeAnnotation(startVerse: 5)
         let verseTen = makeAnnotation(startVerse: 10)
-        let order = LibraryOrder(sort: .bookOrderAscending)
+        let order = LibraryOrder(sortOption: .bookOrderAscending)
 
         let sorted = order.sorted(annotations: [verseTen, verseOne, verseFive],
                                   bookPosition: { positions[$0.bookCode] })

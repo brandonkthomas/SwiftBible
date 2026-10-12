@@ -500,10 +500,6 @@ struct LibraryView: View {
                     .pickerStyle(.menu)
                 } label: {
                     Label("Sort By", systemImage: "arrow.up.arrow.down")
-                        .foregroundStyle(
-                            Color(libraryStore.order.isAnySortActive ? .accent : .label)
-                        )
-                        .fontWeight(libraryStore.order.isAnySortActive ? .heavy : .regular)
                 }
             }
 
@@ -511,24 +507,21 @@ struct LibraryView: View {
             ToolbarItem(placement: .topBarTrailing) {
                 Menu {
                     Text("Group By")
-
-                    Button {
-                        // TODO
-                    } label: {
+                    Picker(selection: $store.order.groupOption) {
+                        Label("None", systemImage: "square.stack.3d.up.slash")
+                            .tag(LibraryOrderGroupOption.none)
                         Label("Date Added", systemImage: "calendar")
-                    }
-                    Button {
-                        // TODO
-                    } label: {
+                            .tag(LibraryOrderGroupOption.dateAdded)
                         Label("Translation", systemImage: "text.book.closed")
-                    }
-                    Button {
-                        // TODO
-                    } label: {
+                            .tag(LibraryOrderGroupOption.translation)
                         Label("Book", systemImage: "books.vertical")
+                            .tag(LibraryOrderGroupOption.book)
+                    } label: {
+                        EmptyView()
                     }
+                    .pickerStyle(.automatic)
                 } label: {
-                    Label("Group By", systemImage: "rectangle.3.group")
+                    Label("Group By", systemImage: "square.stack.3d.up")
                         .foregroundStyle(
                             Color(libraryStore.order.isAnyGroupActive ? .accent : .label)
                         )
