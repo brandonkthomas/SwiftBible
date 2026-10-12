@@ -7,7 +7,7 @@
 
 import Foundation
 
-struct LibrarySelection: Equatable {
+nonisolated struct LibrarySelection: Equatable {
 
     // MARK: Properties
 
