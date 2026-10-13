@@ -37,6 +37,17 @@ struct PassagePickerView: View {
 
     @State var triggerHaptic: Bool = false
 
+    // MARK: Properties (Private, Dynamic Type)
+
+    /// Previous/next chevron symbol size
+    @ScaledMetric(relativeTo: .body) private var chevronSymbolSize: CGFloat = 20
+
+    /// Chapter toggle font size
+    @ScaledMetric(relativeTo: .body) private var chapterFontSize: CGFloat = 18
+
+    /// Book/chapter/translation label font size
+    @ScaledMetric(relativeTo: .body) private var labelFontSize: CGFloat = 14
+
     // MARK: Views
 
     /// Tab bar accessory for Reader view
@@ -50,7 +61,7 @@ struct PassagePickerView: View {
                 triggerHaptic.toggle()
             } label: {
                 Image(systemName: "chevron.left")
-                    .font(.system(size: UIFontMetrics(forTextStyle: .body).scaledValue(for: 20),
+                    .font(.system(size: chevronSymbolSize,
                                   weight: .bold))
                     .foregroundStyle(.foreground)
             }
@@ -76,7 +87,7 @@ struct PassagePickerView: View {
                 triggerHaptic.toggle()
             } label: {
                 Image(systemName: "chevron.right")
-                    .font(.system(size: UIFontMetrics(forTextStyle: .body).scaledValue(for: 20),
+                    .font(.system(size: chevronSymbolSize,
                                   weight: .bold))
                     .foregroundStyle(.foreground)
             }
@@ -111,7 +122,7 @@ struct PassagePickerView: View {
                                 }
                             }
                             .controlGroupStyle(.compactMenu)
-                            .font(.system(size: UIFontMetrics(forTextStyle: .body).scaledValue(for: 18),
+                            .font(.system(size: chapterFontSize,
                                           weight: .medium))
                         }
                     } label: {
@@ -149,7 +160,7 @@ struct PassagePickerView: View {
         } label: {
             // Label: selected Book/Chapter names & Translation abbreviation
             tabBarAccessoryLabel
-                .font(.system(size: UIFontMetrics(forTextStyle: .body).scaledValue(for: 14),
+                .font(.system(size: labelFontSize,
                               weight: .medium,
                               design: .serif))
                 .frame(maxWidth: .infinity, maxHeight: .infinity)

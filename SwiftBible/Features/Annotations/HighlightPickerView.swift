@@ -30,6 +30,9 @@ struct HighlightPickerView: View {
     /// Triggered when a highlight popover button is tapped
     @State private var highlightHapticTrigger: Bool = false
 
+    /// Color button diameter; scales with Dynamic Type
+    @ScaledMetric(relativeTo: .body) private var buttonSize: CGFloat = 30
+
     // MARK: Views
 
     var body: some View {
@@ -58,7 +61,6 @@ struct HighlightPickerView: View {
             highlightHapticTrigger.toggle()
             dismiss()
         }) {
-            let size = UIFontMetrics(forTextStyle: .body).scaledValue(for: 30)
             Group {
                 if selected {
                     Image(systemName: "checkmark")
@@ -66,7 +68,7 @@ struct HighlightPickerView: View {
                     Text("")
                 }
             }
-            .frame(width: size, height: size)
+            .frame(width: buttonSize, height: buttonSize)
             .foregroundColor(Color.primary)
         }
         // blend in w/ surrounding elements; interactive; tint to correct color

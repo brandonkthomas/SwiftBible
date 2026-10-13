@@ -28,6 +28,20 @@ struct VerseActionsView: View {
     /// Used for Liquid Glass effects in highlight popover
     @Namespace private var highlightColorPopoverNamespace
 
+    // MARK: Properties (Private, Dynamic Type)
+
+    /// Action button symbol size
+    @ScaledMetric(relativeTo: .body) private var actionSymbolSize: CGFloat = 20
+
+    /// Highlight action symbol size (eraser)
+    @ScaledMetric(relativeTo: .body) private var eraserSymbolSize: CGFloat = 22
+
+    /// Highlight action symbol size (pen)
+    @ScaledMetric(relativeTo: .body) private var penSymbolSize: CGFloat = 26
+
+    /// Chapter/verse label font size
+    @ScaledMetric(relativeTo: .body) private var labelFontSize: CGFloat = 14
+
     // MARK: Properties (Private, State)
 
     /// AnnotationEditor session:
@@ -85,7 +99,7 @@ struct VerseActionsView: View {
                 }
             }) {
                 Image(systemName: "xmark")
-                    .font(.system(size: UIFontMetrics(forTextStyle: .body).scaledValue(for: 20),
+                    .font(.system(size: actionSymbolSize,
                                   weight: .bold))
             }
 
@@ -114,7 +128,7 @@ struct VerseActionsView: View {
                 annotationEditor = readerStore.makeAnnotationEditor()
             }) {
                 Image(systemName: "bookmark.fill")
-                    .font(.system(size: UIFontMetrics(forTextStyle: .body).scaledValue(for: 20)))
+                    .font(.system(size: actionSymbolSize))
             }
 
             // Share
@@ -122,17 +136,17 @@ struct VerseActionsView: View {
                 // TODO: open share sheet
             }) {
                 Image(systemName: "square.and.arrow.up.fill")
-                    .font(.system(size: UIFontMetrics(forTextStyle: .body).scaledValue(for: 20)))
+                    .font(.system(size: actionSymbolSize))
             }
             // SHARELINK has weird trailing space
 //            ShareLink(item: "",
 //                      preview: SharePreview("", image: "AppIcon")) { // TODO: get raw text from readerStore.selectedVerses
 //                Label("", systemImage: "square.and.arrow.up.fill")
-//                    .font(.system(size: UIFontMetrics(forTextStyle: .body).scaledValue(for: 20)))
+//                    .font(.system(size: actionSymbolSize))
 //            }
         }
         // font, color
-        .font(.system(size: UIFontMetrics(forTextStyle: .body).scaledValue(for: 14),
+        .font(.system(size: labelFontSize,
                       weight: .medium,
                       design: .serif))
         .foregroundStyle(.primary)
@@ -183,9 +197,9 @@ struct VerseActionsView: View {
             let symbolName = showEraser
                 ? "eraser.line.dashed.fill"
                 : "pencil.line"
-            let symbolSize: CGFloat = showEraser ? 22 : 26
+            let symbolSize = showEraser ? eraserSymbolSize : penSymbolSize
             Image(systemName: symbolName)
-                .font(.system(size: UIFontMetrics(forTextStyle: .body).scaledValue(for: symbolSize)))
+                .font(.system(size: symbolSize))
                 .symbolRenderingMode(.palette)
                 .foregroundStyle(.primary, .gray)
                 // allow transition between image states

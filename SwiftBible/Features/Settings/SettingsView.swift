@@ -8,13 +8,18 @@
 import SwiftUI
 
 struct SettingsView: View {
+
+    // MARK: Properties (Private)
+
+    @ScaledMetric(relativeTo: .body) private var rowFontSize: CGFloat = 16
+    @ScaledMetric(relativeTo: .body) private var iconFontSize: CGFloat = 13
+    @ScaledMetric(relativeTo: .body) private var iconSize: CGFloat = 28
+    @ScaledMetric(relativeTo: .body) private var iconCornerRadius: CGFloat = 7
+
+    // MARK: Views
+
     var body: some View {
         NavigationStack {
-//            ContentUnavailableView(
-//                "Customize",
-//                systemImage: "switch.2",
-//                description: Text("Coming soon.")
-//            )
             List {
                 Section {
                     NavigationLink {
@@ -87,7 +92,9 @@ struct SettingsView: View {
                 }
             }
             .listStyle(.insetGrouped)
-            .font(.system(size: 16, weight: .medium, design: .serif))
+            .font(.system(size: rowFontSize,
+                          weight: .regular,
+                          design: .default))
             .navigationTitle("Customize")
             .navigationBarTitleDisplayMode(.inline)
             .navigationBarHidden(true)
@@ -102,10 +109,12 @@ struct SettingsView: View {
             Text(title)
         } icon: {
             Image(systemName: symbol)
-                .font(.system(size: 13, weight: .semibold))
-                .frame(width: 30, height: 30)
+                .font(.system(size: iconFontSize,
+                              weight: .semibold))
+                .frame(width: iconSize, height: iconSize)
                 .foregroundColor(Color.white)
-                .background(color, in: RoundedRectangle(cornerRadius: 7, style: .continuous))
+                .background(color, in: RoundedRectangle(cornerRadius: iconCornerRadius,
+                                                        style: .continuous))
         }
     }
 }

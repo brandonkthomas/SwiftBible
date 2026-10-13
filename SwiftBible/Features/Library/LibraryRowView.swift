@@ -36,10 +36,20 @@ struct LibraryRowView: View {
 
     /// Same value used in ReaderPassageView
     /// TODO: Consolidate in central location
-    private let passageLineHeight: CGFloat = 30
+    @ScaledMetric(relativeTo: .body) private var passageLineHeight: CGFloat = 30
+
+    @ScaledMetric(relativeTo: .body) private var annotationTagsLineHeight: CGFloat = 20
 
     /// Passage text collapses to this many lines; overflow fades out
     private let passageLineLimit = 3
+
+    // MARK: Properties (Private, Dynamic Type)
+
+    /// Passage label + note/tags font size
+    @ScaledMetric(relativeTo: .body) private var detailFontSize: CGFloat = 16
+
+    /// Action menu symbol size
+    @ScaledMetric(relativeTo: .body) private var menuSymbolSize: CGFloat = 20
 
     // MARK: Properties (Private, State)
 
@@ -133,7 +143,7 @@ struct LibraryRowView: View {
                     Text(data.translationLabel)
                         .foregroundStyle(.secondary)
                 }
-                .font(.system(size: UIFontMetrics(forTextStyle: .body).scaledValue(for: 16),
+                .font(.system(size: detailFontSize,
                               weight: .medium,
                               design: .serif))
                 .contentShape(Rectangle())
@@ -197,17 +207,17 @@ struct LibraryRowView: View {
             if case .note(let noteText) = data.annotation.content {
                 Divider()
                 Text(noteText)
-                    .font(.system(size: UIFontMetrics(forTextStyle: .body).scaledValue(for: 16),
+                    .font(.system(size: detailFontSize,
                                   weight: .regular,
                                   design: .serif))
-                    .lineHeight(AttributedString.LineHeight.exact(points: 20)) // try to match AnnotationEditorSheetView Note TextInput
+                    .lineHeight(AttributedString.LineHeight.exact(points: annotationTagsLineHeight)) // try to match AnnotationEditorSheetView Note TextInput
             } else if case .tags(let tags) = data.annotation.content {
                 Divider()
                 Text(tags.joined(separator: ", "))
-                    .font(.system(size: UIFontMetrics(forTextStyle: .body).scaledValue(for: 16),
+                    .font(.system(size: detailFontSize,
                                   weight: .regular,
                                   design: .serif))
-                    .lineHeight(AttributedString.LineHeight.exact(points: 20)) // try to match AnnotationEditorSheetView Note TextInput
+                    .lineHeight(AttributedString.LineHeight.exact(points: annotationTagsLineHeight)) // try to match AnnotationEditorSheetView Note TextInput
             }
 
             // TODO: Date; pending view refactor
@@ -357,7 +367,7 @@ struct LibraryRowView: View {
             annotationItems
         } label: {
             Image(systemName: "ellipsis")
-                .font(.system(size: UIFontMetrics(forTextStyle: .body).scaledValue(for: 20)))
+                .font(.system(size: menuSymbolSize))
                 .foregroundStyle(Color(.label))
                 // touch target optimization
                 .frame(width: 32, height: 18)

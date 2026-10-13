@@ -36,6 +36,8 @@ struct ReaderPassageView: View {
 
     // MARK: Properties (Verse Selection, Private)
 
+    @ScaledMetric(relativeTo: .body) private var passageLineHeight: CGFloat = 30
+
     /// Used for reveal effects on verse highlight renders
     @State private var revealProgress: CGFloat = 0
 
@@ -102,7 +104,7 @@ struct ReaderPassageView: View {
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .lineHeight(AttributedString.LineHeight.exact(points: 30)) // same value used in LibraryRowView
+                .lineHeight(AttributedString.LineHeight.exact(points: passageLineHeight)) // same value used in LibraryRowView
                 // inset on L/R edges; spacing between paragraphs
                 .padding(EdgeInsets(top: 2, leading: 24, bottom: 2, trailing: 24))
             }

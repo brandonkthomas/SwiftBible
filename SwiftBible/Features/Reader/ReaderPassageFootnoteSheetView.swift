@@ -16,7 +16,11 @@ struct ReaderPassageFootnoteSheetView: View {
 
     @Environment(\.dismiss) var dismiss
 
-    // MARK: Properties (Computed)
+    // MARK: Properties (Private)
+
+    @ScaledMetric(relativeTo: .body) private var passageLineHeight: CGFloat = 30
+
+    // MARK: Properties (Private, Computed)
 
     private var footnotesForVerse: [Footnote] {
         passage.footnotes.filter { $0.verseRange == verseRange }
@@ -26,7 +30,7 @@ struct ReaderPassageFootnoteSheetView: View {
                                index: Int) -> AttributedString {
         // Same a/b/c label that Renderer places inline so list/text stay in sync
         var attributedLabel = AttributedString("\(PassageTextRenderer.footnoteSymbol(for: index)) ")
-        attributedLabel.baselineOffset = 6
+        attributedLabel.baselineOffset = PassageTextRenderer.markerBaselineOffset
         attributedLabel.font = .system(.caption2, design: .serif, weight: .bold)
         attributedLabel.foregroundColor = .accentColor
 
@@ -71,7 +75,7 @@ struct ReaderPassageFootnoteSheetView: View {
                 .navigationTitle(sheetTitle)
                 .navigationBarTitleDisplayMode(.inline)
             }
-            .lineHeight(AttributedString.LineHeight.exact(points: 30))
+            .lineHeight(AttributedString.LineHeight.exact(points: passageLineHeight))
             .font(.system(.body, design: .serif))
             .frame(maxWidth: .infinity, alignment: .topLeading)
             // toolbar for NavigationStack (for Close button)
