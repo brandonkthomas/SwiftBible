@@ -205,6 +205,21 @@ struct PassageTextRenderer {
         return result
     }
 
+    /// Superscript raise for verse labels and footnote markers.
+    ///
+    /// Clamped so the raised caption2 ascent never exceeds the body ascent. With an exact
+    /// line height, a taller ascent pushes that line's baseline down, making line spacing
+    /// uneven around markers.
+    static var markerBaselineOffset: CGFloat {
+        func serifFont(_ style: UIFont.TextStyle) -> UIFont {
+            let descriptor = UIFontDescriptor.preferredFontDescriptor(withTextStyle: style)
+            return UIFont(descriptor: descriptor.withDesign(.serif) ?? descriptor, size: 0)
+        }
+
+        let available = serifFont(.body).ascender - serifFont(.caption2).ascender
+        return min(UIFontMetrics(forTextStyle: .body).scaledValue(for: 6), available)
+    }
+
     /// Append space if previous character was a hyphen or curled endquote
     private static func trailingSeparator(after text: String) -> String {
         guard let lastCharacter = text.last else {
@@ -218,7 +233,7 @@ struct PassageTextRenderer {
     private static func styledVerseLabel(displayText: String,
                                          verseRange: RenderedVerseRange?) -> AttributedString {
         var result = AttributedString("\(displayText) ")
-        result.baselineOffset = 6
+        result.baselineOffset = markerBaselineOffset
         result.font = .system(.caption2, design: .serif)
         result.foregroundColor = .secondary
 
@@ -228,7 +243,7 @@ struct PassageTextRenderer {
     /// Generate an inline footnote marker for a given verseRange
     private static func styledInlineMarker(index: Int) -> AttributedString {
         var result = AttributedString("\(footnoteSymbol(for: index)) ")
-        result.baselineOffset = 6
+        result.baselineOffset = markerBaselineOffset
         result.font = .system(.caption2, design: .serif, weight: .bold)
         result.foregroundColor = .accentColor
 
@@ -239,7 +254,7 @@ struct PassageTextRenderer {
     private static func styledVerseEndMarker(for verseRange: RenderedVerseRange,
                                              useLinkAttribute: Bool = true) -> AttributedString {
         var result = AttributedString("† ")
-        result.baselineOffset = 6
+        result.baselineOffset = markerBaselineOffset
         result.font = .system(.caption2, design: .serif, weight: .bold)
         result.foregroundColor = .accentColor
 
