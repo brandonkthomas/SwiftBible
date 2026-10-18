@@ -455,10 +455,11 @@ struct LibraryView: View {
                     }
                 } label: {
                     Image(systemName: "line.3.horizontal.decrease")
+                    // TODO: copy stock iOS filter indicator (filled circle BG when true)
                         .foregroundStyle(
                             Color(libraryStore.filter.isAnyFilterActive ? .accent : .label)
                         )
-                        .fontWeight(libraryStore.filter.isAnyFilterActive ? .heavy : .regular)
+                        .fontWeight(libraryStore.filter.isAnyFilterActive ? .heavy : .medium)
                 }
             }
 
