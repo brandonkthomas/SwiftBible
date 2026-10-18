@@ -174,16 +174,69 @@ struct LibraryOrderTests {
         )
     }
 
+    /// Helper builds annotations in the requested translation; default stays fixed
+    @Test func makeAnnotationBuildsAnnotationsInDifferentTranslations() {
+        let esv = makeAnnotation(translationID: 59)
+        let kjv = makeAnnotation(translationID: 1)
+        let fallback = makeAnnotation()
+
+        #expect(esv.translationID == 59)
+        #expect(kjv.translationID == 1)
+        #expect(fallback.translationID == 1234)
+    }
+
+    /// When grouping by Translation, sections follow the order each translation first appears in the
+    /// input, and rows inside each section keep their input order
+    ///
+    /// - Titles use the translation abbreviation
+    /// - Titles fall back to translation ID
+    @Test func groupingByTranslationFollowsInputOrder() {
+        let abbreviations = [59: "ESV", 1: "KJV"]
+
+        let esv1 = makeAnnotation(translationID: 59, chapter: 1)
+        let kjv1 = makeAnnotation(translationID: 1, chapter: 1)
+        let esv2 = makeAnnotation(translationID: 59, chapter: 2)
+        let unknown1 = makeAnnotation(translationID: 9999, chapter: 1)
+        let kjv2 = makeAnnotation(translationID: 1, chapter: 2)
+
+        let order = LibraryOrder(groupOption: .translation)
+        let grouped = order.grouped(annotations: [unknown1, esv1, kjv1, esv2, kjv2],
+                                    bookPosition: { positions[$0.bookCode] },
+                                    bookName: { _ in nil },
+                                    translationAbbreviation: { abbreviations[$0] })
+
+        #expect(
+            grouped == [
+                .init(
+                    id: "9999",
+                    title: "9999",
+                    annotations: [unknown1]
+                ),
+                .init(
+                    id: "59",
+                    title: "ESV",
+                    annotations: [esv1, esv2]
+                ),
+                .init(
+                    id: "1",
+                    title: "KJV",
+                    annotations: [kjv1, kjv2]
+                )
+            ]
+        )
+    }
+
     // MARK: Helpers
 
     private func makeAnnotation(
+        translationID: Translation.ID = 1234,
         bookCode: String = "GEN",
         chapter: Int = 1,
         startVerse: Int = 1,
         createdAt: Date = Date(timeIntervalSince1970: 0)
     ) -> VerseAnnotation {
         VerseAnnotation(id: UUID(),
-                        translationID: 1234,
+                        translationID: translationID,
                         bookCode: bookCode,
                         chapter: chapter,
                         startVerse: startVerse,

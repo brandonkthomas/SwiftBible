@@ -83,12 +83,15 @@ struct LibraryOrder: Equatable {
         case .translation:
             let dict = Dictionary(grouping: annotations,
                                   by: { $0.translationID }) // Translation.ID:[VerseAnnotation]
-            for entry in dict {
-                // if callback is nil, entry is dropped; prevent that case
-                let title = translationAbbreviation(entry.key) ?? entry.key.description
-                let group = LibraryOrderGroup(id: entry.key.description,
+            // Dictionary order is random; walk IDs in the order they first appear in annotations
+            var seen = Set<Translation.ID>()
+            let orderedIDs = annotations.map(\.translationID).filter { seen.insert($0).inserted }
+            for id in orderedIDs {
+                // if callback is nil, header is empty; prevent that case
+                let title = translationAbbreviation(id) ?? id.description
+                let group = LibraryOrderGroup(id: id.description,
                                               title: title,
-                                              annotations: entry.value)
+                                              annotations: dict[id] ?? [])
                 groups.append(group)
             }
         case .book:
