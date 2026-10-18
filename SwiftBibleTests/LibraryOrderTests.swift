@@ -131,6 +131,49 @@ struct LibraryOrderTests {
         )
     }
 
+    /// When grouping by Date Added w/ Book Order sort, newest day comes first, and rows inside each
+    /// day keep their input order
+    @Test func groupingByDateAddedWithBookSortPutsNewestDayFirst() {
+        let day: TimeInterval = 86_400
+        let date1 = Date(timeIntervalSince1970: day * 10)
+        let date2 = Date(timeIntervalSince1970: day * 11)
+        let date3 = Date(timeIntervalSince1970: day * 12)
+        let calendar = Calendar.current
+
+        let genesis1 = makeAnnotation(bookCode: "GEN", chapter: 1, createdAt: date1)
+        let genesis2 = makeAnnotation(bookCode: "GEN", chapter: 2, createdAt: date1)
+        let exodus1 = makeAnnotation(bookCode: "EXO", chapter: 1, createdAt: date2)
+        let exodus2 = makeAnnotation(bookCode: "EXO", chapter: 2, createdAt: date2)
+        let revelation3 = makeAnnotation(bookCode: "REV", chapter: 3, createdAt: date3)
+
+        let order = LibraryOrder(sortOption: .bookOrderAscending,
+                                 groupOption: .dateAdded)
+        let grouped = order.grouped(annotations: [genesis2, revelation3, exodus2, exodus1, genesis1],
+                                    bookPosition: { positions[$0.bookCode] },
+                                    bookName: { _ in nil },
+                                    translationAbbreviation: { _ in nil })
+
+        #expect(
+            grouped == [
+                .init(
+                    id: calendar.startOfDay(for: date3).description,
+                    title: calendar.startOfDay(for: date3).formatted(date: .long, time: .omitted),
+                    annotations: [revelation3]
+                ),
+                .init(
+                    id: calendar.startOfDay(for: date2).description,
+                    title: calendar.startOfDay(for: date2).formatted(date: .long, time: .omitted),
+                    annotations: [exodus2, exodus1]
+                ),
+                .init(
+                    id: calendar.startOfDay(for: date1).description,
+                    title: calendar.startOfDay(for: date1).formatted(date: .long, time: .omitted),
+                    annotations: [genesis2, genesis1]
+                )
+            ]
+        )
+    }
+
     // MARK: Helpers
 
     private func makeAnnotation(
