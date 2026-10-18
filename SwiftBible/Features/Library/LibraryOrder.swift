@@ -57,48 +57,21 @@ struct LibraryOrder: Equatable {
                 ((bookPosition(a) ?? -1), a.bookCode, a.chapter, a.startVerse, a.createdAt)
                 > ((bookPosition(b) ?? -1), b.bookCode, b.chapter, b.startVerse, b.createdAt)
             }
-            // put newer days first when grouping by dateAdded
-            if groupOption == .dateAdded {
-                let calendar = Calendar.current
-                return annotations.sorted { a, b in
-                    // is day A later than day B?
-                    let dayA = calendar.startOfDay(for: a.createdAt)
-                    let dayB = calendar.startOfDay(for: b.createdAt)
-                    if dayA != dayB {
-                        return dayA > dayB
-                    } else {
-                        // days are the same; book order decides
-                        return bookOrderComparison(a, b)
-                    }
-                }
-            }
             return annotations.sorted(by: bookOrderComparison)
         case .bookOrderAscending:
             func bookOrderComparison(_ a: VerseAnnotation, _ b: VerseAnnotation) -> Bool {
                 ((bookPosition(a) ?? Int.max), a.bookCode, a.chapter, a.startVerse, a.createdAt)
                 < ((bookPosition(b) ?? Int.max), b.bookCode, b.chapter, b.startVerse, b.createdAt)
             }
-            // put newer days first when grouping by dateAdded
-            if groupOption == .dateAdded {
-                let calendar = Calendar.current
-                return annotations.sorted { a, b in
-                    // is day A later than day B?
-                    let dayA = calendar.startOfDay(for: a.createdAt)
-                    let dayB = calendar.startOfDay(for: b.createdAt)
-                    if dayA != dayB {
-                        return dayA > dayB
-                    } else {
-                        // days are the same; book order decides
-                        return bookOrderComparison(a, b)
-                    }
-                }
-            }
             return annotations.sorted(by: bookOrderComparison)
         }
     }
 
     /// Reusable grouping function
-    func grouped(annotations: [VerseAnnotation]) -> [LibraryOrderGroup] {
+    func grouped(annotations: [VerseAnnotation],
+                 bookPosition: (VerseAnnotation) -> Int?,
+                 bookName: (VerseAnnotation) -> String?,
+                 translationAbbreviation: (Translation.ID) -> String?) -> [LibraryOrderGroup] {
         var groups: [LibraryOrderGroup] = []
 
         // logic for all possible options
@@ -109,52 +82,49 @@ struct LibraryOrder: Equatable {
                                             annotations: annotations))
         case .translation:
             let dict = Dictionary(grouping: annotations,
-                                  by: { $0.translationID }) // Translation.ID : VerseAnnotation
-            var translationIDs: [Translation.ID] = []
-            for annotation in annotations {
-                if !translationIDs.contains(annotation.translationID) {
-                    translationIDs.append(annotation.translationID)
-                }
-            }
-            for translationID in translationIDs {
-                guard let annotationsForTranslationID = dict[translationID] else { continue }
-                let group = LibraryOrderGroup(id: translationID.description,
-                                              title: translationID.description, // TODO: friendly name
-                                              annotations: annotationsForTranslationID)
+                                  by: { $0.translationID }) // Translation.ID:[VerseAnnotation]
+            for entry in dict {
+                // if callback is nil, entry is dropped; prevent that case
+                let title = translationAbbreviation(entry.key) ?? entry.key.description
+                let group = LibraryOrderGroup(id: entry.key.description,
+                                              title: title,
+                                              annotations: entry.value)
                 groups.append(group)
             }
         case .book:
             let dict = Dictionary(grouping: annotations,
-                                  by: { $0.bookCode }) // String : VerseAnnotation
-            var bookCodes: [String] = []
-            for annotation in annotations {
-                if !bookCodes.contains(annotation.bookCode) {
-                    bookCodes.append(annotation.bookCode)
+                                  by: { $0.bookCode }) // String:[VerseAnnotation]
+            // each entry is a (key: bookCode, value: [VerseAnnotation]) tuple
+            // value[0] stands in for the whole section; grouping never makes an empty array
+            // unknown books sort last; bookCode keeps them in a fixed order
+            let entries = dict.sorted { a, b in
+                if sortOption == .bookOrderDescending {
+                    return (bookPosition(a.value[0]) ?? -1, a.key) > (bookPosition(b.value[0]) ?? -1, b.key)
                 }
+                return (bookPosition(a.value[0]) ?? Int.max, a.key) < (bookPosition(b.value[0]) ?? Int.max, b.key)
             }
-            for bookCode in bookCodes {
-                guard let annotationsForBookCode = dict[bookCode] else { continue }
-                let group = LibraryOrderGroup(id: bookCode,
-                                              title: bookCode, // TODO: friendly name
-                                              annotations: annotationsForBookCode)
+            for entry in entries {
+                let group = LibraryOrderGroup(id: entry.key, // bookCode
+                                              title: bookName(entry.value[0]) ?? entry.key,
+                                              annotations: entry.value) // [VerseAnnotation]
                 groups.append(group)
             }
         case .dateAdded:
             let calendar = Calendar.current
             let dict = Dictionary(grouping: annotations,
-                                  by: { calendar.startOfDay(for: $0.createdAt) }) // Date : VerseAnnotation
-            var dates: [Date] = []
-            for annotation in annotations {
-                let startOfDay = calendar.startOfDay(for: annotation.createdAt)
-                if !dates.contains(startOfDay) {
-                    dates.append(startOfDay)
+                                  by: { calendar.startOfDay(for: $0.createdAt) }) // Date:[VerseAnnotation]
+            // each entry is a (key: Date, value: [VerseAnnotation]) tuple
+            // value[0] stands in for the whole section; grouping never makes an empty array
+            let entries = dict.sorted { a, b in
+                if sortOption == .dateAddedAscending {
+                    return a.key < b.key
                 }
+                return a.key > b.key
             }
-            for date in dates {
-                guard let annotationsForDate = dict[date] else { continue }
-                let group = LibraryOrderGroup(id: date.description,
-                                              title: date.formatted(date: .long, time: .omitted),
-                                              annotations: annotationsForDate)
+            for entry in entries {
+                let group = LibraryOrderGroup(id: entry.key.description,
+                                              title: entry.key.formatted(date: .long, time: .omitted),
+                                              annotations: entry.value)
                 groups.append(group)
             }
         }

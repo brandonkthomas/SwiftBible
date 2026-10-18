@@ -43,7 +43,19 @@ final class LibraryStore {
 
     /// Collection of grouped annotations; filters & sorts are also applied
     var filteredSortedGroupedAnnotations: [LibraryOrderGroup] {
-        order.grouped(annotations: filteredAndSortedAnnotations)
+        order.grouped(
+            annotations: filteredAndSortedAnnotations,
+            bookPosition: { annotation in
+                catalogStore.books(for: annotation.translationID)?.firstIndex { $0.code == annotation.bookCode }
+            },
+            bookName: { annotation in
+                catalogStore.book(for: annotation.translationID,
+                                  bookCode: annotation.bookCode)?.displayName
+            },
+            translationAbbreviation: { translationID in
+                catalogStore.translation(for: translationID)?.abbreviation
+            }
+        )
     }
 
     /// All unique tags across all annotations
