@@ -78,13 +78,6 @@ struct SettingsView: View {
                     NavigationLink {
                         // TODO
                     } label: {
-                        settingsRow(title: "Tip Jar",
-                                    symbol: "dollarsign.square.fill",
-                                    color: .green)
-                    }
-                    NavigationLink {
-                        // TODO
-                    } label: {
                         settingsRow(title: "Rate Bible",
                                     symbol: "star.fill",
                                     color: .yellow)
