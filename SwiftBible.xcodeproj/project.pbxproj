@@ -242,6 +242,7 @@
 /* Begin PBXShellScriptBuildPhase section */
 		857DAF5B30678143008FEFAC /* Set CFBundleVersion from Git Commit Count */ = {
 			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1; /* placeholder -- will be stamped on every build */
 			buildActionMask = 2147483647;
 			files = (
 			);
@@ -256,7 +257,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "COMMIT_COUNT=$(git -C \"${SRCROOT}\" rev-list --count HEAD)\nPLIST=\"${TARGET_BUILD_DIR}/${INFOPLIST_PATH}\"\nif [ -f \"${PLIST}\" ]; then\n  /usr/libexec/PlistBuddy -c \"Set :CFBundleVersion ${COMMIT_COUNT}\" \"${PLIST}\"\nfi\n";
+			shellScript = "set -euo pipefail\nCOMMIT_COUNT=$(git -C \"${SRCROOT}\" rev-list --count HEAD)\nPLIST=\"${TARGET_BUILD_DIR}/${INFOPLIST_PATH}\"\nif [ -z \"${COMMIT_COUNT}\" ] || [ ! -f \"${PLIST}\" ]; then\n  echo \"error: could not stamp CFBundleVersion (count='${COMMIT_COUNT}', plist='${PLIST}')\"\n  exit 1\nfi\n/usr/libexec/PlistBuddy -c \"Set :CFBundleVersion ${COMMIT_COUNT}\" \"${PLIST}\"\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -424,7 +425,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 183;
+				CURRENT_PROJECT_VERSION = 1;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = H27DCAP274;
 				ENABLE_APP_SANDBOX = YES;
@@ -475,7 +476,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 183;
+				CURRENT_PROJECT_VERSION = 1;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = H27DCAP274;
 				ENABLE_APP_SANDBOX = YES;
