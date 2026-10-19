@@ -82,12 +82,9 @@ final class BibleCatalogStore {
         return books.first { $0.code == bookCode }
     }
 
-    /// Where is a given Translation's Book located in its index?
+    /// Where is a Book located in the canonical index?
     static func bookPosition(for bookCode: String) -> Int? {
-        // BUG: this was returning different indexes for same book across different translations (TPT)
-        // Changed to use canonical static list instead
-//        return books(for: translationID)?.firstIndex { $0.code == bookCode }
-        return canonicalBookCodes.firstIndex { $0 == bookCode }
+        canonicalBookCodes.firstIndex(of: bookCode)
     }
 
     /// Builds a friendly name (i.e. "Genesis 1:1-2") for a given ScriptureReference + range
