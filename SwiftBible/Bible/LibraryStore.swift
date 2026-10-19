@@ -36,7 +36,7 @@ final class LibraryStore {
         return order.sorted(
             annotations: filtered,
             bookPosition: { annotation in
-                catalogStore.books(for: annotation.translationID)?.firstIndex { $0.code == annotation.bookCode }
+                BibleCatalogStore.bookPosition(for: annotation.bookCode)
             }
         )
     }
@@ -46,7 +46,7 @@ final class LibraryStore {
         order.grouped(
             annotations: filteredAndSortedAnnotations,
             bookPosition: { annotation in
-                catalogStore.books(for: annotation.translationID)?.firstIndex { $0.code == annotation.bookCode }
+                BibleCatalogStore.bookPosition(for: annotation.bookCode)
             },
             bookName: { annotation in
                 catalogStore.book(for: annotation.translationID,

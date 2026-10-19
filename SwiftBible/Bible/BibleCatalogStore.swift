@@ -23,6 +23,23 @@ final class BibleCatalogStore {
     /// All available books; each mapped to one translation
     private var booksByTranslation: [Translation.ID: [Book]] = [:]
 
+    /// USFM book codes in Protestant canonical order, then deuterocanonical books in USFM order
+    /// https://ubsicap.github.io/usfm/identification/books.html
+    private static let canonicalBookCodes: [String] = [
+        // Old Testament
+        "GEN", "EXO", "LEV", "NUM", "DEU", "JOS", "JDG", "RUT", "1SA", "2SA",
+        "1KI", "2KI", "1CH", "2CH", "EZR", "NEH", "EST", "JOB", "PSA", "PRO",
+        "ECC", "SNG", "ISA", "JER", "LAM", "EZK", "DAN", "HOS", "JOL", "AMO",
+        "OBA", "JON", "MIC", "NAM", "HAB", "ZEP", "HAG", "ZEC", "MAL",
+        // New Testament
+        "MAT", "MRK", "LUK", "JHN", "ACT", "ROM", "1CO", "2CO", "GAL", "EPH",
+        "PHP", "COL", "1TH", "2TH", "1TI", "2TI", "TIT", "PHM", "HEB", "JAS",
+        "1PE", "2PE", "1JN", "2JN", "3JN", "JUD", "REV",
+        // Deuterocanon
+        "TOB", "JDT", "ESG", "WIS", "SIR", "BAR", "LJE", "S3Y", "SUS", "BEL",
+        "1MA", "2MA", "3MA", "4MA", "1ES", "2ES", "MAN", "PS2"
+    ]
+
     // MARK: Init
 
     init(repository: any BibleRepository) {
@@ -63,6 +80,14 @@ final class BibleCatalogStore {
             return nil
         }
         return books.first { $0.code == bookCode }
+    }
+
+    /// Where is a given Translation's Book located in its index?
+    static func bookPosition(for bookCode: String) -> Int? {
+        // BUG: this was returning different indexes for same book across different translations (TPT)
+        // Changed to use canonical static list instead
+//        return books(for: translationID)?.firstIndex { $0.code == bookCode }
+        return canonicalBookCodes.firstIndex { $0 == bookCode }
     }
 
     /// Builds a friendly name (i.e. "Genesis 1:1-2") for a given ScriptureReference + range

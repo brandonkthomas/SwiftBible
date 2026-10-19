@@ -65,9 +65,15 @@ struct LibraryView: View {
     private var uniqueBookCodeAnnotations: [VerseAnnotation] {
         let annotationsGroupedByBookCode = Dictionary(grouping: libraryStore.annotations,
                                                       by: \.bookCode)
-        return annotationsGroupedByBookCode
+
+        let uniqueBookCodeAnnotations = annotationsGroupedByBookCode
             .compactMap { $0.value.first }
-            .sorted(by: { $0.bookCode < $1.bookCode })
+
+        return uniqueBookCodeAnnotations
+            .sorted(by: { a, b in
+                (BibleCatalogStore.bookPosition(for: a.bookCode) ?? Int.max, a.bookCode)
+                < (BibleCatalogStore.bookPosition(for: b.bookCode) ?? Int.max, b.bookCode)
+            })
     }
 
     /// OS Logging
