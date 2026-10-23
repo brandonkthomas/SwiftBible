@@ -68,6 +68,7 @@ final class BibleCatalogStore {
                let cachedTranslations = try await catalogCache.translations(for: languageTag) {
                 self.translations = cachedTranslations
                 didCacheHit = true
+                Self.logger.info("CACHE: loadTranslations catalogCache.translations(for: \(languageTag))")
             }
         } catch {
             Self.logger.error("loadTranslations catalogCache.translations(for:) failed: \(error.localizedDescription)")
@@ -114,6 +115,7 @@ final class BibleCatalogStore {
             if let cachedBooks = try await catalogCache.books(for: translationID) {
                 self.booksByTranslation[translationID] = cachedBooks
                 didCacheHit = true
+                Self.logger.info("CACHE: loadBooks catalogCache.books(for: \(translationID))")
             }
         } catch {
             Self.logger.error("loadBooks catalogCache.books(for:) failed: \(error.localizedDescription)")

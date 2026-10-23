@@ -19,6 +19,9 @@ struct ContentView: View {
     /// placed into the environment: .environment(readerStore))
     @Environment(ReaderStore.self) private var readerStore: ReaderStore
 
+    /// Read appEnvironment.libraryStore environment value from current view environment
+    @Environment(LibraryStore.self) private var libraryStore: LibraryStore
+
     // MARK: Views
 
     /// Primary application body
@@ -47,6 +50,15 @@ struct ContentView: View {
             } else {
                 VerseActionsView()
             }
+        }
+        // Load Library data -- added here alongside existing .task in LibraryView
+        // to prevent flashing of abbreviations on initial Library view load
+        .task {
+            // First load all annotations
+            libraryStore.load()
+
+            // Load book names for each annotation
+            await libraryStore.loadMissingBookMetadata()
         }
     }
 }

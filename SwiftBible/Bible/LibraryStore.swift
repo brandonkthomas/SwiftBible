@@ -49,11 +49,11 @@ final class LibraryStore {
                 BibleCatalogStore.bookPosition(for: annotation.bookCode)
             },
             bookName: { annotation in
-                catalogStore.book(for: annotation.translationID,
+                bibleCatalogStore.book(for: annotation.translationID,
                                   bookCode: annotation.bookCode)?.displayName
             },
             translationAbbreviation: { translationID in
-                catalogStore.translation(for: translationID)?.abbreviation
+                bibleCatalogStore.translation(for: translationID)?.abbreviation
             }
         )
     }
@@ -69,7 +69,7 @@ final class LibraryStore {
     private let libraryRepository: any LibraryRepository
 
     /// Authority for all available Translations / Books
-    private let catalogStore: BibleCatalogStore
+    private let bibleCatalogStore: BibleCatalogStore
 
     /// Authority for all cached/loaded Passages
     ///
@@ -94,7 +94,7 @@ final class LibraryStore {
          catalogStore: BibleCatalogStore,
          passageStore: BiblePassageStore) {
         self.libraryRepository = libraryRepository
-        self.catalogStore = catalogStore
+        self.bibleCatalogStore = catalogStore
         self.passageStore = passageStore
     }
 
@@ -131,6 +131,26 @@ final class LibraryStore {
         } catch {
             // do not remove existing entries on failure; just log
             Self.logger.error("Unable to load passage: \(error.localizedDescription)")
+        }
+    }
+
+    /// Called on view load (LibraryView); gets missing book display names
+    func loadMissingBookMetadata() async {
+        let unloadedIDs = Set(self.annotations
+            .filter { bibleCatalogStore.books(for: $0.translationID) == nil } // not in memory
+            .map { $0.translationID } // only need the ID
+        )
+
+        await withDiscardingTaskGroup { group in
+            for translationID in unloadedIDs {
+                group.addTask {
+                    do {
+                        try await self.bibleCatalogStore.loadBooks(for: translationID)
+                    } catch {
+                        Self.logger.error("loadMissingBookMetadata(): load for ID \(translationID) failed: \(error.localizedDescription)")
+                    }
+                }
+            }
         }
     }
 

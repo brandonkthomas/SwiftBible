@@ -53,14 +53,6 @@ struct LibraryView: View {
 
     // MARK: Properties (Local, Private)
 
-    /// todo: doc
-    private var unloadedCatalogStoreTranslationIDs: Set<Translation.ID> {
-        Set(libraryStore.annotations
-            .filter { catalogStore.books(for: $0.translationID) == nil } // not in memory
-            .map { $0.translationID } // only need the ID
-        )
-    }
-
     /// First annotation for each unique book code
     private var uniqueBookCodeAnnotations: [VerseAnnotation] {
         let annotationsGroupedByBookCode = Dictionary(grouping: libraryStore.annotations,
@@ -131,7 +123,7 @@ struct LibraryView: View {
             libraryStore.load()
 
             // Load book names for each annotation
-            await loadMissingBookMetadata()
+            await libraryStore.loadMissingBookMetadata()
         }
         // Fire AnnotationEditorSheetView when $annotationEditor instance is assigned
         .sheet(
@@ -622,18 +614,6 @@ struct LibraryView: View {
 //    }
 
     // MARK: Functions
-
-    /// Called on view load; gets missing book display names
-    private func loadMissingBookMetadata() async {
-        let unloadedIDs = unloadedCatalogStoreTranslationIDs
-        for translationID in unloadedIDs {
-            do {
-                try await catalogStore.loadBooks(for: translationID)
-            } catch {
-                Self.logger.error("loadMissingBookMetadata(): load for ID \(translationID) failed: \(error.localizedDescription)")
-            }
-        }
-    }
 
     /// Menus render SF Symbols as templates and drop foreground styles, so bake the
     /// color into a UIImage with `.alwaysOriginal` to keep it
