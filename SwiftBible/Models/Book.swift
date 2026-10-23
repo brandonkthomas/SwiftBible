@@ -9,7 +9,8 @@
 ///
 /// nonisolated: this type is safe to use from any actor (it's just value/data logic)
 /// - Anything that SwiftUI reads must be on @MainActor (i.e. ReaderStore)
-nonisolated struct Book: Identifiable, Equatable {
+/// - Codable used for DiskCatalogCache
+nonisolated struct Book: Identifiable, Equatable, Codable {
     let id: String
     /// i.e. "GEN"
     let code: String

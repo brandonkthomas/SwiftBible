@@ -5,7 +5,8 @@
 //  Created by Brandon Thomas on 6/28/26.
 //
 
-nonisolated struct Verse: Identifiable, Equatable {
+/// - Codable used for DiskCatalogCache
+nonisolated struct Verse: Identifiable, Equatable, Codable {
     /// i.e. "GEN.1.1"
     let id: String
     /// i.e. 1

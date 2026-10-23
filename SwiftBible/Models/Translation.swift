@@ -6,7 +6,8 @@
 //
 
 /// Represents a Bible translation
-nonisolated struct Translation: Identifiable, Equatable {
+/// - Codable used for DiskCatalogCache
+nonisolated struct Translation: Identifiable, Equatable, Codable {
     let id: Int
     let abbreviation: String
     let title: String

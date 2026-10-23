@@ -242,7 +242,7 @@
 /* Begin PBXShellScriptBuildPhase section */
 		857DAF5B30678143008FEFAC /* Set CFBundleVersion from Git Commit Count */ = {
 			isa = PBXShellScriptBuildPhase;
-			alwaysOutOfDate = 1; /* placeholder -- will be stamped on every build */
+			alwaysOutOfDate = 1;
 			buildActionMask = 2147483647;
 			files = (
 			);

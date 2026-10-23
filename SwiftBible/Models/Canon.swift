@@ -6,7 +6,8 @@
 //
 
 /// Which testament is this book in?
-nonisolated enum Canon: String, CaseIterable {
+/// - Codable used for DiskCatalogCache
+nonisolated enum Canon: String, CaseIterable, Codable {
     case oldTestament
     case newTestament
     case deuterocanon
