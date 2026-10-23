@@ -35,14 +35,14 @@ final class ReaderStore {
     // Calculated Collections (owned by BibleCatalogStore)
     
     var translations: [Translation] {
-        catalogStore.translations
+        bibleCatalogStore.translations
     }
     
     var books: [Book] {
         guard let selectedTranslation else {
             return []
         }
-        return catalogStore.books(for: selectedTranslation.id) ?? []
+        return bibleCatalogStore.books(for: selectedTranslation.id) ?? []
     }
 
     // Selections
@@ -129,7 +129,7 @@ final class ReaderStore {
     private let passageStore: BiblePassageStore
 
     /// Authority for all available Translations
-    private let catalogStore: BibleCatalogStore
+    private let bibleCatalogStore: BibleCatalogStore
 
     /// User storage command implementations
     private let libraryRepository: any LibraryRepository
@@ -146,7 +146,7 @@ final class ReaderStore {
          catalogStore: BibleCatalogStore,
          libraryRepository: LibraryRepository) {
         self.passageStore = passageStore
-        self.catalogStore = catalogStore
+        self.bibleCatalogStore = catalogStore
         self.libraryRepository = libraryRepository
     }
 
@@ -168,7 +168,7 @@ final class ReaderStore {
         self.loadState = .loading
 
         do {
-            try await catalogStore.loadTranslations(languageTag: languageTag)
+            try await bibleCatalogStore.loadTranslations(languageTag: languageTag)
 
             // ensure there's at least one translation
             guard let firstTranslation = self.translations.first else {
@@ -191,7 +191,7 @@ final class ReaderStore {
     func selectTranslationAndReloadAll(id: Translation.ID) async {
         Self.logger.debug("ENTRY ReaderStore.selectTranslationAndReloadAll(id: \(id, privacy: .public))")
 
-        guard let requestedTranslation = catalogStore.translation(for: id) else {
+        guard let requestedTranslation = bibleCatalogStore.translation(for: id) else {
             return
         }
 
@@ -229,7 +229,7 @@ final class ReaderStore {
                                          chapterID: Chapter.ID) async {
         Self.logger.debug("ENTRY ReaderStore.selectTranslationBookAndChapter(translationID: \(translationID, privacy: .public), bookID: \(bookID, privacy: .public), chapterID: \(chapterID, privacy: .public))")
 
-        guard let requestedTranslation = catalogStore.translation(for: translationID) else {
+        guard let requestedTranslation = bibleCatalogStore.translation(for: translationID) else {
             return
         }
 
@@ -512,7 +512,7 @@ final class ReaderStore {
 
         do {
             // load via BibleCatalogStore
-            try await catalogStore.loadBooks(for: selectedTranslation.id)
+            try await bibleCatalogStore.loadBooks(for: selectedTranslation.id)
 
             // ensure there's at least one book
             guard let firstBook = self.books.first else {
