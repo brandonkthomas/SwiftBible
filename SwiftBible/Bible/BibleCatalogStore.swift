@@ -6,6 +6,7 @@
 //
 
 import Observation
+import OSLog
 
 @Observable
 final class BibleCatalogStore {
@@ -40,20 +41,61 @@ final class BibleCatalogStore {
         "1MA", "2MA", "3MA", "4MA", "1ES", "2ES", "MAN", "PS2"
     ]
 
+    private static let logger = Logger(subsystem: "SwiftBible", category: "BibleCatalogStore")
+
+    // MARK: Properties (Private, Cache)
+
+    /// Stores API-retrieved Translations/Books clientside for performance
+    private let catalogCache: any CatalogCache
+
     // MARK: Init
 
-    init(repository: any BibleRepository) {
+    init(repository: any BibleRepository,
+         catalogCache: any CatalogCache = InMemoryCatalogCache()) {
         self.repository = repository
+        self.catalogCache = catalogCache
     }
 
-    // MARK: Functions
-    
-    // Translations
+    // MARK: Functions (Translations)
 
-    /// Assigns to self.translations only if repository.translations() call does not throw
+    /// Assigns to self.translations (try from cache first)
     func loadTranslations(languageTag: String? = "en") async throws {
-        let updatedTranslations = try await repository.translations(languageTag: languageTag)
-        self.translations = updatedTranslations
+        // try from the cache first-and-foremost; fast assignment if it hits
+        // (swallow failures to give network a chance later)
+        var didCacheHit = false
+        do {
+            if let languageTag,
+               let cachedTranslations = try await catalogCache.translations(for: languageTag) {
+                self.translations = cachedTranslations
+                didCacheHit = true
+            }
+        } catch {
+            Self.logger.error("loadTranslations catalogCache.translations(for:) failed: \(error.localizedDescription)")
+        }
+
+        // hit network anyway to replace w/ a new result in the background if necessary
+        do {
+            let loadedTranslations = try await repository.translations(languageTag: languageTag)
+            self.translations = loadedTranslations
+        } catch {
+            if didCacheHit {
+                // if we already had a cache hit, ignore
+                Self.logger.error("loadTranslations repository.translations() failed: \(error.localizedDescription)")
+                return
+            } else {
+                // else, both failed; we have nothing; rethrow original error
+                throw error
+            }
+        }
+
+        // network done; try to update cache (best-effort)
+        do {
+            if let languageTag {
+                try await catalogCache.save(self.translations, for: languageTag)
+            }
+        } catch {
+            Self.logger.error("loadTranslations catalogCache.save(:for:) failed: \(error.localizedDescription)")
+        }
     }
 
     /// Retrieve a Translation by ID (from memory)
@@ -61,11 +103,45 @@ final class BibleCatalogStore {
         return self.translations.first { $0.id == id }
     }
     
-    // Books
-    
-    /// Load books using given BibleRepository implementation
+    // MARK: Functions (Books)
+
+    /// Load books using given BibleRepository implementation (try cache first)
     func loadBooks(for translationID: Translation.ID) async throws {
-        self.booksByTranslation[translationID] = try await repository.books(for: translationID)
+        // try from the cache first-and-foremost; fast assignment if it hits
+        // (swallow failures to give network a chance later)
+        var didCacheHit = false
+        do {
+            if let cachedBooks = try await catalogCache.books(for: translationID) {
+                self.booksByTranslation[translationID] = cachedBooks
+                didCacheHit = true
+            }
+        } catch {
+            Self.logger.error("loadBooks catalogCache.books(for:) failed: \(error.localizedDescription)")
+        }
+
+        // hit network anyway to replace w/ a new result in the background if necessary
+        do {
+            let loadedBooks = try await repository.books(for: translationID)
+            self.booksByTranslation[translationID] = loadedBooks
+        } catch {
+            if didCacheHit {
+                // if we already had a cache hit, ignore
+                Self.logger.error("loadBooks repository.books() failed: \(error.localizedDescription)")
+                return
+            } else {
+                // else, both failed; we have nothing; rethrow original error
+                throw error
+            }
+        }
+
+        // network done; try to update cache (best-effort)
+        do {
+            if let books = self.booksByTranslation[translationID] {
+                try await catalogCache.save(books, for: translationID)
+            }
+        } catch {
+            Self.logger.error("loadBooks catalogCache.save(:for:) failed: \(error.localizedDescription)")
+        }
     }
     
     /// Retrieve all books for a given Translation.ID (from memory)
@@ -86,6 +162,8 @@ final class BibleCatalogStore {
     static func bookPosition(for bookCode: String) -> Int? {
         canonicalBookCodes.firstIndex(of: bookCode)
     }
+
+    // MARK: Functions (Passage Names)
 
     /// Builds a friendly name (i.e. "Genesis 1:1-2") for a given ScriptureReference + range
     /// (i.e. AnnotationEditor)

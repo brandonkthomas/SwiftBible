@@ -258,7 +258,8 @@ struct ReaderStoreTests {
         #expect(store.passageHighlightColors.count == 0)
     }
     
-    /// if book load fails, old passage information should be cleared
+    /// if a book load fails with no cached copy (first offline load of a new translation),
+    /// old passage information should be cleared
     @Test func failedBookReloadClearsStalePassageState() async {
         let repository = FakeBibleRepository()
         let passageStore = BiblePassageStore(repository: repository,
@@ -275,17 +276,15 @@ struct ReaderStoreTests {
 
         readerStore.selectedVerses = 1...1
 
-        // now we need to simulate a failure
+        // Only 1234's books were loaded (and cached). Switching to 1849 while the network
+        // fails matches a first offline load of a new translation: no cached copy, so it fails
+        #expect(readerStore.selectedTranslation?.id == 1234)
         repository.throwWhenLoadingBooks = true
-        
-        guard let translationID = readerStore.selectedTranslation?.id else {
-            Issue.record("Expected an initially selected translation")
-            return
-        }
-        
+        let uncachedTranslationID = 1849
+
         // loadTranslationsAndBooks wont work again here since it guards state != .loaded;
         // use this method instead for subsequent book loads
-        await readerStore.selectTranslationAndReloadAll(id: translationID)
+        await readerStore.selectTranslationAndReloadAll(id: uncachedTranslationID)
 
         if case .failed = readerStore.loadState {
             // expect to fail

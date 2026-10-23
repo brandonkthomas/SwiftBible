@@ -49,6 +49,25 @@ struct BibleCatalogStoreTests {
         Issue.record("catalogStore unexpectedly succeeded; expected it to fail")
     }
 
+    /// A network failure after translations were cached does not throw; the cached translations are kept
+    @Test func failedTranslationLoadWithCachedCopyDoesNotThrowAndKeepsTranslations() async throws {
+        // Populate a shared cache through a working repository
+        let catalogCache = InMemoryCatalogCache()
+        let seedingStore = BibleCatalogStore(repository: FakeBibleRepository(),
+                                             catalogCache: catalogCache)
+        try await seedingStore.loadTranslations()
+
+        // A new store using the same cache, whose network always fails
+        let catalogStore = BibleCatalogStore(repository: FakeBibleRepository(throwWhenLoadingTranslations: true),
+                                             catalogCache: catalogCache)
+
+        await #expect(throws: Never.self) {
+            try await catalogStore.loadTranslations()
+        }
+
+        #expect(catalogStore.translations == FakeBibleRepository.defaultTranslations)
+    }
+
     @Test func booksLoadLosslesslyForTranslation() async throws {
         let translationID = 1234
         let expectedBooks = FakeBibleRepository.defaultBooks
@@ -118,7 +137,8 @@ struct BibleCatalogStoreTests {
         #expect(catalogStore.books(for: secondTranslationID) == secondBooks)
     }
 
-    @Test func failedBookLoadPreservesCachedBooksForTranslation() async throws {
+    /// A network failure after books were cached does not throw; the cached books are kept
+    @Test func failedBookLoadWithCachedCopyDoesNotThrowAndKeepsBooks() async throws {
         let translationID = 1234
         let expectedBooks = FakeBibleRepository.defaultBooks
         let repository = StubBibleRepository(booksByTranslation: [translationID: expectedBooks])
@@ -126,11 +146,25 @@ struct BibleCatalogStoreTests {
         try await catalogStore.loadBooks(for: translationID)
         repository.failingTranslationIDs.insert(translationID)
 
-        await #expect(throws: StubBibleRepository.RepositoryError.self) {
+        await #expect(throws: Never.self) {
             try await catalogStore.loadBooks(for: translationID)
         }
 
         #expect(catalogStore.books(for: translationID) == expectedBooks)
+    }
+
+    /// A network failure with nothing cached throws, and no books are stored
+    @Test func failedBookLoadWithoutCachedCopyThrows() async {
+        let translationID = 1234
+        let repository = StubBibleRepository(booksByTranslation: [translationID: FakeBibleRepository.defaultBooks])
+        repository.failingTranslationIDs.insert(translationID)
+        let catalogStore = BibleCatalogStore(repository: repository)
+
+        await #expect(throws: StubBibleRepository.RepositoryError.self) {
+            try await catalogStore.loadBooks(for: translationID)
+        }
+
+        #expect(catalogStore.books(for: translationID) == nil)
     }
 
     // MARK: Friendly Passage Name

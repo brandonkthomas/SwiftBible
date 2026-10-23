@@ -77,6 +77,7 @@ final class AppEnvironment {
                                                    baseURL: appConfiguration.youVersionBaseURL,
                                                    urlSession: .shared)
 
+        // BiblePassageStore (+ DiskPassageCache)
         var passageCache: any PassageCache
         do {
             passageCache = try DiskPassageCache()
@@ -88,7 +89,17 @@ final class AppEnvironment {
         self.passageStore = BiblePassageStore(repository: bibleRepository,
                                               passageCache: passageCache)
 
-        self.catalogStore = BibleCatalogStore(repository: bibleRepository)
+        // BibleCatalogStore (+ DiskCatalogCache)
+        var catalogCache: any CatalogCache
+        do {
+            catalogCache = try DiskCatalogCache()
+        } catch {
+            Self.logger.error("Failed to initialize DiskCatalogCache: \(error.localizedDescription)")
+            catalogCache = InMemoryCatalogCache()
+        }
+
+        self.catalogStore = BibleCatalogStore(repository: bibleRepository,
+                                              catalogCache: catalogCache)
 
         // ReaderStore 2 - API requests, Reader state, etc
         self.readerStore = ReaderStore(passageStore: passageStore,

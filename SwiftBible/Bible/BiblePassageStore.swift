@@ -20,6 +20,10 @@ final class BiblePassageStore {
     /// Used for loading passages if they do not exist in the cache
     private let repository: any BibleRepository
 
+    private static let logger = Logger(subsystem: "SwiftBible", category: "BiblePassageStore")
+
+    // MARK: Properties (Private, Cache)
+
     /// Stores any cached values; NOT externally readable (must use public overloads)
     private var loadedBiblePassageCache: [BiblePassageKey: LoadedBiblePassage] = [:]
 
@@ -28,8 +32,6 @@ final class BiblePassageStore {
 
     /// Tracks all currently-in-flight requests (if any) to prevent duplicate work
     private var inFlightRequests: [BiblePassageKey: Task<LoadedBiblePassage, Error>] = [:]
-
-    private static let logger = Logger(subsystem: "SwiftBible", category: "BiblePassageStore")
 
     // MARK: Init
 
