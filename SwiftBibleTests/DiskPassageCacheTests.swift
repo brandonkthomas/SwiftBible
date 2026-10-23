@@ -67,7 +67,8 @@ struct DiskPassageCacheTests {
 
         let fileUrl = tempDirectory
             .appending(path: "net.brandonthomas.SwiftBible", directoryHint: .isDirectory)
-            .appending(path: "PassageCache", directoryHint: .isDirectory)
+            .appending(path: "Cache", directoryHint: .isDirectory)
+            .appending(path: "Passage", directoryHint: .isDirectory)
             .appending(path: "sbc_1234_GEN_1.json", directoryHint: .notDirectory)
 
         try Data("not valid json".utf8).write(to: fileUrl, options: .atomic)

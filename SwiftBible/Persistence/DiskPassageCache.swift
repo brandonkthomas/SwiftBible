@@ -44,7 +44,8 @@ actor DiskPassageCache: PassageCache {
 
         self.passageDirectory = resolvedBase
             .appending(path: "net.brandonthomas.SwiftBible", directoryHint: .isDirectory)
-            .appending(path: "PassageCache", directoryHint: .isDirectory)
+            .appending(path: "Cache", directoryHint: .isDirectory)
+            .appending(path: "Passage", directoryHint: .isDirectory)
     }
 
     // MARK: Functions
