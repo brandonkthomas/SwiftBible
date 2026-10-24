@@ -243,6 +243,7 @@ struct VerseActionsView: View {
                                          passageCache: InMemoryPassageCache())
     let readerStore = ReaderStore(passageStore: passageStore,
                                   catalogStore: BibleCatalogStore(repository: repository),
+                                  preferencesStore: PreferencesStore(userDefaults: .standard),
                                   libraryRepository: InMemoryLibraryRepository())
 
     ContentView()

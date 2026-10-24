@@ -131,6 +131,9 @@ final class ReaderStore {
     /// Authority for all available Translations
     private let bibleCatalogStore: BibleCatalogStore
 
+    /// Storage for settings / small saved states
+    private let preferencesStore: PreferencesStore
+
     /// User storage command implementations
     private let libraryRepository: any LibraryRepository
 
@@ -144,9 +147,11 @@ final class ReaderStore {
 
     init(passageStore: BiblePassageStore,
          catalogStore: BibleCatalogStore,
+         preferencesStore: PreferencesStore,
          libraryRepository: LibraryRepository) {
         self.passageStore = passageStore
         self.bibleCatalogStore = catalogStore
+        self.preferencesStore = preferencesStore
         self.libraryRepository = libraryRepository
     }
 

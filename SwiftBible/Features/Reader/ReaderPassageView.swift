@@ -295,6 +295,7 @@ struct ReaderPassageView: View {
                                          passageCache: InMemoryPassageCache())
     let readerStore = ReaderStore(passageStore: passageStore,
                                   catalogStore: BibleCatalogStore(repository: repository),
+                                  preferencesStore: PreferencesStore(userDefaults: .standard),
                                   libraryRepository: PreviewFixtures.seededLibraryRepository())
 
     // Drive the real load path so passageHighlightColors is populated exactly as

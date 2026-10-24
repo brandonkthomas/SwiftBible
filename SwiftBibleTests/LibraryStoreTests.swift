@@ -331,6 +331,7 @@ struct LibraryStoreTests {
         let readerStore = ReaderStore(passageStore: BiblePassageStore(repository: bibleRepository,
                                                                       passageCache: InMemoryPassageCache()),
                                       catalogStore: BibleCatalogStore(repository: bibleRepository),
+                                      preferencesStore: PreferencesStore(userDefaults: userDefaults()),
                                       libraryRepository: libraryRepository)
         let libraryStore = LibraryStore(libraryRepository: libraryRepository,
                                         catalogStore: BibleCatalogStore(repository: FakeBibleRepository()),
@@ -382,6 +383,10 @@ struct LibraryStoreTests {
                         endVerse: endVerse,
                         content: content,
                         createdAt: .now)
+    }
+
+    private func userDefaults() -> UserDefaults {
+        UserDefaults(suiteName: UUID().uuidString)!
     }
 }
 

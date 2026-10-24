@@ -71,6 +71,7 @@ struct ContentView: View {
                                          passageCache: InMemoryPassageCache())
     let readerStore = ReaderStore(passageStore: passageStore,
                                   catalogStore: BibleCatalogStore(repository: repository),
+                                  preferencesStore: PreferencesStore(userDefaults: .standard),
                                   libraryRepository: PreviewFixtures.seededLibraryRepository())
 
     ContentView()
@@ -83,6 +84,7 @@ struct ContentView: View {
                                          passageCache: InMemoryPassageCache())
     let readerStore = ReaderStore(passageStore: passageStore,
                                   catalogStore: BibleCatalogStore(repository: repository),
+                                  preferencesStore: PreferencesStore(userDefaults: .standard),
                                   libraryRepository: InMemoryLibraryRepository())
 
     ContentView()
@@ -95,6 +97,7 @@ struct ContentView: View {
                                          passageCache: InMemoryPassageCache())
     let readerStore = ReaderStore(passageStore: passageStore,
                                   catalogStore: BibleCatalogStore(repository: repository),
+                                  preferencesStore: PreferencesStore(userDefaults: .standard),
                                   libraryRepository: InMemoryLibraryRepository())
 
     ContentView()
@@ -107,6 +110,7 @@ struct ContentView: View {
                                          passageCache: InMemoryPassageCache())
     let readerStore = ReaderStore(passageStore: passageStore,
                                   catalogStore: BibleCatalogStore(repository: repository),
+                                  preferencesStore: PreferencesStore(userDefaults: .standard),
                                   libraryRepository: InMemoryLibraryRepository())
 
     ContentView()
@@ -119,6 +123,7 @@ struct ContentView: View {
                                          passageCache: InMemoryPassageCache())
     let readerStore = ReaderStore(passageStore: passageStore,
                                   catalogStore: BibleCatalogStore(repository: repository),
+                                  preferencesStore: PreferencesStore(userDefaults: .standard),
                                   libraryRepository: InMemoryLibraryRepository())
 
     ContentView()
@@ -131,6 +136,7 @@ struct ContentView: View {
                                          passageCache: InMemoryPassageCache())
     let readerStore = ReaderStore(passageStore: passageStore,
                                   catalogStore: BibleCatalogStore(repository: repository),
+                                  preferencesStore: PreferencesStore(userDefaults: .standard),
                                   libraryRepository: InMemoryLibraryRepository())
 
     ContentView()

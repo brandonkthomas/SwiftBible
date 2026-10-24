@@ -655,6 +655,7 @@ private extension View {
                                     passageStore: passageStore)
     let readerStore = ReaderStore(passageStore: passageStore,
                                   catalogStore: catalogStore,
+                                  preferencesStore: PreferencesStore(userDefaults: .standard),
                                   libraryRepository: libraryRepository)
     LibraryPreviewHost(readerStore: readerStore,
                        libraryStore: libraryStore,

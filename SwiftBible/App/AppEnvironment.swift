@@ -26,6 +26,7 @@ final class AppEnvironment {
     let passageStore: BiblePassageStore
     let catalogStore: BibleCatalogStore
     let libraryStore: LibraryStore
+    let preferencesStore: PreferencesStore
 
     let appConfiguration: AppConfiguration
 
@@ -48,7 +49,7 @@ final class AppEnvironment {
         self.appConfiguration = appConfiguration
 
         // ModelContainer - app-wide @Model storage
-        // Use explicit ModelConfiguration here for easier caller variations in tests/CloudKit)
+        // Use explicit ModelConfiguration here for easier caller variations in tests/CloudKit
         let typesToRegister: [any PersistentModel.Type] = [
             StoredVerseAnnotation.self,
             StoredTag.self
@@ -63,11 +64,11 @@ final class AppEnvironment {
             preconditionFailure("Failed to initialize ModelContainer: \(error.localizedDescription)")
         }
 
-        // LibraryRepository 1 - storage for annotations
+        // LibraryRepository - storage for annotations
         let libraryRepository = SwiftDataLibraryRepository(modelContainer: modelContainer)
         self.libraryRepository = libraryRepository
 
-        // ReaderStore 1 - API requests, Reader state, etc B
+        // ReaderStore [pre-req] - API requests, Reader state, etc
         guard let apiKey = appConfiguration.youVersionApiKey else {
             preconditionFailure("Missing YOUVERSION_APP_KEY in bundled Secrets.plist")
         }
@@ -101,9 +102,13 @@ final class AppEnvironment {
         self.catalogStore = BibleCatalogStore(repository: bibleRepository,
                                               catalogCache: catalogCache)
 
+        // PreferencesStore
+        self.preferencesStore = PreferencesStore(userDefaults: .standard)
+
         // ReaderStore 2 - API requests, Reader state, etc
         self.readerStore = ReaderStore(passageStore: passageStore,
                                        catalogStore: catalogStore,
+                                       preferencesStore: preferencesStore,
                                        libraryRepository: libraryRepository)
 
         // LibraryStore 2 - presentation view for annotations

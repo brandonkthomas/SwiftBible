@@ -50,8 +50,9 @@ struct ReaderStoreTests {
         let passageStore = BiblePassageStore(repository: repository,
                                              passageCache: InMemoryPassageCache())
         let readerStore = ReaderStore(passageStore: passageStore,
-                                catalogStore: BibleCatalogStore(repository: repository),
-                                libraryRepository: InMemoryLibraryRepository())
+                                      catalogStore: BibleCatalogStore(repository: repository),
+                                      preferencesStore: PreferencesStore(userDefaults: userDefaults()),
+                                      libraryRepository: InMemoryLibraryRepository())
 
         await readerStore.loadTranslationsAndBooks(languageTag: "en")
 
@@ -68,8 +69,9 @@ struct ReaderStoreTests {
         let passageStore = BiblePassageStore(repository: repository,
                                              passageCache: InMemoryPassageCache())
         let readerStore = ReaderStore(passageStore: passageStore,
-                                catalogStore: BibleCatalogStore(repository: repository),
-                                libraryRepository: InMemoryLibraryRepository())
+                                      catalogStore: BibleCatalogStore(repository: repository),
+                                      preferencesStore: PreferencesStore(userDefaults: userDefaults()),
+                                      libraryRepository: InMemoryLibraryRepository())
 
         await readerStore.loadTranslationsAndBooks(languageTag: "en")
 
@@ -86,8 +88,9 @@ struct ReaderStoreTests {
         let passageStore = BiblePassageStore(repository: repository,
                                              passageCache: InMemoryPassageCache())
         let readerStore = ReaderStore(passageStore: passageStore,
-                                catalogStore: BibleCatalogStore(repository: repository),
-                                libraryRepository: InMemoryLibraryRepository())
+                                      catalogStore: BibleCatalogStore(repository: repository),
+                                      preferencesStore: PreferencesStore(userDefaults: userDefaults()),
+                                      libraryRepository: InMemoryLibraryRepository())
 
         await readerStore.loadTranslationsAndBooks(languageTag: "en")
 
@@ -104,8 +107,9 @@ struct ReaderStoreTests {
         let passageStore = BiblePassageStore(repository: repository,
                                              passageCache: InMemoryPassageCache())
         let readerStore = ReaderStore(passageStore: passageStore,
-                                catalogStore: BibleCatalogStore(repository: repository),
-                                libraryRepository: InMemoryLibraryRepository())
+                                      catalogStore: BibleCatalogStore(repository: repository),
+                                      preferencesStore: PreferencesStore(userDefaults: userDefaults()),
+                                      libraryRepository: InMemoryLibraryRepository())
 
         await readerStore.loadTranslationsAndBooks(languageTag: "en")
 
@@ -265,8 +269,9 @@ struct ReaderStoreTests {
         let passageStore = BiblePassageStore(repository: repository,
                                              passageCache: InMemoryPassageCache())
         let readerStore = ReaderStore(passageStore: passageStore,
-                                catalogStore: BibleCatalogStore(repository: repository),
-                                libraryRepository: InMemoryLibraryRepository())
+                                      catalogStore: BibleCatalogStore(repository: repository),
+                                      preferencesStore: PreferencesStore(userDefaults: userDefaults()),
+                                      libraryRepository: InMemoryLibraryRepository())
         
         await readerStore.loadTranslationsAndBooks(languageTag: "en")
         await readerStore.loadSelectedPassage()
@@ -365,6 +370,11 @@ struct ReaderStoreTests {
                                              passageCache: InMemoryPassageCache())
         return ReaderStore(passageStore: passageStore,
                            catalogStore: BibleCatalogStore(repository: repository),
+                           preferencesStore: PreferencesStore(userDefaults: userDefaults()),
                            libraryRepository: libraryRepository)
+    }
+
+    private func userDefaults() -> UserDefaults {
+        UserDefaults(suiteName: UUID().uuidString)!
     }
 }
