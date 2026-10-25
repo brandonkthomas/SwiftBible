@@ -360,18 +360,139 @@ struct ReaderStoreTests {
         #expect(store.passageHighlightColors == colorsBeforeDelete)
     }
 
+    // MARK: Reader Position Restoration
+
+    /// A saved position whose translation, book and chapter all exist is restored at launch
+    ///
+    /// Books are reversed so Exodus (no chapters) is first; if the saved book weren't
+    /// restored, the first-book fallback would land on .emptyChapters instead of Genesis
+    @Test func savedPositionIsRestored() async throws {
+        let suiteName = UUID().uuidString
+        defer { UserDefaults().removePersistentDomain(forName: suiteName) }
+        let userDefaults = try #require(UserDefaults(suiteName: suiteName))
+
+        let preferencesStore = PreferencesStore(userDefaults: userDefaults)
+        preferencesStore.readerPosition = ReaderPosition(translationID: 1849, bookCode: "GEN", chapter: 2)
+
+        let store = readerStore(preferencesStore: preferencesStore,
+                                books: FakeBibleRepository.defaultBooks.reversed())
+        await store.loadTranslationsAndBooks(languageTag: "en")
+
+        #expect(store.loadState == .loaded)
+        #expect(store.selectedTranslation?.abbreviation == "TPT")
+        #expect(store.selectedBook?.displayName == "Genesis")
+        #expect(store.selectedChapter?.number == 2)
+    }
+
+    /// A saved translation that no longer exists falls back to NIV, Genesis 1
+    @Test func savedTranslationMissingFallsBackToNIV() async throws {
+        let suiteName = UUID().uuidString
+        defer { UserDefaults().removePersistentDomain(forName: suiteName) }
+        let userDefaults = try #require(UserDefaults(suiteName: suiteName))
+
+        let preferencesStore = PreferencesStore(userDefaults: userDefaults)
+        preferencesStore.readerPosition = ReaderPosition(translationID: 9999, bookCode: "GEN", chapter: 2)
+
+        let store = readerStore(preferencesStore: preferencesStore)
+        await store.loadTranslationsAndBooks(languageTag: "en")
+
+        #expect(store.loadState == .loaded)
+        #expect(store.selectedTranslation?.abbreviation == "NIV")
+        #expect(store.selectedBook?.displayName == "Genesis")
+        #expect(store.selectedChapter?.number == 1)
+    }
+
+    /// With nothing saved, NIV is selected even when it isn't the first translation
+    @Test func nothingSavedSelectsNIVWhenNotFirst() async throws {
+        let suiteName = UUID().uuidString
+        defer { UserDefaults().removePersistentDomain(forName: suiteName) }
+        let userDefaults = try #require(UserDefaults(suiteName: suiteName))
+
+        let tpt = try translation(abbreviation: "TPT")
+        let niv = try translation(abbreviation: "NIV")
+
+        let store = readerStore(preferencesStore: PreferencesStore(userDefaults: userDefaults),
+                                translations: [tpt, niv])
+        await store.loadTranslationsAndBooks(languageTag: "en")
+
+        #expect(store.loadState == .loaded)
+        #expect(store.translations.first == tpt)
+        #expect(store.selectedTranslation == niv)
+    }
+
+    /// With nothing saved and no NIV available, the first translation is selected
+    @Test func nothingSavedWithoutNIVSelectsFirstTranslation() async throws {
+        let suiteName = UUID().uuidString
+        defer { UserDefaults().removePersistentDomain(forName: suiteName) }
+        let userDefaults = try #require(UserDefaults(suiteName: suiteName))
+
+        let tpt = try translation(abbreviation: "TPT")
+
+        let store = readerStore(preferencesStore: PreferencesStore(userDefaults: userDefaults),
+                                translations: [tpt])
+        await store.loadTranslationsAndBooks(languageTag: "en")
+
+        #expect(store.loadState == .loaded)
+        #expect(store.selectedTranslation == tpt)
+    }
+
+    /// A saved chapter that doesn't exist in the saved book falls back to chapter 1
+    @Test func savedChapterMissingFallsBackToFirstChapter() async throws {
+        let suiteName = UUID().uuidString
+        defer { UserDefaults().removePersistentDomain(forName: suiteName) }
+        let userDefaults = try #require(UserDefaults(suiteName: suiteName))
+
+        let preferencesStore = PreferencesStore(userDefaults: userDefaults)
+        preferencesStore.readerPosition = ReaderPosition(translationID: 1234, bookCode: "GEN", chapter: 99)
+
+        let store = readerStore(preferencesStore: preferencesStore)
+        await store.loadTranslationsAndBooks(languageTag: "en")
+
+        #expect(store.loadState == .loaded)
+        #expect(store.selectedTranslation?.abbreviation == "NIV")
+        #expect(store.selectedBook?.displayName == "Genesis")
+        #expect(store.selectedChapter?.number == 1)
+    }
+
+    /// A successful passage load saves the position; a second PreferencesStore
+    /// on the same suite reads it back
+    @Test func successfulPassageLoadSavesPosition() async throws {
+        let suiteName = UUID().uuidString
+        defer { UserDefaults().removePersistentDomain(forName: suiteName) }
+        let userDefaults = try #require(UserDefaults(suiteName: suiteName))
+
+        let store = readerStore(preferencesStore: PreferencesStore(userDefaults: userDefaults))
+        await store.loadTranslationsAndBooks(languageTag: "en")
+        await store.loadSelectedPassage()
+
+        #expect(store.passageLoadState == .loaded)
+
+        let secondPreferencesStore = PreferencesStore(userDefaults: userDefaults)
+        #expect(secondPreferencesStore.readerPosition == ReaderPosition(translationID: 1234,
+                                                                        bookCode: "GEN",
+                                                                        chapter: 1))
+    }
+
     // MARK: Functions (Private)
 
     private func readerStore(
-        libraryRepository: any LibraryRepository = InMemoryLibraryRepository()
+        libraryRepository: any LibraryRepository = InMemoryLibraryRepository(),
+        preferencesStore: PreferencesStore? = nil,
+        translations: [Translation] = FakeBibleRepository.defaultTranslations,
+        books: [Book] = FakeBibleRepository.defaultBooks
     ) -> ReaderStore {
-        let repository = FakeBibleRepository()
+        let repository = FakeBibleRepository(translations: translations, books: books)
         let passageStore = BiblePassageStore(repository: repository,
                                              passageCache: InMemoryPassageCache())
         return ReaderStore(passageStore: passageStore,
                            catalogStore: BibleCatalogStore(repository: repository),
-                           preferencesStore: PreferencesStore(userDefaults: userDefaults()),
+                           preferencesStore: preferencesStore ?? PreferencesStore(userDefaults: userDefaults()),
                            libraryRepository: libraryRepository)
+    }
+
+    /// Looks up a fixture translation by abbreviation
+    private func translation(abbreviation: String) throws -> Translation {
+        try #require(FakeBibleRepository.defaultTranslations.first { $0.abbreviation == abbreviation })
     }
 
     private func userDefaults() -> UserDefaults {

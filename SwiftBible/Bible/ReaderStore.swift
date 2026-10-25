@@ -140,6 +140,9 @@ final class ReaderStore {
     /// User highlight colors for the currently-selected passage
     private(set) var passageHighlightColors: [Int: VerseAnnotationHighlightColor] = [:]
 
+    /// Attempt to load this translation first if nothing else was saved/requested
+    private static let defaultTranslationAbbreviation: String = "NIV"
+
     /// OS Logging
     private static let logger = Logger(subsystem: "SwiftBible", category: "ReaderStore")
 
@@ -182,7 +185,20 @@ final class ReaderStore {
                 return
             }
 
-            self.selectedTranslation = firstTranslation // TODO: persist preference
+            // Attempt to read last-saved translation
+            // If none, default to NIV
+            // If no NIV, fall back to first
+            if let readerPosition = preferencesStore.readerPosition,
+               let savedTranslation = self.translations.first(where: { $0.id == readerPosition.translationID }) {
+                self.selectedTranslation = savedTranslation
+                await loadBooks(preferredBookCode: readerPosition.bookCode,
+                                preferredChapterNumber: readerPosition.chapter)
+                return
+            } else if let niv = self.translations.first(where: { $0.abbreviation == ReaderStore.defaultTranslationAbbreviation }) {
+                self.selectedTranslation = niv
+            } else {
+                self.selectedTranslation = firstTranslation
+            }
 
             await loadBooks()
         } catch {
@@ -325,6 +341,11 @@ final class ReaderStore {
 
             // we're done
             self.passageLoadState = .loaded
+
+            // lastly, save this current passage so we can restore from it on next app restart
+            preferencesStore.readerPosition = .init(translationID: selectedReference.translationID,
+                                                    bookCode: selectedReference.bookCode,
+                                                    chapter: selectedReference.chapter)
         } catch {
             // TODO: log exception
             self.selectedPassage = nil
@@ -508,7 +529,8 @@ final class ReaderStore {
 
     /// Load a collection of available Books via BibleCatalogStore;
     /// select first chapter
-    private func loadBooks() async {
+    private func loadBooks(preferredBookCode: String? = nil,
+                           preferredChapterNumber: Int? = nil) async {
         Self.logger.debug("ENTRY ReaderStore.loadBooks()")
 
         guard let selectedTranslation else {
@@ -526,16 +548,31 @@ final class ReaderStore {
                 return
             }
 
-            self.selectedBook = firstBook
+            // If we passed in a preferred book selection, use that
+            // Else, use first book
+            if let preferredBookCode,
+               let preferredBook = books.first(where: { $0.code == preferredBookCode }) {
+                self.selectedBook = preferredBook
+            } else {
+                self.selectedBook = firstBook
+            }
 
             // ensure there's at least one chapter
-            guard let firstChapter = firstBook.chapters.first else {
+            guard let firstChapter = self.selectedBook!.chapters.first else {
                 clearBookChapterAndPassageStates()
                 self.loadState = .emptyChapters
                 return
             }
 
-            self.selectedChapter = firstChapter
+            // If we passed in a preferred chapter selection, use that
+            // Else, use first chapter
+            if let preferredChapterNumber,
+               let preferredChapter = self.selectedBook!.chapters.first(where: { $0.number == preferredChapterNumber }) {
+                self.selectedChapter = preferredChapter
+            } else {
+                self.selectedChapter = firstChapter
+            }
+
             self.loadState = .loaded // done
         } catch {
             // TODO: log exception

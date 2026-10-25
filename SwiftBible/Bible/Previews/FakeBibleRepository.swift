@@ -69,7 +69,7 @@ final class FakeBibleRepository: BibleRepository {
         return fixture.passage
     }
 
-    static let defaultTranslations: [Translation] = [
+    nonisolated static let defaultTranslations: [Translation] = [
         Translation(id: 1234,
                     abbreviation: "NIV",
                     title: "New International Version",
