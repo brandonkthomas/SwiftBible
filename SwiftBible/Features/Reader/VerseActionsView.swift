@@ -51,6 +51,9 @@ struct VerseActionsView: View {
 
     @State private var isHighlightPopoverPresented: Bool = false
 
+    /// Recorded by AnnotationEditorSheetView.onSaveCompleted
+    @State private var didAnnotationSaveComplete: Bool = false
+
     /// Eraser state as of the last live selection; only displayed while there is no selection
     /// (the deselect closing animation), so the icon doesn't flash on the way out
     @State private var lastSelectionShowedEraser: Bool = false
@@ -175,11 +178,24 @@ struct VerseActionsView: View {
             rememberEraserState()
         }
         // Fire AnnotationEditorSheetView when $annotationEditor instance is assigned
-        .sheet(item: $annotationEditor) { editor in
-            AnnotationEditorSheetView(editor: editor,
-                                      bibleCatalogStore: bibleCatalogStore)
+        .sheet(item: $annotationEditor,
+               onDismiss: {
+            // Deselect on close
+            if didAnnotationSaveComplete {
+                withAnimation(.snappy(duration: 0.35)) {
+                    readerStore.selectedVerses = nil
+                }
+            }
+            didAnnotationSaveComplete = false // reset
+        }, content: { editor in
+            AnnotationEditorSheetView(
+                editor: editor,
+                bibleCatalogStore: bibleCatalogStore,
+                onSaveCompleted: {
+                    didAnnotationSaveComplete = true
+                })
                 .presentationDragIndicator(.visible)
-        }
+        })
     }
 
     /// Highlight action item (pen/eraser; compact pen popover)

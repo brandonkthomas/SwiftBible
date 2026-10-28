@@ -18,6 +18,9 @@ struct AnnotationEditorSheetView: View {
     /// Used for calculation of the sheet's title
     let bibleCatalogStore: BibleCatalogStore
 
+    /// Fired after we've saved so that parent views can react as needed
+    var onSaveCompleted: (() -> Void)?
+
     // MARK: Properties (Private)
 
     /// Shared animation for tag chip selection/reflow
@@ -116,7 +119,9 @@ struct AnnotationEditorSheetView: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button {
+                        // perform actual save + let caller know, then dismiss sheet
                         editor.save()
+                        onSaveCompleted?()
                         dismiss()
                     } label: {
                         Label("Save", systemImage: "checkmark")
