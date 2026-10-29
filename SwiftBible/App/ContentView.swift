@@ -6,6 +6,9 @@ struct ContentView: View {
 
     @State private var selectedTab: CurrentTab = .read
 
+    /// Mirrors tab bar minimization, derived from the bottom accessory's placement
+    @State private var isTabBarExpanded = true
+
     private enum CurrentTab {
         case read
         case saved
@@ -29,6 +32,36 @@ struct ContentView: View {
         TabView(selection: $selectedTab) {
             Tab("Read", systemImage: "book", value: CurrentTab.read) {
                 ReaderView()
+                // TODO: Listen Mode (v1.1)
+//                    .safeAreaInset(edge: .bottom, alignment: .trailing, spacing: nil) {
+//                        if readerStore.loadState == .loaded {
+//                            Button {
+//                                // TODO: Listen Mode
+//                                // Similar to accessibility feature "Speak Selection"
+//                                // Auto-scroll and realtime word/line highlight
+//                                // Show small sheet w/ play/pause, pacing, auto-advance chapter, voice
+//                                // Allow disabling in Settings > Reader > Show Listen Mode
+//                            } label: {
+//                                Image(systemName: "waveform")
+//                                    .frame(width: 24, height: 24)
+//                                    .imageScale(.large)
+//                                    .foregroundStyle(Color.primary)
+//                                    .padding(10)
+//                            }
+//                            .glassEffect(.regular.interactive(), in: .circle)
+//                            .safeAreaPadding(.trailing, 20)
+//                            .safeAreaPadding(.bottom, 8)
+//                            .opacity(isTabBarExpanded ? 1 : 0)
+//                            .allowsHitTesting(isTabBarExpanded)
+//                            .accessibilityHidden(!isTabBarExpanded)
+//                            .animation(
+//                                isTabBarExpanded
+//                                ? .bouncy(duration: 0.3)
+//                                : .bouncy(duration: 0.3),
+//                                value: isTabBarExpanded
+//                            )
+//                        }
+//                    }
             }
             Tab("Saved", systemImage: "bookmark", value: CurrentTab.saved) {
                 LibraryView(onShowInReader: { selectedTab = .read })
@@ -45,11 +78,14 @@ struct ContentView: View {
         .tabViewSearchActivation(.searchTabSelection) // added in iOS 26
         // "isEnabled" param added in iOS 26.1
         .tabViewBottomAccessory(isEnabled: $selectedTab.wrappedValue == CurrentTab.read && readerStore.loadState != .loading) {
-            if readerStore.selectedVerses == nil {
-                PassagePickerView()
-            } else {
-                VerseActionsView()
+            Group {
+                if readerStore.selectedVerses == nil {
+                    PassagePickerView()
+                } else {
+                    VerseActionsView()
+                }
             }
+            .background(TabBarExpansionReader(isExpanded: $isTabBarExpanded))
         }
         // Load Library data -- added here alongside existing .task in LibraryView
         // to prevent flashing of abbreviations on initial Library view load
@@ -60,6 +96,23 @@ struct ContentView: View {
             // Load book names for each annotation
             await libraryStore.loadMissingBookMetadata()
         }
+    }
+}
+
+/// Reports whether the tab bar is expanded. SwiftUI has no direct tab bar minimized state,
+/// but the bottom accessory's placement is `.inline` exactly when the tab bar is minimized.
+/// Must be placed inside `tabViewBottomAccessory` content to receive the placement.
+private struct TabBarExpansionReader: View {
+
+    @Environment(\.tabViewBottomAccessoryPlacement) private var placement
+
+    @Binding var isExpanded: Bool
+
+    var body: some View {
+        Color.clear
+            .onChange(of: placement, initial: true) { _, newValue in
+                isExpanded = newValue != .inline
+            }
     }
 }
 
