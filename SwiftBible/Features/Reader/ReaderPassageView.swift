@@ -290,17 +290,12 @@ struct ReaderPassageView: View {
 // MARK: Xcode Canvas Previews
 
 #Preview {
-    let repository = FakeBibleRepository()
-    let passageStore = BiblePassageStore(repository: repository,
-                                         passageCache: InMemoryPassageCache())
-    let readerStore = ReaderStore(passageStore: passageStore,
-                                  catalogStore: BibleCatalogStore(repository: repository),
-                                  preferencesStore: PreferencesStore(userDefaults: .standard),
-                                  libraryRepository: PreviewFixtures.seededLibraryRepository())
+    let environment = PreviewEnvironment(libraryRepository: PreviewFixtures.seededLibraryRepository())
 
     // Drive the real load path so passageHighlightColors is populated exactly as
     // it is at runtime — no ReaderStore preview-only surface required.
-    ReaderPassagePreviewHost(readerStore: readerStore)
+    ReaderPassagePreviewHost(readerStore: environment.readerStore)
+        .previewEnvironment(environment)
 }
 
 /// Preview-only host: drives ReaderStore through its public load lifecycle, then
@@ -316,7 +311,6 @@ private struct ReaderPassagePreviewHost: View {
                 ProgressView()
             }
         }
-        .environment(readerStore)
         .task {
             await readerStore.loadTranslationsAndBooks()
             await readerStore.loadSelectedPassage()

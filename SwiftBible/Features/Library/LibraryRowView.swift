@@ -434,15 +434,10 @@ struct LibraryRowView: View {
 // MARK: Xcode Canvas Previews
 
 #Preview {
-    let repository = FakeBibleRepository()
-    let passageStore = BiblePassageStore(repository: repository,
-                                         passageCache: InMemoryPassageCache())
-    let catalogStore = BibleCatalogStore(repository: repository)
-    let libraryStore = LibraryStore(libraryRepository: InMemoryLibraryRepository(),
-                                    catalogStore: catalogStore,
-                                    passageStore: passageStore)
-    LibraryRowViewPreviewHost(libraryStore: libraryStore,
-                              catalogStore: catalogStore)
+    let environment = PreviewEnvironment()
+
+    LibraryRowViewPreviewHost(libraryStore: environment.libraryStore,
+                              catalogStore: environment.catalogStore)
 }
 
 /// Preview-only host: loads each sample's passage before building its `LibraryRowViewData`,

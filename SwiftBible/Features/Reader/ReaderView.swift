@@ -126,79 +126,31 @@ struct ReaderView: View {
 // MARK: Xcode Canvas Previews
 
 #Preview("Loaded") {
-    let repository = FakeBibleRepository()
-    let passageStore = BiblePassageStore(repository: repository,
-                                         passageCache: InMemoryPassageCache())
-    let readerStore = ReaderStore(passageStore: passageStore,
-                                  catalogStore: BibleCatalogStore(repository: repository),
-                                  preferencesStore: PreferencesStore(userDefaults: .standard),
-                                  libraryRepository: PreviewFixtures.seededLibraryRepository())
-
     ReaderView()
-        .environment(readerStore)
+        .previewEnvironment(PreviewEnvironment(libraryRepository: PreviewFixtures.seededLibraryRepository()))
 }
 
 #Preview("Failed") {
-    let repository = FakeBibleRepository(throwWhenLoadingTranslations: true)
-    let passageStore = BiblePassageStore(repository: repository,
-                                         passageCache: InMemoryPassageCache())
-    let readerStore = ReaderStore(passageStore: passageStore,
-                                  catalogStore: BibleCatalogStore(repository: repository),
-                                  preferencesStore: PreferencesStore(userDefaults: .standard),
-                                  libraryRepository: InMemoryLibraryRepository())
-
     ReaderView()
-        .environment(readerStore)
+        .previewEnvironment(PreviewEnvironment(repository: FakeBibleRepository(throwWhenLoadingTranslations: true)))
 }
 
 #Preview("No Translations") {
-    let repository = FakeBibleRepository(translations: [])
-    let passageStore = BiblePassageStore(repository: repository,
-                                         passageCache: InMemoryPassageCache())
-    let readerStore = ReaderStore(passageStore: passageStore,
-                                  catalogStore: BibleCatalogStore(repository: repository),
-                                  preferencesStore: PreferencesStore(userDefaults: .standard),
-                                  libraryRepository: InMemoryLibraryRepository())
-
     ReaderView()
-        .environment(readerStore)
+        .previewEnvironment(PreviewEnvironment(repository: FakeBibleRepository(translations: [])))
 }
 
 #Preview("No Books") {
-    let repository = FakeBibleRepository(books: [])
-    let passageStore = BiblePassageStore(repository: repository,
-                                         passageCache: InMemoryPassageCache())
-    let readerStore = ReaderStore(passageStore: passageStore,
-                                  catalogStore: BibleCatalogStore(repository: repository),
-                                  preferencesStore: PreferencesStore(userDefaults: .standard),
-                                  libraryRepository: InMemoryLibraryRepository())
-
     ReaderView()
-        .environment(readerStore)
+        .previewEnvironment(PreviewEnvironment(repository: FakeBibleRepository(books: [])))
 }
 
 #Preview("No Chapters") {
-    let repository = FakeBibleRepository(books: FakeBibleRepository.booksWithoutChapters)
-    let passageStore = BiblePassageStore(repository: repository,
-                                         passageCache: InMemoryPassageCache())
-    let readerStore = ReaderStore(passageStore: passageStore,
-                                  catalogStore: BibleCatalogStore(repository: repository),
-                                  preferencesStore: PreferencesStore(userDefaults: .standard),
-                                  libraryRepository: InMemoryLibraryRepository())
-
     ReaderView()
-        .environment(readerStore)
+        .previewEnvironment(PreviewEnvironment(repository: FakeBibleRepository(books: FakeBibleRepository.booksWithoutChapters)))
 }
 
 #Preview("Loading") {
-    let repository = FakeBibleRepository(forceLoadingState: true)
-    let passageStore = BiblePassageStore(repository: repository,
-                                         passageCache: InMemoryPassageCache())
-    let readerStore = ReaderStore(passageStore: passageStore,
-                                  catalogStore: BibleCatalogStore(repository: repository),
-                                  preferencesStore: PreferencesStore(userDefaults: .standard),
-                                  libraryRepository: InMemoryLibraryRepository())
-
     ReaderView()
-        .environment(readerStore)
+        .previewEnvironment(PreviewEnvironment(repository: FakeBibleRepository(forceLoadingState: true)))
 }

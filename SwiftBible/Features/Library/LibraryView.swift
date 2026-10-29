@@ -645,36 +645,11 @@ private extension View {
 // MARK: Xcode Canvas Previews
 
 #Preview {
-    let repository = FakeBibleRepository()
-    let passageStore = BiblePassageStore(repository: repository,
-                                         passageCache: InMemoryPassageCache())
-    let libraryRepository = PreviewFixtures.seededLibraryRepository()
-    let catalogStore = BibleCatalogStore(repository: repository)
-    let libraryStore = LibraryStore(libraryRepository: libraryRepository,
-                                    catalogStore: catalogStore,
-                                    passageStore: passageStore)
-    let readerStore = ReaderStore(passageStore: passageStore,
-                                  catalogStore: catalogStore,
-                                  preferencesStore: PreferencesStore(userDefaults: .standard),
-                                  libraryRepository: libraryRepository)
-    LibraryPreviewHost(readerStore: readerStore,
-                       libraryStore: libraryStore,
-                       catalogStore: catalogStore)
-}
+    let environment = PreviewEnvironment(libraryRepository: PreviewFixtures.seededLibraryRepository())
 
-/// Preview-only host
-private struct LibraryPreviewHost: View {
-    let readerStore: ReaderStore
-    let libraryStore: LibraryStore
-    let catalogStore: BibleCatalogStore
-
-    var body: some View {
-        LibraryView()
-        .environment(readerStore)
-        .environment(libraryStore)
-        .environment(catalogStore)
+    LibraryView()
+        .previewEnvironment(environment)
         .task {
-            libraryStore.load()
+            environment.libraryStore.load()
         }
-    }
 }

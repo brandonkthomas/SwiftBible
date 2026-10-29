@@ -123,6 +123,82 @@ struct VerseAnnotationHelpersTests {
         #expect(result.isEmpty)
     }
 
+    // MARK: getPassageVersesWithTextAnnotations
+
+    /// A note on a single verse marks only that verse
+    @Test func singleVerseNoteMarksThatVerse() throws {
+        let annotation = makeTextAnnotation(start: 7, end: nil, content: .note("Hello"))
+
+        let passageReference = try #require(ScriptureReference(translationID: 123,
+                                                               bookCode: "GEN",
+                                                               chapter: 1))
+
+        let result = VerseAnnotationHelpers.getPassageVersesWithTextAnnotations(for: [annotation],
+                                                                                reference: passageReference)
+
+        #expect(result == [7])
+    }
+
+    /// Tags on a verse range mark every verse in that range
+    @Test func tagsOnVerseRangeMarkEveryVerse() throws {
+        let annotation = makeTextAnnotation(start: 3, end: 5, content: .tags(["faith"]))
+
+        let passageReference = try #require(ScriptureReference(translationID: 123,
+                                                               bookCode: "GEN",
+                                                               chapter: 1))
+
+        let result = VerseAnnotationHelpers.getPassageVersesWithTextAnnotations(for: [annotation],
+                                                                                reference: passageReference)
+
+        #expect(result == [3, 4, 5])
+    }
+
+    /// Highlights are excluded from text annotation markers
+    @Test func highlightAloneMarksNothing() throws {
+        let annotation = makeTextAnnotation(start: 3, end: 5, content: .highlight(.yellow))
+
+        let passageReference = try #require(ScriptureReference(translationID: 123,
+                                                               bookCode: "GEN",
+                                                               chapter: 1))
+
+        let result = VerseAnnotationHelpers.getPassageVersesWithTextAnnotations(for: [annotation],
+                                                                                reference: passageReference)
+
+        #expect(result.isEmpty)
+    }
+
+    /// Annotations from a different chapter don't mark verses in this chapter
+    @Test func annotationFromOtherChapterMarksNothing() throws {
+        let annotation = makeTextAnnotation(start: 3, end: nil, chapter: 2, content: .note("Hello"))
+
+        let passageReference = try #require(ScriptureReference(translationID: 123,
+                                                               bookCode: "GEN",
+                                                               chapter: 1))
+
+        let result = VerseAnnotationHelpers.getPassageVersesWithTextAnnotations(for: [annotation],
+                                                                                reference: passageReference)
+
+        #expect(result.isEmpty)
+    }
+
+    private func makeTextAnnotation(
+        start: Int,
+        end: Int?,
+        chapter: Int = 1,
+        content: AnnotationContent)
+    -> VerseAnnotation {
+        .init(
+            id: UUID(),
+            translationID: 123,
+            bookCode: "GEN",
+            chapter: chapter,
+            startVerse: start,
+            endVerse: end,
+            content: content,
+            createdAt: .now
+        )
+    }
+
     private func makeAnnotation(
         start: Int,
         end: Int?,

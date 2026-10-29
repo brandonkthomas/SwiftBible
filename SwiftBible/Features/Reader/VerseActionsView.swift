@@ -254,14 +254,6 @@ struct VerseActionsView: View {
 }
 
 #Preview("ContentView: Ready") {
-    let repository = FakeBibleRepository()
-    let passageStore = BiblePassageStore(repository: repository,
-                                         passageCache: InMemoryPassageCache())
-    let readerStore = ReaderStore(passageStore: passageStore,
-                                  catalogStore: BibleCatalogStore(repository: repository),
-                                  preferencesStore: PreferencesStore(userDefaults: .standard),
-                                  libraryRepository: InMemoryLibraryRepository())
-
     ContentView()
-        .environment(readerStore)
+        .previewEnvironment()
 }

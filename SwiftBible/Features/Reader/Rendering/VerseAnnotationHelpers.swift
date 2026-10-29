@@ -49,4 +49,26 @@ enum VerseAnnotationHelpers { // caseless enum as pseudo-namespace
 
         return result
     }
+
+    /// For a given passage reference, return all verse numbers covered by any of a passage's
+    /// note/tag annotations (highlights excluded)
+    static func getPassageVersesWithTextAnnotations(
+        for annotations: [VerseAnnotation],
+        reference: ScriptureReference
+    ) -> Set<Int> {
+        var verses: Set<Int> = []
+
+        // basically same filter as getPassageHighlightColors() but dropping the sort,
+        // since it's not needed here
+        for annotation in annotations
+        where annotation.translationID == reference.translationID
+        && annotation.bookCode == reference.bookCode
+        && annotation.chapter == reference.chapter
+        && (annotation.content.type == .note || annotation.content.type == .tags)
+        && annotation.content.isMeaningful { // sanity check
+            verses.formUnion(annotation.verseRange)
+        }
+
+        return verses
+    }
 }

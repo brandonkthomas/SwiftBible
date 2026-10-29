@@ -226,7 +226,9 @@ struct PassagePickerView: View {
             default:
                 HStack(spacing: 8) {
                     Text(
-                        "\(readerStore.selectedBook?.displayName ?? "Select Book") \(readerStore.selectedChapter?.displayName ?? "")"
+                        readerStore.books.isEmpty
+                        ? "Select Translation"
+                        : "\(readerStore.selectedBook?.displayName ?? "Select Book") \(readerStore.selectedChapter?.displayName ?? "")"
                     )
                     Text("\(readerStore.selectedTranslation?.abbreviation ?? "")")
                         .foregroundStyle(.secondary)
@@ -238,14 +240,6 @@ struct PassagePickerView: View {
 }
 
 #Preview("ContentView: Ready") {
-    let repository = FakeBibleRepository()
-    let passageStore = BiblePassageStore(repository: repository,
-                                         passageCache: InMemoryPassageCache())
-    let readerStore = ReaderStore(passageStore: passageStore,
-                                  catalogStore: BibleCatalogStore(repository: repository),
-                                  preferencesStore: PreferencesStore(userDefaults: .standard),
-                                  libraryRepository: InMemoryLibraryRepository())
-
     ContentView()
-        .environment(readerStore)
+        .previewEnvironment()
 }
