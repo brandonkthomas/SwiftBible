@@ -63,7 +63,13 @@ final class YouVersionBibleRepository: BibleRepository {
         let collectionResponse = try jsonDecoder.decode(YouVersionBibleCollectionResponse.self,
                                                         from: data)
 
-        return collectionResponse.translationsForApp()
+        var translations = collectionResponse.translationsForApp()
+
+        // Manual cleanup
+        let unwantedTranslations = ["amp","bsb","cpdv","easy","fbv","gnv","lsv","nasb1995","nivuk","pev","tojb2011","tcent","webus","wmb","wmbbe"]
+        translations.removeAll(where: { unwantedTranslations.contains($0.abbreviation.lowercased()) })
+
+        return translations
     }
 
     /// Load all available Books + Chapters + Verses for a given Translation ID
