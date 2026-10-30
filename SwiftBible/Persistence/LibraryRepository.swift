@@ -11,6 +11,13 @@ import Foundation
 ///
 /// For UI injection, see: LibraryRepositoryKey
 protocol LibraryRepository {
+    /// Increments after every successful save or delete
+    ///
+    /// Implementations must be @Observable so views can react with .onChange(of:), letting
+    /// readers of annotations (i.e. the Reader) refresh in one place instead of every writer
+    /// having to notify them
+    var changeCount: Int { get }
+
     /// Create a new highlight/tag/note
     func save(_ annotation: VerseAnnotation) throws
 

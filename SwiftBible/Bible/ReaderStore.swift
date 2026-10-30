@@ -27,26 +27,11 @@ final class ReaderStore {
 
     // MARK: Properties
 
-    // State
-    
     var loadState: ReaderLoadState = .idle
     var passageLoadState: PassageLoadState = .idle
 
-    // Calculated Collections (owned by BibleCatalogStore)
-    
-    var translations: [Translation] {
-        bibleCatalogStore.translations
-    }
-    
-    var books: [Book] {
-        guard let selectedTranslation else {
-            return []
-        }
-        return bibleCatalogStore.books(for: selectedTranslation.id) ?? []
-    }
+    // MARK: Properties (Selections)
 
-    // Selections
-    
     var selectedTranslation: Translation?
 
     var selectedBook: Book?
@@ -59,6 +44,22 @@ final class ReaderStore {
 
     var selectedPassage: Passage?
     var selectedRenderedPassage: RenderedPassage?
+
+    // MARK: Properties (Computed, Collections)
+    // owned by BibleCatalogStore
+
+    var translations: [Translation] {
+        bibleCatalogStore.translations
+    }
+    
+    var books: [Book] {
+        guard let selectedTranslation else {
+            return []
+        }
+        return bibleCatalogStore.books(for: selectedTranslation.id) ?? []
+    }
+
+    // MARK: Properties (Computed)
 
     var selectedReference: ScriptureReference? {
         get {
@@ -139,6 +140,10 @@ final class ReaderStore {
 
     /// User highlight colors for the currently-selected passage
     private(set) var passageHighlightColors: [Int: VerseAnnotationHighlightColor] = [:]
+
+    /// All verse numbers in the currently selected reference which have either a note or tag annotations
+    /// Set by loadPassageHighlights()
+    private(set) var passageVersesWithTextAnnotations: Set<Int> = []
 
     /// Attempt to load this translation first if nothing else was saved/requested
     private static let defaultTranslationAbbreviation: String = "NIV"
@@ -518,6 +523,9 @@ final class ReaderStore {
     }
 
     /// Refresh current highlights cache for current selectedReference
+    ///
+    /// Called once, from ContentView's .onChange(of: libraryRepository.changeCount), so
+    /// writers outside ReaderStore never call this themselves
     func refreshPassageHighlights() {
         guard let selectedReference else {
             return
@@ -592,8 +600,14 @@ final class ReaderStore {
                 for: annotations,
                 reference: reference
             )
+
+            passageVersesWithTextAnnotations = VerseAnnotationHelpers.getPassageVersesWithTextAnnotations(
+                for: annotations,
+                reference: reference
+            )
         } catch {
             passageHighlightColors = [:]
+            passageVersesWithTextAnnotations = []
             // this is supplementary; no need to fail
         }
     }
@@ -683,7 +697,7 @@ final class ReaderStore {
     }
 
     /// Clear selectedBook, selectedChapter, selectedVerses, selectedPassage, selectedRenderedPassage,
-    /// passageLoadState, passageHighlightColors
+    /// passageLoadState, passageHighlightColors, passageVersesWithTextAnnotations
     private func clearBookChapterAndPassageStates() {
         Self.logger.debug("ENTRY ReaderStore.clearBookChapterPassageStates()")
         // book / chapter
@@ -693,7 +707,8 @@ final class ReaderStore {
         clearPassageStates()
     }
 
-    /// Clear selectedPassage + passageLoadState
+    /// Clear selected verses, passage, rendered passage, load state,
+    /// private-tracked highlight colors, & private-tracked verse>annotation numbers
     private func clearPassageStates() {
         Self.logger.debug("ENTRY ReaderStore.clearPassageStates()")
         self.selectedVerses = nil // also clear verse selection
@@ -701,6 +716,7 @@ final class ReaderStore {
         self.selectedRenderedPassage = nil
         self.passageLoadState = .idle
         self.passageHighlightColors = [:]
+        self.passageVersesWithTextAnnotations = []
     }
 }
 

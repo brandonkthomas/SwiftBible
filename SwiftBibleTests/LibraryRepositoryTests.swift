@@ -123,4 +123,30 @@ struct LibraryRepositoryTests {
 
         #expect(results == [])
     }
+
+    /// changeCount starts at 0, save then delete each bump it by one, and reads don't count
+    @Test func saveAndDeleteEachIncrementChangeCount() throws {
+        let repository = InMemoryLibraryRepository()
+
+        let reference = try #require(ScriptureReference(translationID: 123,
+                                                        bookCode: "GEN",
+                                                        chapter: 1,
+                                                        startVerse: 16,
+                                                        endVerse: nil))
+        let verseRange = try #require(reference.verseRange)
+        let annotation = try #require(VerseAnnotation(reference: reference,
+                                                      selectedVerses: verseRange,
+                                                      content: .note("Note content")))
+
+        #expect(repository.changeCount == 0)
+
+        try repository.save(annotation)
+        #expect(repository.changeCount == 1)
+
+        _ = try repository.annotations(for: reference)
+        #expect(repository.changeCount == 1)
+
+        try repository.delete(annotation.id)
+        #expect(repository.changeCount == 2)
+    }
 }

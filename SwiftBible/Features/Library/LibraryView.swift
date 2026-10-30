@@ -170,7 +170,6 @@ struct LibraryView: View {
                             libraryStore.delete(allIDs)
                         }
                         didDeleteFail = !didDelete
-                        readerStore.refreshPassageHighlights()
                         librarySelection.endSelection()
                     }
                 } message: {
@@ -276,23 +275,13 @@ struct LibraryView: View {
                     libraryStore.changeHighlightColor(annotation.id,
                                                       color: color)
                 }
-                if didChange {
-                    readerStore.refreshPassageHighlights()
-                    didHighlightColorChangeFail = false // reset state
-                } else {
-                    didHighlightColorChangeFail = true
-                }
+                didHighlightColorChangeFail = didChange
             },
             onDeleteRequested: {
                 let didDelete = withAnimation(.snappy(duration: 0.35)) {
                     libraryStore.delete(annotation.id)
                 }
-                if didDelete {
-                    readerStore.refreshPassageHighlights()
-                    didDeleteFail = false // reset state
-                } else {
-                    didDeleteFail = true
-                }
+                didDeleteFail = !didDelete
             },
             onPassageViewRequested: {
                 await readerStore.selectTranslationBookAndChapter(

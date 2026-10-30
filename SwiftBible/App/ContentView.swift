@@ -25,6 +25,9 @@ struct ContentView: View {
     /// Read appEnvironment.libraryStore environment value from current view environment
     @Environment(LibraryStore.self) private var libraryStore: LibraryStore
 
+    /// Observed for changeCount only; see .onChange below
+    @Environment(\.libraryRepository) private var libraryRepository
+
     // MARK: Views
 
     /// Primary application body
@@ -95,6 +98,13 @@ struct ContentView: View {
 
             // Load book names for each annotation
             await libraryStore.loadMissingBookMetadata()
+        }
+        // Any annotation save/delete from anywhere (Reader, Library, editor sheet) bumps
+        // changeCount; reload the Reader's per-passage annotation state here, once, so writers
+        // never need to notify the Reader themselves
+        // Lives on the root view because it stays on screen while any tab is visible
+        .onChange(of: libraryRepository.changeCount) {
+            readerStore.refreshPassageHighlights()
         }
     }
 }

@@ -303,6 +303,7 @@ struct ReaderStoreTests {
         #expect(readerStore.selectedVerses == nil)
         #expect(readerStore.passageLoadState == .idle)
         #expect(readerStore.passageHighlightColors.isEmpty)
+        #expect(readerStore.passageVersesWithTextAnnotations.isEmpty)
     }
 
     /// A highlight deleted outside ReaderStore (i.e. from LibraryView) disappears
@@ -358,6 +359,28 @@ struct ReaderStoreTests {
         store.refreshPassageHighlights()
 
         #expect(store.passageHighlightColors == colorsBeforeDelete)
+    }
+
+    /// A note seeded in the repository surfaces in passageVersesWithTextAnnotations
+    /// once its passage is loaded
+    @Test func seededNoteAppearsInPassageVersesWithTextAnnotations() async throws {
+        let libraryRepository = InMemoryLibraryRepository()
+        let niv = try translation(abbreviation: "NIV")
+        let note = VerseAnnotation(id: UUID(),
+                                   translationID: niv.id,
+                                   bookCode: "GEN",
+                                   chapter: 1,
+                                   startVerse: 2,
+                                   endVerse: nil,
+                                   content: .note("In the beginning"),
+                                   createdAt: .now)
+        try libraryRepository.save(note)
+
+        let store = readerStore(libraryRepository: libraryRepository)
+        await store.loadTranslationsAndBooks(languageTag: "en")
+        await store.loadSelectedPassage()
+
+        #expect(store.passageVersesWithTextAnnotations == [2])
     }
 
     // MARK: Reader Position Restoration

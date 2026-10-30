@@ -8,12 +8,16 @@
 import Foundation
 import SwiftData
 
+@Observable
 final class SwiftDataLibraryRepository: LibraryRepository {
-    
+
     // MARK: Properties
-    
+
     let container: ModelContainer
     let context: ModelContext
+
+    /// See LibraryRepository.changeCount
+    private(set) var changeCount: Int = 0
     
     init(modelContainer: ModelContainer) {
         self.container = modelContainer
@@ -55,6 +59,7 @@ final class SwiftDataLibraryRepository: LibraryRepository {
     
         // Now we can try to persist the changes
         try context.save()
+        changeCount += 1
     }
     
     /// Return all annotations for a specfiic reference
@@ -98,8 +103,9 @@ final class SwiftDataLibraryRepository: LibraryRepository {
         if let annotation {
             context.delete(annotation)
         }
-        
+
         try context.save()
+        changeCount += 1
     }
     
     // MARK: Functions (Private)

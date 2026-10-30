@@ -13,10 +13,14 @@ nonisolated final class InMemoryLibraryRepository: LibraryRepository {
 
     private var annotations: [VerseAnnotation] = []
 
+    /// See LibraryRepository.changeCount
+    private(set) var changeCount: Int = 0
+
     func save(_ annotation: VerseAnnotation) throws {
         // upsert
         self.annotations.removeAll { $0.id == annotation.id }
         self.annotations.append(annotation)
+        changeCount += 1
     }
 
     func annotations(for reference: ScriptureReference) throws -> [VerseAnnotation] {
@@ -33,5 +37,6 @@ nonisolated final class InMemoryLibraryRepository: LibraryRepository {
 
     func delete(_ id: UUID) throws {
         annotations.removeAll { $0.id == id }
+        changeCount += 1
     }
 }

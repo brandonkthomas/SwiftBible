@@ -131,6 +131,37 @@ struct SwiftDataLibraryRepositoryTests {
         #expect(annotations.contains { $0.id == annotation2.id } )
     }
 
+    // MARK: Change Count
+
+    /// changeCount starts at 0, and save then delete each bump it by one
+    @Test func saveAndDeleteEachIncrementChangeCount() throws {
+        let repository = try buildRepository()
+        let reference = try buildReference()
+        let verseRange = try #require(reference.verseRange)
+        let annotation = try #require(VerseAnnotation(reference: reference,
+                                                      selectedVerses: verseRange,
+                                                      content: .note("Note content")))
+
+        #expect(repository.changeCount == 0)
+
+        try repository.save(annotation)
+        #expect(repository.changeCount == 1)
+
+        try repository.delete(annotation.id)
+        #expect(repository.changeCount == 2)
+    }
+
+    /// Reads do not count as changes
+    @Test func readsDoNotChangeChangeCount() throws {
+        let repository = try buildRepository()
+        let reference = try buildReference()
+
+        _ = try repository.annotations(for: reference)
+        _ = try repository.allAnnotations()
+
+        #expect(repository.changeCount == 0)
+    }
+
     // MARK: Functions (Private)
 
     private func buildRepository() throws -> SwiftDataLibraryRepository {
