@@ -24,6 +24,10 @@ struct VerseHighlightRenderer: TextRenderer {
     @AnimatableIgnored
     let fadingVerses: ClosedRange<Int>?
 
+    /// Which verses have notes/tags? (We need to draw an icon on their verse labels)
+    @AnimatableIgnored // this is not animated
+    var annotatedVerses: Set<Int> = []
+
     /// Where on the screen was this tap positioned?
     @AnimatableIgnored // this is not animated
     let tapOrigin: CGPoint?
@@ -54,7 +58,7 @@ struct VerseHighlightRenderer: TextRenderer {
 
         for line in layout {
             for run in line {
-                // Does this run carry our custom attribute?
+                // Does this run carry our custom selection attribute?
                 if let number = run[VerseNumberAttribute.self]?.number,
                    revealingVerses?.contains(number) == true {
                     cgRects.append(run.typographicBounds.rect)
@@ -128,6 +132,13 @@ struct VerseHighlightRenderer: TextRenderer {
 
             // 2. Glyphs drawn after all backgrounds so no fill covers text
             for run in line {
+                // Does this run carry our custom annotation label attribute?
+                if let annotatedNumber = run[VerseLabelAttribute.self]?.number,
+                   annotatedVerses.contains(annotatedNumber) {
+                    let shape = bookmarkPath(in: cgRect(for: run, in: line))
+                    ctx.fill(shape, with: .color(.readerVerseLabelBookmarkIndicator))
+                }
+
                 ctx.draw(run)
             }
         }
@@ -152,5 +163,38 @@ struct VerseHighlightRenderer: TextRenderer {
             }
         }
         return result
+    }
+
+    /// Create a CGRect for a Verse Label
+    ///
+    /// Width covers the label's glyphs minus its trailing space;
+    /// top + height come from a body-text run on the same line (line rect as fallback)
+    private func cgRect(for run: Text.Layout.Run,
+                        in line: Text.Layout.Line) -> CGRect {
+        // Labels are built as "<number> "; drop the trailing space glyph
+        let glyphs = run.count > 1 ? run[run.startIndex..<(run.endIndex - 1)] : run[...]
+        let glyphRect = glyphs.typographicBounds.rect
+
+        // Find closest text run and use that for the height rather than full line
+        let bodyRect = line.first { $0[VerseNumberAttribute.self] != nil }?
+            .typographicBounds.rect ?? line.typographicBounds.rect
+
+        return CGRect(x: glyphRect.minX,
+                      y: bodyRect.minY,
+                      width: glyphRect.width,
+                      height: bodyRect.height)
+    }
+
+    /// Bookmark shape: a rectangle with a V-notch cut into the bottom edge
+    private func bookmarkPath(in rect: CGRect) -> Path {
+        let notchDepth = min(rect.width * 0.35, rect.height * 0.25)
+        var path = Path()
+        path.move(to: CGPoint(x: rect.minX, y: rect.minY))
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.minY))
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
+        path.addLine(to: CGPoint(x: rect.midX, y: rect.maxY - notchDepth))
+        path.addLine(to: CGPoint(x: rect.minX, y: rect.maxY))
+        path.closeSubpath()
+        return path
     }
 }

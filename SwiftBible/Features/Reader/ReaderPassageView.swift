@@ -90,6 +90,7 @@ struct ReaderPassageView: View {
                                 settledVerses: settledVerses,
                                 revealingVerses: revealingVerses,
                                 fadingVerses: fadingVerses,
+                                annotatedVerses: readerStore.passageVersesWithTextAnnotations,
                                 tapOrigin: origin,
                                 progress: revealProgress,
                                 fadeProgress: fadeProgress,

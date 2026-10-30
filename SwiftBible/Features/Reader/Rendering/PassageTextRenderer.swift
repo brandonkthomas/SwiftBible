@@ -126,7 +126,12 @@ struct PassageTextRenderer {
                 let label = styledVerseLabel(displayText: displayText,
                                              verseRange: currentVerseRange)
 
-                let segment = Text(label)
+                var segment = Text(label)
+
+                if let currentVerseRange {
+                    segment = segment
+                        .customAttribute(VerseLabelAttribute(number: currentVerseRange.startVerse))
+                }
 
                 result = Text("\(result)\(segment)")
 
