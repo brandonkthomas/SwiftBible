@@ -135,8 +135,33 @@ struct VerseHighlightRenderer: TextRenderer {
                 // Does this run carry our custom annotation label attribute?
                 if let annotatedNumber = run[VerseLabelAttribute.self]?.number,
                    annotatedVerses.contains(annotatedNumber) {
-                    let shape = bookmarkPath(in: cgRect(for: run, in: line))
-                    ctx.fill(shape, with: .color(.readerVerseLabelBookmarkIndicator))
+                    let bookmarkRect = cgRect(for: run, in: line)
+                    ctx.fill(bookmarkPath(in: bookmarkRect), with: .color(.readerVerseLabelBookmarkIndicator))
+
+                    // Recolor the number to the page color for contrast against the bookmark:
+                    // draw the glyphs into their own layer, then paint with .sourceIn, which only
+                    // keeps paint where glyph pixels already exist (anti-aliasing preserved)
+                    // The outer layer isolates the blend so it can't affect anything drawn earlier
+                    ctx.drawLayer { layer in
+                        // Inner layer so the filter applies to the glyphs ONLY (not the fill below)
+                        // Labels use .secondary, which is partly transparent (~60%); .sourceIn
+                        // keeps that transparency, so scale glyph alpha up to fully opaque first
+                        layer.drawLayer { glyphs in
+                            var opaqueGlyphs = ColorMatrix()
+                            opaqueGlyphs.a4 = 3
+                            glyphs.addFilter(.colorMatrix(opaqueGlyphs))
+                            glyphs.draw(run)
+                        }
+
+                        // Finite rect covering the number (superscript sits inside the bookmark);
+                        // padded so no glyph edge falls outside the paint
+                        let paintRect = bookmarkRect
+                            .union(run.typographicBounds.rect)
+                            .insetBy(dx: -4, dy: -4)
+                        layer.blendMode = .sourceIn
+                        layer.fill(Path(paintRect), with: .color(.readerBackground))
+                    }
+                    continue
                 }
 
                 ctx.draw(run)
@@ -179,11 +204,18 @@ struct VerseHighlightRenderer: TextRenderer {
         let bodyRect = line.first { $0[VerseNumberAttribute.self] != nil }?
             .typographicBounds.rect ?? line.typographicBounds.rect
 
-        return CGRect(x: glyphRect.minX,
+        // Horizontal breathing room so the number doesn't touch the bookmark's edges;
+        // small enough to stay within the spaces on either side of the label
+        let padding = Self.bookmarkHorizontalPadding
+
+        return CGRect(x: glyphRect.minX - padding,
                       y: bodyRect.minY,
-                      width: glyphRect.width,
+                      width: glyphRect.width + padding * 2,
                       height: bodyRect.height)
     }
+
+    /// Space between the verse number and each side of its bookmark (points)
+    private static let bookmarkHorizontalPadding: CGFloat = 2
 
     /// Bookmark shape: a rectangle with a V-notch cut into the bottom edge
     private func bookmarkPath(in rect: CGRect) -> Path {
