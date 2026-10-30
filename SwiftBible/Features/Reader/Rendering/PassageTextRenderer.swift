@@ -30,7 +30,7 @@ struct PassageTextRenderer {
     static func text(for runs: [RenderedPassageRun],
                      footnoteMarkerMode: MarkerMode,
                      produceLinkAttributes: Bool = true) -> Text {
-        var result = Text("")
+        var result = Text(verbatim: "")
 
         // If mode.collapsed:
         // Track verse progress so we can append a single footnote marker at the end

@@ -90,7 +90,9 @@ struct LibraryRowView: View {
         guard isPassageTruncated else {
             return ""
         }
-        return isPassageExpanded ? "Collapses the passage" : "Shows the full passage"
+        return isPassageExpanded
+            ? String(localized: "Collapses the passage", comment: "VoiceOver hint on an expanded Library card passage")
+            : String(localized: "Shows the full passage", comment: "VoiceOver hint on a collapsed Library card passage")
     }
 
     /// Height of the collapsed passage (also used by the loading placeholder)

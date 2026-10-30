@@ -75,7 +75,8 @@ struct AnnotationEditorSheetView: View {
         NavigationStack {
             VStack(alignment: .leading, spacing: 16) {
                 // Tags section
-                Label("TAGS", systemImage: "tag")
+                Label("Tags", systemImage: "tag")
+                    .textCase(.uppercase)
                     .font(.system(size: 11, weight: .regular, design: .serif))
                     .foregroundStyle(.secondary)
 
@@ -84,7 +85,8 @@ struct AnnotationEditorSheetView: View {
                 Divider()
 
                 // Note section
-                Label("NOTE", systemImage: "text.alignleft")
+                Label("Note", systemImage: "text.alignleft")
+                    .textCase(.uppercase)
                     .font(.system(size: 11, weight: .regular, design: .serif))
                     .foregroundStyle(.secondary)
 

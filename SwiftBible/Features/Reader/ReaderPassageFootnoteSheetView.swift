@@ -39,7 +39,10 @@ struct ReaderPassageFootnoteSheetView: View {
 
     private var sheetTitle: String {
         guard let bookAndChapter = passage.referenceBookAndChapterDisplayName else {
-            return footnotesForVerse.count == 1 ? "Footnote" : "Footnotes"
+            // Title has no number to vary by plural, so pick between two localized nouns
+            return footnotesForVerse.count == 1
+                ? String(localized: "Footnote", comment: "Footnote sheet title (one footnote)")
+                : String(localized: "Footnotes", comment: "Footnote sheet title (several footnotes)")
         }
         return "\(bookAndChapter):\(verseRange.displayText)"
     }

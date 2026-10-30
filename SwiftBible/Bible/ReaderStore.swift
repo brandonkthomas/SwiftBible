@@ -209,7 +209,7 @@ final class ReaderStore {
         } catch {
             // TODO: log exception
             clearAllStates()
-            self.loadState = .failed("An error occurred while loading Bibles.")
+            self.loadState = .failed(String(localized: "An error occurred while loading Bibles."))
         }
     }
 
@@ -308,7 +308,7 @@ final class ReaderStore {
         Self.logger.debug("ENTRY ReaderStore.loadSelectedPassage()")
 
         guard let selectedReference else {
-            self.passageLoadState = .failed("No passage selected.")
+            self.passageLoadState = .failed(String(localized: "No passage selected."))
             return
         }
 
@@ -354,7 +354,7 @@ final class ReaderStore {
         } catch {
             // TODO: log exception
             self.selectedPassage = nil
-            self.passageLoadState = .failed("An error occurred while loading the selected passage.")
+            self.passageLoadState = .failed(String(localized: "An error occurred while loading the selected passage."))
         }
     }
 
@@ -612,7 +612,7 @@ final class ReaderStore {
         } catch {
             // TODO: log exception
             clearBookChapterAndPassageStates()
-            self.loadState = .failed("Unable to load books and chapters.")
+            self.loadState = .failed(String(localized: "Unable to load books and chapters."))
         }
     }
 

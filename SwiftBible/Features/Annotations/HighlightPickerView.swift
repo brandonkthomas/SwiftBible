@@ -65,7 +65,7 @@ struct HighlightPickerView: View {
                 if selected {
                     Image(systemName: "checkmark")
                 } else {
-                    Text("")
+                    Text(verbatim: "")
                 }
             }
             .frame(width: buttonSize, height: buttonSize)

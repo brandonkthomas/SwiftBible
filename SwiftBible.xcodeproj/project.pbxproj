@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		852A8D9F309451BB00B25CB3 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 852A8D9E309451BB00B25CB3 /* Localizable.xcstrings */; };
 		85BBD28C2FF0EC9B00C2FE15 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 85BBD28B2FF0EC9B00C2FE15 /* Assets.xcassets */; };
 /* End PBXBuildFile section */
 
@@ -28,6 +29,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		852A8D9E309451BB00B25CB3 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; name = Localizable.xcstrings; path = SwiftBible/Localizable.xcstrings; sourceTree = "<group>"; };
 		8539B6722FEEE6C0007FC718 /* SwiftBible.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SwiftBible.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		8539B67F2FEEE6C0007FC718 /* SwiftBibleTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SwiftBibleTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		8539B6892FEEE6C0007FC718 /* SwiftBibleUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SwiftBibleUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -80,6 +82,7 @@
 		8539B6692FEEE6C0007FC718 = {
 			isa = PBXGroup;
 			children = (
+				852A8D9E309451BB00B25CB3 /* Localizable.xcstrings */,
 				85BBD28B2FF0EC9B00C2FE15 /* Assets.xcassets */,
 				8539B6742FEEE6C0007FC718 /* SwiftBible */,
 				8539B6822FEEE6C0007FC718 /* SwiftBibleTests */,
@@ -219,6 +222,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				852A8D9F309451BB00B25CB3 /* Localizable.xcstrings in Resources */,
 				85BBD28C2FF0EC9B00C2FE15 /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -359,6 +363,7 @@
 				ONLY_ACTIVE_ARCH = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
 			name = Debug;
@@ -416,6 +421,7 @@
 				MTL_FAST_MATH = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_EMIT_LOC_STRINGS = YES;
 			};
 			name = Release;
 		};

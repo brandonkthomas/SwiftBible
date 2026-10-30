@@ -133,7 +133,8 @@ struct PassagePickerView: View {
                 Label("Books", systemImage: "books.vertical")
                 if let selectedBook = readerStore.selectedBook,
                    let selectedChapter = readerStore.selectedChapter {
-                    Text("\(selectedBook.displayName) \(selectedChapter.number)")
+                    // verbatim: book name + chapter are API data, not app UI text
+                    Text(verbatim: "\(selectedBook.displayName) \(selectedChapter.number)")
                         .foregroundStyle(Color.secondary)
                 }
             }
@@ -225,12 +226,16 @@ struct PassagePickerView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             default:
                 HStack(spacing: 8) {
-                    Text(
-                        readerStore.books.isEmpty
-                        ? "Select Translation"
-                        : "\(readerStore.selectedBook?.displayName ?? "Select Book") \(readerStore.selectedChapter?.displayName ?? "")"
-                    )
-                    Text("\(readerStore.selectedTranslation?.abbreviation ?? "")")
+                    // UI prompts are localized literals; book/chapter/abbreviation are API data
+                    // shown verbatim
+                    if readerStore.books.isEmpty {
+                        Text("Select Translation")
+                    } else if let selectedBook = readerStore.selectedBook {
+                        Text(verbatim: "\(selectedBook.displayName) \(readerStore.selectedChapter?.displayName ?? "")")
+                    } else {
+                        Text("Select Book")
+                    }
+                    Text(verbatim: readerStore.selectedTranslation?.abbreviation ?? "")
                         .foregroundStyle(.secondary)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)

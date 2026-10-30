@@ -95,7 +95,10 @@ struct SettingsView: View {
     }
 
     /// Individual settings row
-    private func settingsRow(title: String,
+    ///
+    /// title is LocalizedStringKey (not String) so the literals callers pass are looked up in
+    /// the String Catalog; Text(String) would show them verbatim
+    private func settingsRow(title: LocalizedStringKey,
                              symbol: String,
                              color: Color) -> some View {
         Label {

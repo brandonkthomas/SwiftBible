@@ -105,7 +105,7 @@ struct ReaderView: View {
             await readerStore.loadTranslationsAndBooks()
             await readerStore.loadSelectedPassage()
         }
-        .navigationTitle(readerStore.selectedReferenceFriendlyName ?? "No Passage Selected")
+        .navigationTitle(readerStore.selectedReferenceFriendlyName ?? String(localized: "No Passage Selected", comment: "Reader navigation short title shown when no passage is selected"))
     }
 
     /// Selected Passage is unavailable / doesnt exist

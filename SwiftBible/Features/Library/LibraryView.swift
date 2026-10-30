@@ -68,6 +68,11 @@ struct LibraryView: View {
             })
     }
 
+    /// Number of selected annotations (0 outside selection mode); drives pluralized dialog text
+    private var selectedCount: Int {
+        librarySelection.selectedIDCount ?? 0
+    }
+
     /// OS Logging
     private static let logger = Logger(subsystem: "SwiftBible", category: "LibraryView")
 
@@ -162,9 +167,10 @@ struct LibraryView: View {
                 .padding(.trailing, 20)  // outside: margin from the screen edge
                 .disabled(!canDelete)
                 // Delete dialog for Edit mode
-                .confirmationDialog("Delete \(librarySelection.selectedIDCount ?? 0 == 1 ? "Annotation" : "Annotations")",
+                // Count is a non-optional Int so the catalog key uses %lld and can vary by plural
+                .confirmationDialog("Delete \(selectedCount) Annotations",
                                     isPresented: $isEditModeDeleteConfirmationVisible) {
-                    Button("Delete \(librarySelection.selectedIDCount ?? 0 == 1 ? "Annotation" : "Annotations")", role: .destructive) {
+                    Button("Delete \(selectedCount) Annotations", role: .destructive) {
                         guard let allIDs = librarySelection.allSelectedIDs else { return }
                         let didDelete = withAnimation(.snappy(duration: 0.35)) {
                             libraryStore.delete(allIDs)
@@ -173,11 +179,7 @@ struct LibraryView: View {
                         librarySelection.endSelection()
                     }
                 } message: {
-                    let count = librarySelection.selectedIDCount ?? 0
-                    let noun = count == 1 ? "annotation" : "annotations"
-                    Text(
-                        "The \(count) selected \(noun) will be permanently deleted."
-                    )
+                    Text("The \(selectedCount) selected annotations will be permanently deleted.")
                 }
             }
         }
