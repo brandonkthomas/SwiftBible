@@ -124,7 +124,8 @@ struct PassageTextRenderer {
 
                 // append verse label immediately
                 let label = styledVerseLabel(displayText: displayText,
-                                             verseRange: currentVerseRange)
+                                             verseRange: currentVerseRange,
+                                             useLinkAttribute: produceLinkAttributes)
 
                 var segment = Text(label)
 
@@ -236,11 +237,23 @@ struct PassageTextRenderer {
 
     /// Generate a verse label
     private static func styledVerseLabel(displayText: String,
-                                         verseRange: RenderedVerseRange?) -> AttributedString {
+                                         verseRange: RenderedVerseRange?,
+                                         useLinkAttribute: Bool = false) -> AttributedString {
         var result = AttributedString("\(displayText) ")
         result.baselineOffset = markerBaselineOffset
         result.font = .system(.caption2, design: .serif)
+        // Explicit color so link styling doesn't recolor the label
         result.foregroundColor = .secondary
+
+        // Tap link (adds support for opening a verse's note/tags via tap action)
+        if useLinkAttribute,
+           let verseRange {
+            var url = "swiftbible://label?sv=\(verseRange.startVerse)"
+            if let endVerse = verseRange.endVerse {
+                url.append("&ev=\(endVerse)")
+            }
+            result.link = URL(string: url)
+        }
 
         return result
     }

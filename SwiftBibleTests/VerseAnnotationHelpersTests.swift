@@ -181,11 +181,98 @@ struct VerseAnnotationHelpersTests {
         #expect(result.isEmpty)
     }
 
+    // MARK: getTextAnnotation
+
+    /// Tapping a single-verse note returns that verse
+    @Test func tappedSingleVerseNoteReturnsThatVerse() throws {
+        let annotation = makeTextAnnotation(start: 7, end: nil, content: .note("Hello"))
+
+        let passageReference = try #require(ScriptureReference(translationID: 123,
+                                                               bookCode: "GEN",
+                                                               chapter: 1))
+
+        let result = VerseAnnotationHelpers.getTextAnnotation(for: [annotation],
+                                                              reference: passageReference,
+                                                              verse: 7)
+
+        #expect(result?.verseRange == 7...7)
+    }
+
+    /// Tapping any verse inside a ranged tag annotation returns the full range
+    @Test func tappedVerseInsideTagRangeReturnsFullRange() throws {
+        let annotation = makeTextAnnotation(start: 3, end: 5, content: .tags(["faith"]))
+
+        let passageReference = try #require(ScriptureReference(translationID: 123,
+                                                               bookCode: "GEN",
+                                                               chapter: 1))
+
+        let result = VerseAnnotationHelpers.getTextAnnotation(for: [annotation],
+                                                              reference: passageReference,
+                                                              verse: 4)
+
+        #expect(result?.verseRange == 3...5)
+    }
+
+    /// Overlapping note/tag annotations resolve to the most recently updated one
+    @Test func tappedOverlappingAnnotationsReturnsNewest() throws {
+        let note = makeTextAnnotation(start: 3,
+                                      end: 5,
+                                      content: .note("Hello"),
+                                      createdAt: .distantPast,
+                                      updatedAt: .distantPast.addingTimeInterval(60))
+        let tags = makeTextAnnotation(start: 4,
+                                      end: nil,
+                                      content: .tags(["faith"]),
+                                      createdAt: .now)
+
+        let passageReference = try #require(ScriptureReference(translationID: 123,
+                                                               bookCode: "GEN",
+                                                               chapter: 1))
+
+        let result = VerseAnnotationHelpers.getTextAnnotation(for: [note, tags],
+                                                              reference: passageReference,
+                                                              verse: 4)
+
+        #expect(result?.verseRange == 4...4)
+    }
+
+    /// Highlights never resolve to an editable text annotation
+    @Test func tappedHighlightOnlyReturnsNil() throws {
+        let annotation = makeTextAnnotation(start: 3, end: 5, content: .highlight(.yellow))
+
+        let passageReference = try #require(ScriptureReference(translationID: 123,
+                                                               bookCode: "GEN",
+                                                               chapter: 1))
+
+        let result = VerseAnnotationHelpers.getTextAnnotation(for: [annotation],
+                                                              reference: passageReference,
+                                                              verse: 4)
+
+        #expect(result == nil)
+    }
+
+    /// Annotations from a different chapter don't resolve
+    @Test func tappedVerseWithAnnotationInOtherChapterReturnsNil() throws {
+        let annotation = makeTextAnnotation(start: 3, end: nil, chapter: 2, content: .note("Hello"))
+
+        let passageReference = try #require(ScriptureReference(translationID: 123,
+                                                               bookCode: "GEN",
+                                                               chapter: 1))
+
+        let result = VerseAnnotationHelpers.getTextAnnotation(for: [annotation],
+                                                              reference: passageReference,
+                                                              verse: 3)
+
+        #expect(result == nil)
+    }
+
     private func makeTextAnnotation(
         start: Int,
         end: Int?,
         chapter: Int = 1,
-        content: AnnotationContent)
+        content: AnnotationContent,
+        createdAt: Date = .now,
+        updatedAt: Date? = nil)
     -> VerseAnnotation {
         .init(
             id: UUID(),
@@ -195,7 +282,8 @@ struct VerseAnnotationHelpersTests {
             startVerse: start,
             endVerse: end,
             content: content,
-            createdAt: .now
+            createdAt: createdAt,
+            updatedAt: updatedAt
         )
     }
 

@@ -29,6 +29,17 @@ struct ReaderPassageView: View {
     /// placed into the environment: .environment(readerStore))
     @Environment(ReaderStore.self) private var readerStore: ReaderStore
 
+    /// Read appEnvironment.bibleCatalogStore environment value from current view environment
+    ///
+    /// Required for AnnotationEditorSheetView
+    @Environment(BibleCatalogStore.self) private var bibleCatalogStore: BibleCatalogStore
+
+    // MARK: Properties (Annotations, Private)
+
+    /// AnnotationEditor session for a tapped verse label indicator;
+    /// when set, AnnotationEditorSheetView will open
+    @State private var annotationEditor: AnnotationEditor?
+
     // MARK: Properties (Footnotes, Private)
 
     /// When set, ReaderPassageFootnoteSheetView will open
@@ -148,6 +159,26 @@ struct ReaderPassageView: View {
 
                 return .handled // we dealt with it; don't open a browser
 
+            // Verse label branch
+            } else if url.host == "label" {
+                if readerStore.passageVersesWithTextAnnotations.contains(startVerse) {
+                    // clear selection so the verse actions bar isn't showing behind the sheet
+                    withAnimation(.snappy(duration: 0.35)) {
+                        readerStore.selectedVerses = nil
+                    }
+
+                    // setting this will open AnnotationEditorSheetView using the .sheet
+                    // modifier below
+                    annotationEditor = readerStore.makeAnnotationEditor(forAnnotatedVerse: startVerse)
+                } else {
+                    // unannotated label behaves like tapping its verse text
+                    handleVerseSelection(components: components,
+                                         queryItems: queryItems,
+                                         startVerse: startVerse)
+                }
+
+                return .handled // we dealt with it; don't open a browser
+
             // All other items: we don't need to handle; exit
             } else {
                 return .discarded
@@ -159,6 +190,14 @@ struct ReaderPassageView: View {
                                            passage: renderedPassage)
                 .presentationDetents([.medium, .large])
                 .presentationContentInteraction(.automatic)
+        }
+        // Open AnnotationEditorSheetView when a verse label indicator tap sets annotationEditor
+        // (saving bumps libraryRepository.changeCount; ContentView refreshes the indicators)
+        .sheet(item: $annotationEditor) { editor in
+            AnnotationEditorSheetView(
+                editor: editor,
+                bibleCatalogStore: bibleCatalogStore)
+                .presentationDragIndicator(.visible)
         }
         // Handle deselection animations/etc ONCE (applies to all callers across all views)
         .onChange(of: readerStore.selectedVerses) {

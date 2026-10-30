@@ -212,17 +212,8 @@ final class LibraryStore {
 
     /// Build AnnotationEditor instance for a given VerseAnnotation (reuses LibraryStore.libraryRepository)
     func annotationEditor(for annotation: VerseAnnotation) -> AnnotationEditor? {
-        guard let reference = ScriptureReference(
-            translationID: annotation.translationID,
-            bookCode: annotation.bookCode,
-            chapter: annotation.chapter) else {
-            return nil
-        }
-        return AnnotationEditor(
-            reference: reference,
-            selectedVerses: annotation.verseRange,
-            libraryRepository: libraryRepository
-        )
+        AnnotationEditor(annotation: annotation,
+                         libraryRepository: libraryRepository)
     }
 
     // MARK: Functions (Private)

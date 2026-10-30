@@ -522,6 +522,33 @@ final class ReaderStore {
         )
     }
 
+    /// Build AnnotationEditor session for the note/tag annotation covering a tapped verse label
+    ///
+    /// Uses the annotation's full verse range rather than the current selection
+    func makeAnnotationEditor(forAnnotatedVerse verse: Int) -> AnnotationEditor? {
+        guard let reference = self.selectedReference else {
+            return nil
+        }
+
+        do {
+            let annotations = try libraryRepository.annotations(for: reference)
+
+            guard let annotation = VerseAnnotationHelpers.getTextAnnotation(
+                for: annotations,
+                reference: reference,
+                verse: verse
+            ) else {
+                return nil
+            }
+
+            return AnnotationEditor(annotation: annotation,
+                                    libraryRepository: self.libraryRepository)
+        } catch {
+            Self.logger.error("Unable to load annotations: \(error.localizedDescription)")
+            return nil
+        }
+    }
+
     /// Refresh current highlights cache for current selectedReference
     ///
     /// Called once, from ContentView's .onChange(of: libraryRepository.changeCount), so

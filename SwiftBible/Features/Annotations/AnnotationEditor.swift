@@ -69,6 +69,23 @@ final class AnnotationEditor: Identifiable {
         self.libraryRepository = libraryRepository
     }
 
+    /// Editing session for an existing annotation: its chapter + full verse range
+    ///
+    /// Shared by every entry point that opens an annotation directly (Library rows,
+    /// Reader verse label indicators) so they build editors the same way
+    convenience init?(annotation: VerseAnnotation,
+                      libraryRepository: LibraryRepository) {
+        guard let reference = ScriptureReference(
+            translationID: annotation.translationID,
+            bookCode: annotation.bookCode,
+            chapter: annotation.chapter) else {
+            return nil
+        }
+        self.init(reference: reference,
+                  selectedVerses: annotation.verseRange,
+                  libraryRepository: libraryRepository)
+    }
+
     // MARK: Subscripts (Tags)
 
     subscript(tagIsSelected tag: String) -> Bool {

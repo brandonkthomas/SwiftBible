@@ -58,17 +58,42 @@ enum VerseAnnotationHelpers { // caseless enum as pseudo-namespace
     ) -> Set<Int> {
         var verses: Set<Int> = []
 
-        // basically same filter as getPassageHighlightColors() but dropping the sort,
-        // since it's not needed here
-        for annotation in annotations
-        where annotation.translationID == reference.translationID
-        && annotation.bookCode == reference.bookCode
-        && annotation.chapter == reference.chapter
-        && (annotation.content.type == .note || annotation.content.type == .tags)
-        && annotation.content.isMeaningful { // sanity check
+        for annotation in annotations where isTextAnnotation(annotation, in: reference) {
             verses.formUnion(annotation.verseRange)
         }
 
         return verses
+    }
+
+    /// For a given passage reference + verse number, return the note/tag annotation
+    /// covering that verse (highlights excluded)
+    ///
+    /// If several overlap, the newest wins (same rule as getPassageHighlightColors())
+    static func getTextAnnotation(
+        for annotations: [VerseAnnotation],
+        reference: ScriptureReference,
+        verse: Int
+    ) -> VerseAnnotation? {
+        annotations
+            .filter { isTextAnnotation($0, in: reference) && $0.verseRange.contains(verse) }
+            .max { lhs, rhs in
+                (lhs.updatedAt ?? lhs.createdAt) < (rhs.updatedAt ?? rhs.createdAt)
+            }
+    }
+
+    // MARK: Functions (Private)
+
+    /// Is this a meaningful note/tag annotation in the reference's translation/book/chapter?
+    ///
+    /// Single source of truth for getPassageVersesWithTextAnnotations() (which verses draw a
+    /// bookmark) and getTextAnnotation() (what a tapped bookmark opens), so every drawn
+    /// bookmark resolves to an annotation
+    private static func isTextAnnotation(_ annotation: VerseAnnotation,
+                                         in reference: ScriptureReference) -> Bool {
+        annotation.translationID == reference.translationID
+        && annotation.bookCode == reference.bookCode
+        && annotation.chapter == reference.chapter
+        && (annotation.content.type == .note || annotation.content.type == .tags)
+        && annotation.content.isMeaningful // sanity check
     }
 }
