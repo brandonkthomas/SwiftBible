@@ -37,13 +37,17 @@ struct PassagePickerView: View {
 
     @State var triggerHaptic: Bool = false
 
+    /// Is the book/translation picker sheet showing?
+    @State private var isPickerSheetPresented = false
+
+    /// Used for Zoom transition
+    @Namespace private var presentationNamespace
+    private var presentationID = UUID()
+
     // MARK: Properties (Private, Dynamic Type)
 
     /// Previous/next chevron symbol size
     @ScaledMetric(relativeTo: .body) private var chevronSymbolSize: CGFloat = 20
-
-    /// Chapter toggle font size
-    @ScaledMetric(relativeTo: .body) private var chapterFontSize: CGFloat = 18
 
     /// Book/chapter/translation label font size
     @ScaledMetric(relativeTo: .body) private var labelFontSize: CGFloat = 14
@@ -74,7 +78,7 @@ struct PassagePickerView: View {
 
             // Actual Menu Component
             // -- transition between this and VerseActionsView on tabBarAccessory
-            booksAndTranslationsMenuView
+            passagePickerButtonView
             .transition(.blurReplace)
 
             Spacer()
@@ -104,60 +108,10 @@ struct PassagePickerView: View {
         .transition(.blurReplace)
     }
 
-    private var booksAndTranslationsMenuView: some View {
-        Menu {
-            // Books + Chapters nested menus
-            // TODO: Change to Picker
-            Menu {
-                ForEach(readerStore.books) { book in
-                    Menu {
-                        // TODO: ControlGroup may be to blame for submenus "sticking" in place
-                        // for 2 seconds after closing the submenu + scrolling the parent menu
-                        ForEach(Array(chapterGroups(for: book).enumerated()), id: \.offset) { _, group in
-                            ControlGroup {
-                                ForEach(group) { chapter in
-                                    Toggle(isOn: chapterSelectionBinding(book: book, chapter: chapter)) {
-                                        Text(chapter.displayName)
-                                    }
-                                }
-                            }
-                            .controlGroupStyle(.compactMenu)
-                            .font(.system(size: chapterFontSize,
-                                          weight: .medium))
-                        }
-                    } label: {
-                        Text(book.displayName)
-                    }
-                }
-            } label: {
-                Label("Books", systemImage: "books.vertical")
-                if let selectedBook = readerStore.selectedBook,
-                   let selectedChapter = readerStore.selectedChapter {
-                    // verbatim: book name + chapter are API data, not app UI text
-                    Text(verbatim: "\(selectedBook.displayName) \(selectedChapter.number)")
-                        .foregroundStyle(Color.secondary)
-                }
-            }
-            .menuOrder(.fixed)
-
-            // Translations menu
-            // TODO: Change to Picker
-            Menu {
-                ForEach(readerStore.translations.sorted { $0.title < $1.title }) { translation in
-                    Toggle(isOn: translationSelectionBinding(for: translation)) {
-                        Text(translation.title)
-                        Text(translation.abbreviation)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-            } label: {
-                Label("Translations", systemImage: "text.book.closed")
-                if let selectedTranslation = readerStore.selectedTranslation {
-                    Text(selectedTranslation.title)
-                        .foregroundStyle(Color.secondary)
-                }
-            }
-            .menuOrder(.fixed)
+    /// Opens PassagePickerSheetView for choosing book/chapter or translation
+    private var passagePickerButtonView: some View {
+        Button {
+            isPickerSheetPresented = true
         } label: {
             // Label: selected Book/Chapter names & Translation abbreviation
             tabBarAccessoryLabel
@@ -167,47 +121,15 @@ struct PassagePickerView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .contentShape(Rectangle())
         }
+        .buttonStyle(.plain)
         .foregroundStyle(.primary) // Automatically adapts to light/dark
-        .menuOrder(.fixed)
-    }
-
-    private func chapterGroups(for book: Book) -> [[Chapter]] {
-        stride(from: 0, to: book.chapters.count, by: 3).map { startIndex in
-            Array(book.chapters[startIndex..<min(startIndex + 3, book.chapters.count)])
+        .sheet(isPresented: $isPickerSheetPresented) {
+            PassagePickerSheetView()
+                .navigationTransition(.zoom(sourceID: presentationID, in: presentationNamespace))
+                .presentationDetents([.fraction(0.7)])
+//                .presentationDragIndicator(.hidden)
         }
-    }
-
-    private func chapterSelectionBinding(book: Book, chapter: Chapter) -> Binding<Bool> {
-        Binding(
-            get: {
-                readerStore.selectedChapter?.id == chapter.id
-            },
-            set: { isSelected in
-                guard isSelected,
-                      readerStore.selectedChapter?.id != chapter.id else { return }
-
-                Task {
-                    await readerStore.selectBookAndChapter(bookID: book.id,
-                                                           chapterID: chapter.id,
-                                                           reloadPassage: true)
-                }
-            }
-        )
-    }
-
-    private func translationSelectionBinding(for translation: Translation) -> Binding<Bool> {
-        Binding(
-            get: {
-                readerStore.selectedTranslation?.id == translation.id
-            },
-            set: { isSelected in
-                guard isSelected,
-                      readerStore.selectedTranslation?.id != translation.id else { return }
-                Task {
-                    await readerStore.selectTranslationAndReloadAll(id: translation.id)
-                }
-            }
-        )
+        .matchedTransitionSource(id: presentationID, in: presentationNamespace)
     }
 
     /// TabBarAccessory label view
