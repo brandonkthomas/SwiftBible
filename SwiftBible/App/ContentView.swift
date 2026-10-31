@@ -77,8 +77,8 @@ struct ContentView: View {
             }
         }
         .font(.system(.body, design: .serif))
-        .tabBarMinimizeBehavior(.onScrollDown) // added in iOS 26
-        .tabViewSearchActivation(.searchTabSelection) // added in iOS 26
+        .tabBarMinimizeBehavior($selectedTab.wrappedValue == CurrentTab.read ? .onScrollDown : .never) // added in iOS 26
+//        .tabViewSearchActivation(.searchTabSelection) // added in iOS 26
         // "isEnabled" param added in iOS 26.1
         .tabViewBottomAccessory(isEnabled: $selectedTab.wrappedValue == CurrentTab.read && readerStore.loadState != .loading) {
             Group {
