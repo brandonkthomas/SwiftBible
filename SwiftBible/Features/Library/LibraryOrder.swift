@@ -158,9 +158,31 @@ enum LibraryOrderSortOption {
 }
 
 /// Library grouping preferences used by LibraryOrder
-enum LibraryOrderGroupOption {
+enum LibraryOrderGroupOption: CaseIterable, Identifiable {
     case none
     case dateAdded
     case translation
     case book
+
+    var id: Self { self }
+
+    /// Display title; LocalizedStringResource so the String Catalog picks it up
+    var title: LocalizedStringResource {
+        switch self {
+        case .none: "None"
+        case .dateAdded: "Date Added"
+        case .translation: "Translation"
+        case .book: "Book"
+        }
+    }
+
+    var systemImage: String {
+        switch self {
+        case .none: "square.stack.3d.up.slash"
+        case .dateAdded: "calendar"
+        case .translation: "text.book.closed"
+        case .book: "books.vertical"
+        }
+    }
 }
+
