@@ -331,231 +331,262 @@ struct LibraryView: View {
         if !librarySelection.isSelecting {
             // Filter By: Translation, Book, Highlight Color, Tag
             ToolbarItem(placement: .topBarTrailing) {
-                Menu {
-                    Section("Filter By") {
-                        // Translations
-                        Picker(selection: $store.filter.translationID) {
-                            // "All" row: tag type must be String? to match the binding
-                            Text("All Translations")
-                                .tag(Translation.ID?.none) // aka nil
-
-                            ForEach(Set(libraryStore.annotations.map(\.translationID)).sorted(), id: \.self) { translationID in
-                                let label = catalogStore.translation(for: translationID)?.abbreviation ?? translationID.description
-                                Text(label)
-                                    .tag(Optional(translationID)) // ID?, not ID
-                            }
-                        } label: {
-                            Label("Translation", systemImage: "text.book.closed")
-                            if let translationID = libraryStore.filter.translationID {
-                                let label = catalogStore.translation(for: translationID)?.abbreviation
-                                ?? translationID.description
-                                Text(label)
-                                    .foregroundStyle(Color.secondary)
-                            }
-                        }
-                        .pickerStyle(.menu)
-
-                        // Books
-                        Picker(selection: $store.filter.bookCode) {
-                            // "All" row: tag type must be String? to match the binding
-                            Text("All Books")
-                                .tag(String?.none) // aka nil
-
-                            // Group by unique book code; only take first one; sort
-                            // TODO: sort according to Bible ordering (may need to hardcode as API doesnt return this...?)
-                            ForEach(uniqueBookCodeAnnotations) { annotation in
-                                let label = catalogStore.book(for: annotation.translationID,
-                                                              bookCode: annotation.bookCode)?.displayName ?? annotation.bookCode
-                                Text(label)
-                                    .tag(Optional(annotation.bookCode)) // String?, not String
-                            }
-                        } label: {
-                            Label("Book", systemImage: "books.vertical")
-                            if let bookCode = libraryStore.filter.bookCode,
-                               let translationID = uniqueBookCodeAnnotations.first(where: { $0.bookCode == bookCode })?.translationID {
-                                let label = catalogStore.book(for: translationID,
-                                                              bookCode: bookCode)?.displayName ?? bookCode
-                                Text(label)
-                                    .foregroundStyle(Color.secondary)
-                            }
-                        }
-                        .pickerStyle(.menu)
-
-                        Divider()
-
-                        // Annotation Type
-                        Picker(selection: $store.filter.contentType) {
-                            Label("All", systemImage: "circle.dotted")
-                                .tag(AnnotationContentType?.none) // aka nil
-                            Label("Highlights", systemImage: "pencil.line")
-                                .tag(Optional(AnnotationContentType.highlight))
-                            Label("Tags", systemImage: "tag")
-                                .tag(Optional(AnnotationContentType.tags))
-                            Label("Notes", systemImage: "text.alignleft")
-                                .tag(Optional(AnnotationContentType.note))
-                        } label: {
-                            Label("Annotation Type", systemImage: "square.3.layers.3d.top.filled")
-                        }
-                        .pickerStyle(.segmented)
-
-                        // Highlight Colors
-                        Picker(selection: $store.filter.highlightColor) {
-                            // "All" row: tag type must match the binding (VerseAnnotationHighlightColor?)
-                            Label("All", systemImage: "circle.dotted")
-                                .tag(VerseAnnotationHighlightColor?.none)
-
-                            ForEach(VerseAnnotationHighlightColor.allCases.filter { color in
-                                store.annotations.contains { $0.highlightColor == color }
-                            }, id: \.self) { highlightColor in
-                                Label {
-                                    Text(highlightColor.rawValue.capitalized)
-                                } icon: {
-                                    highlightSwatch(highlightColor)
-                                }
-                                .tag(Optional(highlightColor))
-                            }
-                        } label: {
-                            Label("Highlight Color", systemImage: "pencil.line")
-                        }
-                        .pickerStyle(.segmented)
-
-                        // Tags
-                        Picker(selection: $store.filter.tag) {
-                            // "All" row: tag type must be String? to match the binding
-                            Text("All Tags")
-                                .tag(String?.none) // aka nil
-
-                            ForEach(store.allTags.sorted(), id: \.self) { tag in
-                                Text(tag)
-                                    .tag(Optional(tag))   // String?, not String
-                            }
-                        } label: {
-                            Label("Tag", systemImage: "tag")
-                            if let tag = libraryStore.filter.tag {
-                                Text(tag)
-                                    .foregroundStyle(Color.secondary)
-                            }
-                        }
-                        .pickerStyle(.menu)
-
-                        // Clear All Filters
-                        if libraryStore.filter.isAnyFilterActive {
-                            Divider()
-                            Button(role: .destructive) {
-                                store.filter.clearAllFilters()
-                            } label: {
-                                Label("Clear All Filters", systemImage: "trash") // TODO: better symbol
-                            }
-                        }
-                    }
-                } label: {
-                    Image(systemName: "line.3.horizontal.decrease")
-                    // TODO: copy stock iOS filter indicator (filled circle BG when true)
-                        .foregroundStyle(
-                            Color(libraryStore.filter.isAnyFilterActive ? .accent : .label)
-                        )
-                        .fontWeight(libraryStore.filter.isAnyFilterActive ? .heavy : .medium)
-                }
+                filterMenu
             }
 
             // Sort By
             ToolbarItem(placement: .topBarTrailing) {
-                Menu {
-                    Section("Sort By") {
-                        Picker(selection: $store.order.sortOption) {
-                            Text("Ascending")
-                                .tag(LibraryOrderSortOption.dateAddedAscending)
-
-                            Text("Descending")
-                                .tag(LibraryOrderSortOption.dateAddedDescending)
-                        } label: {
-                            Label("Date Added", systemImage: "calendar")
-                            if libraryStore.order.sortOption == .dateAddedAscending {
-                                Text("Ascending")
-                            } else if libraryStore.order.sortOption == .dateAddedDescending {
-                                Text("Descending")
-                            }
-                        }
-                        .pickerStyle(.menu)
-
-                        Picker(selection: $store.order.sortOption) {
-                            Text("Ascending")
-                                .tag(LibraryOrderSortOption.bookOrderAscending)
-
-                            Text("Descending")
-                                .tag(LibraryOrderSortOption.bookOrderDescending)
-                        } label: {
-                            Label("Book Order", systemImage: "calendar.day.timeline.leading")
-                            if libraryStore.order.sortOption == .bookOrderAscending {
-                                Text("Ascending")
-                            } else if libraryStore.order.sortOption == .bookOrderDescending {
-                                Text("Descending")
-                            }
-                        }
-                        .pickerStyle(.menu)
-                    }
-                } label: {
-                    Label("Sort By", systemImage: "arrow.up.arrow.down")
-                }
+                sortMenu
             }
 
             // Group By
             ToolbarItem(placement: .topBarTrailing) {
-                Menu {
-                    Section("Group By") {
-                        ForEach(LibraryOrderGroupOption.allCases) { option in
-                            Toggle(option.title, systemImage: option.systemImage, isOn: Binding(
-                                get: { store.order.groupOption == option },
-                                set: { isOn in store.order.groupOption = isOn ? option : .none }
-                            ))
-                        }
-                    }
-                } label: {
-                    Label("Group By", systemImage: "square.stack.3d.up")
-                        .foregroundStyle(
-                            Color(libraryStore.order.isAnyGroupActive ? .accent : .label)
-                        )
-                        .fontWeight(libraryStore.order.isAnyGroupActive ? .heavy : .regular)
-                }
+                groupMenu
             }
         }
 
         // Select Annotations
         ToolbarItem(placement: .topBarLeading) {
-            if librarySelection.isSelecting {
-                Button {
-                    withAnimation(.snappy(duration: 0.35)) {
-                        librarySelection.endSelection()
-                    }
-                } label: {
-                    Label("Done", systemImage: "checkmark")
-//                        .tint(Color(.accent))
-                        .labelStyle(.iconOnly)
-                        .font(.system(.body, weight: .semibold))
-                        .foregroundStyle(.white)
-                        .backgroundStyle(.clear)
-                        .frame(width: frameSize40, height: frameSize40)
-                        .glassEffect(.regular.tint(.accent).interactive(), in: .circle)
-                }
-                .buttonStyle(.plain)
-            } else {
-                Button {
-                    withAnimation(.snappy(duration: 0.35)) {
-                        librarySelection.beginSelection()
-                    }
-                } label: {
-                    Label("Select Annotations", systemImage: "checkmark.circle")
-                        .labelStyle(.iconOnly)
-                        .font(.system(.body, weight: .semibold))
-//                        .foregroundStyle(.white)
-//                        .backgroundStyle(.clear)
-                        .frame(width: frameSize42, height: frameSize42)
-                        .glassEffect(.regular.interactive(), in: .circle)
-                }
-                .buttonStyle(.plain)
-            }
+            selectAnnotationsItem
         }
         .sharedBackgroundVisibility(.hidden)
+    }
+
+    /// Filter By menu (for toolbar)
+    /// Styled by filterOptionsToolbarItem based on filter state
+    @ViewBuilder
+    private var filterMenu: some View {
+        @Bindable var store: LibraryStore = libraryStore
+
+        Menu {
+            Section("Filter By") {
+                // Translations
+                Picker(selection: $store.filter.translationID) {
+                    // "All" row: tag type must be String? to match the binding
+                    Text("All Translations")
+                        .tag(Translation.ID?.none) // aka nil
+
+                    ForEach(Set(libraryStore.annotations.map(\.translationID)).sorted(), id: \.self) { translationID in
+                        let label = catalogStore.translation(for: translationID)?.abbreviation ?? translationID.description
+                        Text(label)
+                            .tag(Optional(translationID)) // ID?, not ID
+                    }
+                } label: {
+                    Label("Translation", systemImage: "text.book.closed")
+                    if let translationID = libraryStore.filter.translationID {
+                        let label = catalogStore.translation(for: translationID)?.abbreviation
+                        ?? translationID.description
+                        Text(label)
+                            .foregroundStyle(Color.secondary)
+                    }
+                }
+                .pickerStyle(.menu)
+
+                // Books
+                Picker(selection: $store.filter.bookCode) {
+                    // "All" row: tag type must be String? to match the binding
+                    Text("All Books")
+                        .tag(String?.none) // aka nil
+
+                    // Group by unique book code; only take first one; sort
+                    // TODO: sort according to Bible ordering (may need to hardcode as API doesnt return this...?)
+                    ForEach(uniqueBookCodeAnnotations) { annotation in
+                        let label = catalogStore.book(for: annotation.translationID,
+                                                      bookCode: annotation.bookCode)?.displayName ?? annotation.bookCode
+                        Text(label)
+                            .tag(Optional(annotation.bookCode)) // String?, not String
+                    }
+                } label: {
+                    Label("Book", systemImage: "books.vertical")
+                    if let bookCode = libraryStore.filter.bookCode,
+                       let translationID = uniqueBookCodeAnnotations.first(where: { $0.bookCode == bookCode })?.translationID {
+                        let label = catalogStore.book(for: translationID,
+                                                      bookCode: bookCode)?.displayName ?? bookCode
+                        Text(label)
+                            .foregroundStyle(Color.secondary)
+                    }
+                }
+                .pickerStyle(.menu)
+
+                Divider()
+
+                // Annotation Type
+                Picker(selection: $store.filter.contentType) {
+                    Label("All", systemImage: "circle.dotted")
+                        .tag(AnnotationContentType?.none) // aka nil
+                    Label("Highlights", systemImage: "pencil.line")
+                        .tag(Optional(AnnotationContentType.highlight))
+                    Label("Tags", systemImage: "tag")
+                        .tag(Optional(AnnotationContentType.tags))
+                    Label("Notes", systemImage: "text.alignleft")
+                        .tag(Optional(AnnotationContentType.note))
+                } label: {
+                    Label("Annotation Type", systemImage: "square.3.layers.3d.top.filled")
+                }
+                .pickerStyle(.segmented)
+
+                // Highlight Colors
+                Picker(selection: $store.filter.highlightColor) {
+                    // "All" row: tag type must match the binding (VerseAnnotationHighlightColor?)
+                    Label("All", systemImage: "circle.dotted")
+                        .tag(VerseAnnotationHighlightColor?.none)
+
+                    ForEach(VerseAnnotationHighlightColor.allCases.filter { color in
+                        store.annotations.contains { $0.highlightColor == color }
+                    }, id: \.self) { highlightColor in
+                        Label {
+                            Text(highlightColor.rawValue.capitalized)
+                        } icon: {
+                            highlightSwatch(highlightColor)
+                        }
+                        .tag(Optional(highlightColor))
+                    }
+                } label: {
+                    Label("Highlight Color", systemImage: "pencil.line")
+                }
+                .pickerStyle(.segmented)
+
+                // Tags
+                Picker(selection: $store.filter.tag) {
+                    // "All" row: tag type must be String? to match the binding
+                    Text("All Tags")
+                        .tag(String?.none) // aka nil
+
+                    ForEach(store.allTags.sorted(), id: \.self) { tag in
+                        Text(tag)
+                            .tag(Optional(tag))   // String?, not String
+                    }
+                } label: {
+                    Label("Tag", systemImage: "tag")
+                    if let tag = libraryStore.filter.tag {
+                        Text(tag)
+                            .foregroundStyle(Color.secondary)
+                    }
+                }
+                .pickerStyle(.menu)
+
+                // Clear All Filters
+                if libraryStore.filter.isAnyFilterActive {
+                    Divider()
+                    Button(role: .destructive) {
+                        store.filter.clearAllFilters()
+                    } label: {
+                        Label("Clear All Filters", systemImage: "trash") // TODO: better symbol
+                    }
+                }
+            }
+        } label: {
+            Image(systemName: "line.3.horizontal.decrease")
+            // TODO: copy stock iOS filter indicator (filled circle BG when true)
+                .foregroundStyle(
+                    Color(libraryStore.filter.isAnyFilterActive ? .accent : .label)
+                )
+                .fontWeight(libraryStore.filter.isAnyFilterActive ? .heavy : .medium)
+        }
+    }
+
+    /// Sort By menu (for toolbar)
+    @ViewBuilder
+    private var sortMenu: some View {
+        @Bindable var store: LibraryStore = libraryStore
+
+        Menu {
+            Section("Sort By") {
+                Picker(selection: $store.order.sortOption) {
+                    Text("Ascending")
+                        .tag(LibraryOrderSortOption.dateAddedAscending)
+
+                    Text("Descending")
+                        .tag(LibraryOrderSortOption.dateAddedDescending)
+                } label: {
+                    Label("Date Added", systemImage: "calendar")
+                    if libraryStore.order.sortOption == .dateAddedAscending {
+                        Text("Ascending")
+                    } else if libraryStore.order.sortOption == .dateAddedDescending {
+                        Text("Descending")
+                    }
+                }
+                .pickerStyle(.menu)
+
+                Picker(selection: $store.order.sortOption) {
+                    Text("Ascending")
+                        .tag(LibraryOrderSortOption.bookOrderAscending)
+
+                    Text("Descending")
+                        .tag(LibraryOrderSortOption.bookOrderDescending)
+                } label: {
+                    Label("Book Order", systemImage: "calendar.day.timeline.leading")
+                    if libraryStore.order.sortOption == .bookOrderAscending {
+                        Text("Ascending")
+                    } else if libraryStore.order.sortOption == .bookOrderDescending {
+                        Text("Descending")
+                    }
+                }
+                .pickerStyle(.menu)
+            }
+        } label: {
+            Label("Sort By", systemImage: "arrow.up.arrow.down")
+        }
+    }
+
+    /// Group By menu (for toolbar)
+    @ViewBuilder
+    private var groupMenu: some View {
+        @Bindable var store: LibraryStore = libraryStore
+
+        Menu {
+            Section("Group By") {
+                ForEach(LibraryOrderGroupOption.allCases) { option in
+                    Toggle(option.title, systemImage: option.systemImage, isOn: Binding(
+                        get: { store.order.groupOption == option },
+                        set: { isOn in store.order.groupOption = isOn ? option : .none }
+                    ))
+                }
+            }
+        } label: {
+            Label("Group By", systemImage: "square.stack.3d.up")
+                .foregroundStyle(
+                    Color(libraryStore.order.isAnyGroupActive ? .accent : .label)
+                )
+                .fontWeight(libraryStore.order.isAnyGroupActive ? .heavy : .regular)
+        }
+    }
+
+    /// Select Annotations button (for toolbar)
+    @ViewBuilder
+    private var selectAnnotationsItem: some View {
+        if librarySelection.isSelecting {
+            Button {
+                withAnimation(.snappy(duration: 0.35)) {
+                    librarySelection.endSelection()
+                }
+            } label: {
+                Label("Done", systemImage: "checkmark")
+                //                        .tint(Color(.accent))
+                    .labelStyle(.iconOnly)
+                    .font(.system(.body, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .backgroundStyle(.clear)
+                    .frame(width: frameSize40, height: frameSize40)
+                    .glassEffect(.regular.tint(.accent).interactive(), in: .circle)
+            }
+            .buttonStyle(.plain)
+        } else {
+            Button {
+                withAnimation(.snappy(duration: 0.35)) {
+                    librarySelection.beginSelection()
+                }
+            } label: {
+                Label("Select Annotations", systemImage: "checkmark.circle")
+                    .labelStyle(.iconOnly)
+                    .font(.system(.body, weight: .semibold))
+                //                        .foregroundStyle(.white)
+                //                        .backgroundStyle(.clear)
+                    .frame(width: frameSize42, height: frameSize42)
+                    .glassEffect(.regular.interactive(), in: .circle)
+            }
+            .buttonStyle(.plain)
+        }
     }
 
     // MARK: Views (Filter Bar)
