@@ -147,7 +147,7 @@ final class LibraryStore {
                     do {
                         try await self.bibleCatalogStore.loadBooks(for: translationID)
                     } catch {
-                        Self.logger.error("loadMissingBookMetadata(): load for ID \(translationID) failed: \(error.localizedDescription)")
+                        await Self.logger.error("loadMissingBookMetadata(): load for ID \(translationID) failed: \(error.localizedDescription)")
                     }
                 }
             }

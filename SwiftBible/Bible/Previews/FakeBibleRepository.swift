@@ -86,7 +86,7 @@ final class FakeBibleRepository: BibleRepository {
                     availableBookCodes: ["GEN", "EXO", "LEV"])
     ]
 
-    static let defaultBooks: [Book] = [
+    nonisolated static let defaultBooks: [Book] = [
         Book(id: "GEN",
              code: "GEN",
              displayName: "Genesis",

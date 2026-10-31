@@ -139,7 +139,8 @@ struct LibraryOrder: Equatable {
 /// Represents a group of annotations
 ///
 /// Equatable is required since LibraryOrder inherits & is Equatable
-struct LibraryOrderGroup: Identifiable, Equatable {
+/// nonisolated: plain value type, safe to use from any actor
+nonisolated struct LibraryOrderGroup: Identifiable, Equatable {
     /// Represents whatever this is grouped by; i.e. a specific Translation.ID  or bookCode
     /// (stringified for reusability)
     let id: String

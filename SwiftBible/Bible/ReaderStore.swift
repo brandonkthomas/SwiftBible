@@ -756,8 +756,3 @@ enum ReaderLoadState: Equatable {
     case emptyChapters
     case failed(String)
 }
-
-enum ChapterNavigationDirection {
-    case previous
-    case next
-}
