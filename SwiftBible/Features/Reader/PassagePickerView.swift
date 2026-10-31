@@ -42,7 +42,7 @@ struct PassagePickerView: View {
 
     /// Used for Zoom transition
     @Namespace private var presentationNamespace
-    private var presentationID = UUID()
+    private static let presentationID = UUID()
 
     // MARK: Properties (Private, Dynamic Type)
 
@@ -125,11 +125,11 @@ struct PassagePickerView: View {
         .foregroundStyle(.primary) // Automatically adapts to light/dark
         .sheet(isPresented: $isPickerSheetPresented) {
             PassagePickerSheetView()
-                .navigationTransition(.zoom(sourceID: presentationID, in: presentationNamespace))
-                .presentationDetents([.fraction(0.7)])
-//                .presentationDragIndicator(.hidden)
+                .navigationTransition(.zoom(sourceID: PassagePickerView.presentationID,
+                                            in: presentationNamespace))
         }
-        .matchedTransitionSource(id: presentationID, in: presentationNamespace)
+        .matchedTransitionSource(id: PassagePickerView.presentationID,
+                                 in: presentationNamespace)
     }
 
     /// TabBarAccessory label view

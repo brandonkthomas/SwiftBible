@@ -77,7 +77,7 @@ struct PassagePickerSheetView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .principal) {
-                    Picker("Picker Mode", selection: $mode) {
+                    Picker("Translations & Books", selection: $mode) {
                         Text("Books").tag(Mode.books)
                         Text("Translations").tag(Mode.translations)
                     }
@@ -85,16 +85,13 @@ struct PassagePickerSheetView: View {
                     .fixedSize()
                 }
                 ToolbarItem(placement: .cancellationAction) {
-                    Button {
+                    Button(role: .close) {
                         dismiss()
-                    } label: {
-                        Label("Cancel", systemImage: "xmark")
-                            .labelStyle(.iconOnly)
                     }
                 }
             }
         }
-        .presentationDetents([.medium, .large])
+        .presentationDetents([.fraction(0.7)])
         .presentationDragIndicator(.visible)
     }
 
@@ -135,9 +132,8 @@ struct PassagePickerSheetView: View {
         }
     }
 
-    /// One List row per book: header button + (when expanded) chapter grid in the same row
-    /// Single row grows in place instead of List inserting a separate grid row, which animated
-    /// grid cells in from a stale position
+    /// One row per book: header button + (when expanded) chapter grid in the same VStack
+    /// Row grows in place and reports its layout frame so expansion can scroll it into view
     private func bookRowView(_ book: Book, proxy: ScrollViewProxy) -> some View {
         let isExpanded = expandedBookID == book.id
         let isSelected = readerStore.selectedBook?.id == book.id
@@ -156,10 +152,12 @@ struct PassagePickerSheetView: View {
                         .font(.footnote.weight(.semibold))
                         .foregroundStyle(.secondary)
                         .rotationEffect(.degrees(isExpanded ? 90 : 0))
+                        .accessibilityHidden(true) // no need to read this
                 }
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
+            .accessibilityValue(isExpanded ? "Expanded" : "Collapsed")
 
             if isExpanded {
                 chapterGridView(book)
@@ -193,7 +191,6 @@ struct PassagePickerSheetView: View {
 
         // verbatim: chapter name is API data, not app UI text
         // Same button style + frame for every cell so selected cell doesn't add height to its row
-        // (.borderedProminent adds its own padding around the label)
         Button {
             if isSelected {
                 dismiss()
@@ -213,12 +210,14 @@ struct PassagePickerSheetView: View {
                 .contentShape(Rectangle())
         }
         .buttonStyle(.borderless)
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 
     // MARK: Views (Translations)
 
     private var translationsListView: some View {
         List(sortedTranslations) { translation in
+            let isSelected = readerStore.selectedTranslation?.id == translation.id
             Button {
                 select(translation: translation)
             } label: {
@@ -230,15 +229,17 @@ struct PassagePickerSheetView: View {
                             .foregroundStyle(.secondary)
                     }
                     Spacer()
-                    if readerStore.selectedTranslation?.id == translation.id {
+                    if isSelected {
                         Image(systemName: "checkmark")
                             .fontWeight(.semibold)
                             .foregroundStyle(.tint)
+                            .accessibilityHidden(true)
                     }
                 }
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
+            .accessibilityAddTraits(isSelected ? .isSelected : [])
         }
         .listStyle(.plain)
     }
