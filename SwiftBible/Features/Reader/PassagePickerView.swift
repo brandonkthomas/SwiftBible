@@ -141,24 +141,62 @@ struct PassagePickerView: View {
             case .emptyBooks:
                 Text("Select Translation")
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .lineLimit(1)
             // no translations should never happen
             case .emptyTranslations,
                  .failed(_):
                 Text("Content Unavailable")
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .lineLimit(1)
             default:
-                HStack(spacing: 8) {
-                    // UI prompts are localized literals; book/chapter/abbreviation are API data
-                    // shown verbatim
-                    if readerStore.books.isEmpty {
-                        Text("Select Translation")
-                    } else if let selectedBook = readerStore.selectedBook {
-                        Text(verbatim: "\(selectedBook.displayName) \(readerStore.selectedChapter?.displayName ?? "")")
-                    } else {
-                        Text("Select Book")
+                ViewThatFits(in: .horizontal) {
+                    // Case 1
+                    HStack(spacing: 8) {
+                        // UI prompts are localized literals; book/chapter/abbreviation are API data
+                        // shown verbatim
+                        if readerStore.books.isEmpty {
+                            Text("Select Translation")
+                                .lineLimit(1)
+                        } else if let selectedBook = readerStore.selectedBook {
+                            Text(verbatim: "\(selectedBook.displayName) \(readerStore.selectedChapter?.displayName ?? "")")
+                                .lineLimit(1)
+                        } else {
+                            Text("Select Book")
+                                .lineLimit(1)
+                        }
+                        Text(verbatim: readerStore.selectedTranslation?.abbreviation ?? "")
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
                     }
-                    Text(verbatim: readerStore.selectedTranslation?.abbreviation ?? "")
-                        .foregroundStyle(.secondary)
+                    // Case 2
+                    HStack(spacing: 8) {
+                        if readerStore.books.isEmpty {
+                            Text("Select Translation")
+                                .lineLimit(1)
+                        } else if let selectedBook = readerStore.selectedBook {
+                            Text(verbatim: "\(selectedBook.displayName) \(readerStore.selectedChapter?.displayName ?? "")")
+                                .lineLimit(1)
+                        } else {
+                            Text("Select Book")
+                                .lineLimit(1)
+                        }
+                    }
+                    // Case 3
+                    HStack(spacing: 8) {
+                        if readerStore.books.isEmpty {
+                            Text("Select Translation")
+                                .minimumScaleFactor(0.8)
+                                .lineLimit(1)
+                        } else if let selectedBook = readerStore.selectedBook {
+                            Text(verbatim: "\(selectedBook.displayName) \(readerStore.selectedChapter?.displayName ?? "")")
+                                .minimumScaleFactor(0.8)
+                                .lineLimit(1)
+                        } else {
+                            Text("Select Book")
+                                .minimumScaleFactor(0.8)
+                                .lineLimit(1)
+                        }
+                    }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
