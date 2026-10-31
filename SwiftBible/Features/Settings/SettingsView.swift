@@ -29,6 +29,13 @@ struct SettingsView: View {
                                     symbol: "paintbrush.fill",
                                     color: .blue)
                     }
+                    NavigationLink {
+                        // TODO
+                    } label: {
+                        settingsRow(title: "Language",
+                                    symbol: "globe",
+                                    color: .green)
+                    }
                 }
                 Section {
                     NavigationLink {
@@ -88,7 +95,7 @@ struct SettingsView: View {
             .font(.system(size: rowFontSize,
                           weight: .regular,
                           design: .default))
-            .navigationTitle("Customize")
+            .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
             .navigationBarHidden(true)
         }

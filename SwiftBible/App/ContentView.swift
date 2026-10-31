@@ -12,7 +12,7 @@ struct ContentView: View {
     private enum CurrentTab {
         case read
         case saved
-        case themes
+        case settings
         case search
     }
 
@@ -69,7 +69,7 @@ struct ContentView: View {
             Tab("Saved", systemImage: "bookmark", value: CurrentTab.saved) {
                 LibraryView(onShowInReader: { selectedTab = .read })
             }
-            Tab("Customize", systemImage: "switch.2", value: CurrentTab.themes) {
+            Tab("Settings", systemImage: "switch.2", value: CurrentTab.settings) {
                 SettingsView()
             }
             Tab("Search", systemImage: "magnifyingglass", value: CurrentTab.search) {
