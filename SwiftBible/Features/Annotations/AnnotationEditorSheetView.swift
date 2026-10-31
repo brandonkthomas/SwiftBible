@@ -69,6 +69,13 @@ struct AnnotationEditorSheetView: View {
         }
     }
 
+    // MARK: Properties (Private, Dynamic Type)
+
+    @ScaledMetric(relativeTo: .caption) private var captionSymbolSize9: CGFloat = 9
+    @ScaledMetric(relativeTo: .caption) private var captionSymbolSize13: CGFloat = 13
+    @ScaledMetric(relativeTo: .caption) private var captionFrameSize18: CGFloat = 18
+    @ScaledMetric(relativeTo: .caption) private var captionFrameSize140: CGFloat = 140
+
     // MARK: Views
 
     var body: some View {
@@ -77,7 +84,7 @@ struct AnnotationEditorSheetView: View {
                 // Tags section
                 Label("Tags", systemImage: "tag")
                     .textCase(.uppercase)
-                    .font(.system(size: 11, weight: .regular, design: .serif))
+                    .font(.system(.caption2, design: .serif))
                     .foregroundStyle(.secondary)
 
                 tagChipsView
@@ -87,7 +94,7 @@ struct AnnotationEditorSheetView: View {
                 // Note section
                 Label("Note", systemImage: "text.alignleft")
                     .textCase(.uppercase)
-                    .font(.system(size: 11, weight: .regular, design: .serif))
+                    .font(.system(.caption2, design: .serif))
                     .foregroundStyle(.secondary)
 
                 TextField("Write a note about this passage...",
@@ -197,7 +204,8 @@ struct AnnotationEditorSheetView: View {
                 Image(systemName: "plus")
                 Text("Tag")
             }
-            .font(.system(size: 12, weight: .semibold, design: .serif))
+            .font(.system(.caption, design: .serif))
+            .fontWeight(.semibold)
             .padding(.horizontal, 14)
             .padding(.vertical, 8)
         }
@@ -211,12 +219,13 @@ struct AnnotationEditorSheetView: View {
     private var tagInputField: some View {
         HStack(spacing: 6) {
             TextField("New tag", text: $newTagText)
-                .font(.system(size: 12, weight: .semibold, design: .serif))
+                .font(.system(.caption, design: .serif))
+                .fontWeight(.semibold)
                 .textInputAutocapitalization(.words)
                 .autocorrectionDisabled()
                 .submitLabel(.done)
                 .focused($focusedField, equals: .newTag)
-                .frame(width: 140)
+                .frame(width: captionFrameSize140)
                 .onSubmit(submitNewTag)
                 // Focus once field is actually in hierarchy AND ready to accept first responder
                 // onAppear alone fires too early (field exists but can't respond yet, so request
@@ -229,9 +238,9 @@ struct AnnotationEditorSheetView: View {
             // Add button
             Button(action: submitNewTag) {
                 Image(systemName: "plus")
-                    .font(.system(size: 13, weight: .bold))
+                    .font(.system(size: captionSymbolSize13, weight: .bold))
                     .foregroundStyle(.white)
-                    .frame(width: 18, height: 18)
+                    .frame(width: captionFrameSize18, height: captionFrameSize18)
                     .background(Circle().fill(.blue))
             }
             .buttonStyle(.plain)
@@ -255,10 +264,11 @@ struct AnnotationEditorSheetView: View {
                 Text(tag)
                 if isSelected {
                     Image(systemName: "xmark")
-                        .font(.system(size: 9, weight: .bold))
+                        .font(.system(size: captionSymbolSize9, weight: .bold))
                 }
             }
-            .font(.system(size: 12, weight: .semibold, design: .serif))
+            .font(.system(.caption, design: .serif))
+            .fontWeight(.semibold)
             .foregroundStyle(isSelected ? Color.white : Color.primary)
             .padding(.horizontal, 12)
             .padding(.vertical, 8)

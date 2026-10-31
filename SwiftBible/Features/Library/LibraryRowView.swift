@@ -45,11 +45,11 @@ struct LibraryRowView: View {
 
     // MARK: Properties (Private, Dynamic Type)
 
-    /// Passage label + note/tags font size
-    @ScaledMetric(relativeTo: .body) private var detailFontSize: CGFloat = 16
-
-    /// Action menu symbol size
-    @ScaledMetric(relativeTo: .body) private var menuSymbolSize: CGFloat = 20
+    @ScaledMetric(relativeTo: .body) private var fontSize16: CGFloat = 16
+    @ScaledMetric(relativeTo: .body) private var frameSize16: CGFloat = 16
+    @ScaledMetric(relativeTo: .body) private var frameSize18: CGFloat = 18
+    @ScaledMetric(relativeTo: .body) private var frameSize32: CGFloat = 32
+    @ScaledMetric(relativeTo: .body) private var symbolSize20: CGFloat = 20
 
     // MARK: Properties (Private, State)
 
@@ -135,8 +135,8 @@ struct LibraryRowView: View {
                         Image(systemName: "tag")
                     }
                 }
-                .frame(width: 16, height: 16)
-                .font(.system(size: 16, weight: .regular, design: .serif))
+                .frame(width: frameSize16, height: frameSize16)
+                .font(.system(size: fontSize16, weight: .regular, design: .serif))
                 .foregroundStyle(.secondary)
 
                 // Chapter / verse range / translation
@@ -145,7 +145,7 @@ struct LibraryRowView: View {
                     Text(data.translationLabel)
                         .foregroundStyle(.secondary)
                 }
-                .font(.system(size: detailFontSize,
+                .font(.system(size: fontSize16,
                               weight: .medium,
                               design: .serif))
                 .contentShape(Rectangle())
@@ -209,14 +209,14 @@ struct LibraryRowView: View {
             if case .note(let noteText) = data.annotation.content {
                 Divider()
                 Text(noteText)
-                    .font(.system(size: detailFontSize,
+                    .font(.system(size: fontSize16,
                                   weight: .regular,
                                   design: .serif))
                     .lineHeight(AttributedString.LineHeight.exact(points: annotationTagsLineHeight)) // try to match AnnotationEditorSheetView Note TextInput
             } else if case .tags(let tags) = data.annotation.content {
                 Divider()
                 Text(tags.joined(separator: ", "))
-                    .font(.system(size: detailFontSize,
+                    .font(.system(size: fontSize16,
                                   weight: .regular,
                                   design: .serif))
                     .lineHeight(AttributedString.LineHeight.exact(points: annotationTagsLineHeight)) // try to match AnnotationEditorSheetView Note TextInput
@@ -369,10 +369,10 @@ struct LibraryRowView: View {
             annotationItems
         } label: {
             Image(systemName: "ellipsis")
-                .font(.system(size: menuSymbolSize))
+                .font(.system(size: symbolSize20))
                 .foregroundStyle(Color(.label))
                 // touch target optimization
-                .frame(width: 32, height: 18)
+                .frame(width: frameSize32, height: frameSize18)
                 .contentShape(.rect.inset(by: -14))
         }
         // Shared by the menu's Delete and the swipe action; on iOS 26+ it presents as a

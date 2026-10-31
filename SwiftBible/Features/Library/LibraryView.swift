@@ -76,6 +76,12 @@ struct LibraryView: View {
     /// OS Logging
     private static let logger = Logger(subsystem: "SwiftBible", category: "LibraryView")
 
+    // MARK: Properties (Private, Dynamic Type)
+
+    @ScaledMetric(relativeTo: .body) private var deleteSymbolSize24: CGFloat = 24
+    @ScaledMetric(relativeTo: .body) private var frameSize40: CGFloat = 40
+    @ScaledMetric(relativeTo: .body) private var frameSize42: CGFloat = 42
+
     // MARK: Views
 
     /// Primary body
@@ -156,7 +162,7 @@ struct LibraryView: View {
                 } label: {
                     Label("Delete", systemImage: "trash.fill")
                         .labelStyle(.iconOnly)
-                        .font(.system(size: 24))
+                        .font(.system(size: deleteSymbolSize24))
                         .foregroundStyle(canDelete ? AnyShapeStyle(Color.white) : AnyShapeStyle(.tertiary))
                 }
                 .padding()  // inside the circle
@@ -531,10 +537,10 @@ struct LibraryView: View {
                     Label("Done", systemImage: "checkmark")
 //                        .tint(Color(.accent))
                         .labelStyle(.iconOnly)
-                        .font(.system(size: 17, weight: .semibold))
+                        .font(.system(.body, weight: .semibold))
                         .foregroundStyle(.white)
                         .backgroundStyle(.clear)
-                        .frame(width: 40, height: 40)
+                        .frame(width: frameSize40, height: frameSize40)
                         .glassEffect(.regular.tint(.accent).interactive(), in: .circle)
                 }
                 .buttonStyle(.plain)
@@ -546,10 +552,10 @@ struct LibraryView: View {
                 } label: {
                     Label("Select Annotations", systemImage: "checkmark.circle")
                         .labelStyle(.iconOnly)
-                        .font(.system(size: 17, weight: .semibold))
+                        .font(.system(.body, weight: .semibold))
 //                        .foregroundStyle(.white)
 //                        .backgroundStyle(.clear)
-                        .frame(width: 42, height: 42)
+                        .frame(width: frameSize42, height: frameSize42)
                         .glassEffect(.regular.interactive(), in: .circle)
                 }
                 .buttonStyle(.plain)

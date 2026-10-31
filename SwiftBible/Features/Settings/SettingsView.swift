@@ -29,13 +29,13 @@ struct SettingsView: View {
                                     symbol: "paintbrush.fill",
                                     color: .blue)
                     }
-                    NavigationLink {
-                        // TODO
-                    } label: {
-                        settingsRow(title: "Language",
-                                    symbol: "globe",
-                                    color: .green)
-                    }
+//                    NavigationLink {
+//                        // TODO
+//                    } label: {
+//                        settingsRow(title: "Language",
+//                                    symbol: "globe",
+//                                    color: .green)
+//                    }
                 }
                 Section {
                     NavigationLink {
