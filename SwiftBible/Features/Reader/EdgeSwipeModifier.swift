@@ -58,11 +58,14 @@ struct EdgeSwipeModifier: ViewModifier {
         (dragCircleOffset ?? 0) + (dragEdge == .leading ? -Self.circleSize : Self.circleSize)
     }
 
-    /// anchor at start Y, follow vertical finger movement w/ resistance
+    /// anchor at start Y, follow vertical finger movement w/ logarithmic resistance
+    ///   Starts at `resistanceFactor` slope near startY, then flattens as distance grows:
+    ///   resistanceFactor * scale * ln(1 + |delta| / scale)
     private var dragFinalOffsetY: CGFloat {
-        (dragStartY ?? 0)
-        + (((dragCurrentY ?? 0) - (dragStartY ?? 0)) * EdgeSwipeCalculator.resistanceFactor)
-        - Self.circleSize
+        let delta = (dragCurrentY ?? 0) - (dragStartY ?? 0)
+        let scale = Self.verticalResistanceScale
+        let resisted = EdgeSwipeCalculator.resistanceFactor * scale * log1p(abs(delta) / scale)
+        return (dragStartY ?? 0) + (delta < 0 ? -resisted : resisted) - Self.circleSize
     }
 
     // MARK: Properties (Private, Constants)
@@ -73,6 +76,9 @@ struct EdgeSwipeModifier: ViewModifier {
     private static let minimumDragDistance: CGFloat = 10
 
     private static let circleSize: CGFloat = 52
+
+    /// Vertical distance (pt) where log resistance starts to noticeably flatten; lower = stiffer
+    private static let verticalResistanceScale: CGFloat = 100
 
     private static let logger = Logger(subsystem: "SwiftBible", category: "EdgeSwipeModifier")
 
