@@ -9,6 +9,12 @@ struct ContentView: View {
     /// Mirrors tab bar minimization, derived from the bottom accessory's placement
     @State private var isTabBarExpanded = true
 
+    /// Is the Listen Mode sheet showing?
+    @State private var isListenModeSheetPresented = false
+
+    /// for sheet close button / dismiss after selection
+    @Environment(\.dismiss) private var dismissListenModeSheet
+
     private enum CurrentTab {
         case read
         case saved
@@ -36,35 +42,66 @@ struct ContentView: View {
             Tab("Read", systemImage: "book", value: CurrentTab.read) {
                 ReaderView()
                 // TODO: Listen Mode (v1.1)
-//                    .safeAreaInset(edge: .bottom, alignment: .trailing, spacing: nil) {
-//                        if readerStore.loadState == .loaded {
-//                            Button {
-//                                // TODO: Listen Mode
-//                                // Similar to accessibility feature "Speak Selection"
-//                                // Auto-scroll and realtime word/line highlight
-//                                // Show small sheet w/ play/pause, pacing, auto-advance chapter, voice
-//                                // Allow disabling in Settings > Reader > Show Listen Mode
-//                            } label: {
-//                                Image(systemName: "waveform")
-//                                    .frame(width: 24, height: 24)
+                // TODO: move to ViewModifier
+                    .safeAreaInset(edge: .bottom, alignment: .trailing, spacing: nil) {
+                        if readerStore.loadState == .loaded {
+                            Button {
+                                // TODO: Listen Mode
+                                // Similar to accessibility feature "Speak Selection"
+                                // Auto-scroll and realtime word/line highlight
+                                // Show small sheet w/ play/pause, pacing, auto-advance chapter, voice
+                                // Allow disabling in Settings > Reader > Show Listen Mode
+                                isListenModeSheetPresented = true
+                            } label: {
+                                Image(systemName: "waveform")
+                                    .frame(width: 24, height: 24)
+                                    .imageScale(.large)
+                                    .foregroundStyle(Color.primary)
+                                    .padding(10)
+                            }
+                            .glassEffect(.regular.interactive(), in: .circle)
+                            .safeAreaPadding(.trailing, 20)
+                            .safeAreaPadding(.bottom, 8)
+                            .opacity(isTabBarExpanded ? 1 : 0)
+                            .allowsHitTesting(isTabBarExpanded)
+                            .accessibilityHidden(!isTabBarExpanded)
+                            .animation(
+                                isTabBarExpanded
+                                ? .bouncy(duration: 0.3)
+                                : .bouncy(duration: 0.4), // slightly longer on collapse
+                                value: isTabBarExpanded
+                            )
+                        }
+                    }
+                    .sheet(isPresented: $isListenModeSheetPresented, content: {
+                        NavigationStack {
+                            Button {
+
+                            } label: {
+                                Label("Play", systemImage: "play.fill")
+                                    .labelStyle(.iconOnly)
+                                    .frame(width: 80, height: 80)
+                                    .foregroundStyle(Color.primary)
 //                                    .imageScale(.large)
-//                                    .foregroundStyle(Color.primary)
-//                                    .padding(10)
-//                            }
-//                            .glassEffect(.regular.interactive(), in: .circle)
-//                            .safeAreaPadding(.trailing, 20)
-//                            .safeAreaPadding(.bottom, 8)
-//                            .opacity(isTabBarExpanded ? 1 : 0)
-//                            .allowsHitTesting(isTabBarExpanded)
-//                            .accessibilityHidden(!isTabBarExpanded)
-//                            .animation(
-//                                isTabBarExpanded
-//                                ? .bouncy(duration: 0.3)
-//                                : .bouncy(duration: 0.3),
-//                                value: isTabBarExpanded
-//                            )
-//                        }
-//                    }
+                                    .font(.system(size: 32))
+                            }
+                                .buttonStyle(.automatic)
+                                .glassEffect(.clear.interactive(), in: .circle)
+                                .frame(width: 80, height: 80)
+                                .navigationTitle("Listen")
+                                .navigationBarTitleDisplayMode(.inline)
+                                .toolbar {
+                                    ToolbarItem(placement: .cancellationAction) {
+                                        Button(role: .close) {
+                                            dismissListenModeSheet()
+                                        }
+                                    }
+                                }
+                        }
+                        .presentationDetents([.fraction(0.3)])
+                        .presentationDragIndicator(.visible)
+                        .presentationBackgroundInteraction(.enabled)
+                    })
             }
             Tab("Saved", systemImage: "bookmark", value: CurrentTab.saved) {
                 LibraryView(onShowInReader: { selectedTab = .read })
