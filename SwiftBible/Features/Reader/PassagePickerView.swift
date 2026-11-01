@@ -23,14 +23,14 @@ struct PassagePickerView: View {
     /// - Dont check passageLoadState right now as we want to be able to quickly tap the button while loading
     private var isPrevNavigationDisabled: Bool {
         readerStore.loadState != .loaded //  || readerStore.passageLoadState != .loaded
-        || readerStore.previousAdjacentChapterExists == false
+        || !readerStore.previousAdjacentChapterExists
     }
 
     /// disable if we are loading OR at end of Bible
     /// - Dont check passageLoadState right now as we want to be able to quickly tap the button while loading
     private var isNextNavigationDisabled: Bool {
         readerStore.loadState != .loaded //  || readerStore.passageLoadState != .loaded
-        || readerStore.nextAdjacentChapterExists == false
+        || !readerStore.nextAdjacentChapterExists
     }
 
     // MARK: Properties (Private, State)
