@@ -48,12 +48,17 @@ final class BibleCatalogStore {
     /// Stores API-retrieved Translations/Books clientside for performance
     private let catalogCache: any CatalogCache
 
+    private let appBuildNumber: String?
+    private static let unknownBuildNumber: String = "unknownBuildNumber"
+
     // MARK: Init
 
     init(repository: any BibleRepository,
-         catalogCache: any CatalogCache = InMemoryCatalogCache()) {
+         catalogCache: any CatalogCache = InMemoryCatalogCache(),
+         appBuildNumber: String? = Bundle.main.infoDictionary?["CFBundleVersion"] as? String) {
         self.repository = repository
         self.catalogCache = catalogCache
+        self.appBuildNumber = appBuildNumber
     }
 
     // MARK: Functions (Translations)
@@ -66,7 +71,7 @@ final class BibleCatalogStore {
         do {
             if let languageTag,
                let cachedTranslations = try await catalogCache.translations(for: languageTag) {
-                self.translations = cachedTranslations
+                self.translations = cachedTranslations.value
                 didCacheHit = true
                 Self.logger.info("CACHE: loadTranslations catalogCache.translations(for: \(languageTag))")
             }
@@ -92,7 +97,11 @@ final class BibleCatalogStore {
         // network done; try to update cache (best-effort)
         do {
             if let languageTag {
-                try await catalogCache.save(self.translations, for: languageTag)
+                // unknownBuildNumber: still allow saving + cache to function in case Info.plist is wrong
+                let catalogCacheEntry = CatalogCacheEntry<[Translation]>(value: self.translations,
+                                                                         createdOn: Date.now,
+                                                                         createdByBuildNumber: appBuildNumber ?? Self.unknownBuildNumber)
+                try await catalogCache.save(catalogCacheEntry, for: languageTag)
             }
         } catch {
             Self.logger.error("loadTranslations catalogCache.save(:for:) failed: \(error.localizedDescription)")
@@ -113,7 +122,7 @@ final class BibleCatalogStore {
         var didCacheHit = false
         do {
             if let cachedBooks = try await catalogCache.books(for: translationID) {
-                self.booksByTranslation[translationID] = cachedBooks
+                self.booksByTranslation[translationID] = cachedBooks.value
                 didCacheHit = true
                 Self.logger.info("CACHE: loadBooks catalogCache.books(for: \(translationID))")
             }
@@ -139,7 +148,11 @@ final class BibleCatalogStore {
         // network done; try to update cache (best-effort)
         do {
             if let books = self.booksByTranslation[translationID] {
-                try await catalogCache.save(books, for: translationID)
+                // unknownBuildNumber: still allow saving + cache to function in case Info.plist is wrong
+                let catalogCacheEntry = CatalogCacheEntry<[Book]>(value: books,
+                                                                  createdOn: Date.now,
+                                                                  createdByBuildNumber: appBuildNumber ?? Self.unknownBuildNumber)
+                try await catalogCache.save(catalogCacheEntry, for: translationID)
             }
         } catch {
             Self.logger.error("loadBooks catalogCache.save(:for:) failed: \(error.localizedDescription)")

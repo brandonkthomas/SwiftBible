@@ -12,15 +12,15 @@ final class InMemoryCatalogCache: CatalogCache {
     // MARK: Variables (Private)
 
     /// Maps language tag keys => translations
-    private var translationCache: [String: [Translation]] = [:]
+    private var translationCache: [String: CatalogCacheEntry<[Translation]>] = [:]
 
     /// Maps translation ID keys => books
-    private var bookCache: [Translation.ID: [Book]] = [:]
+    private var bookCache: [Translation.ID: CatalogCacheEntry<[Book]>] = [:]
 
     // MARK: Functions
 
     /// Retrieves cached translation list for a given language
-    func translations(for languageTag: String) async throws -> [Translation]? {
+    func translations(for languageTag: String) async throws -> CatalogCacheEntry<[Translation]>? {
         return self.translationCache[languageTag] // this is optional
     }
 
@@ -28,12 +28,13 @@ final class InMemoryCatalogCache: CatalogCache {
     /// (requires language tag as PK)
     ///
     /// Replaces the key if it already exists
-    func save(_ translations: [Translation], for languageTag: String) async throws {
-        self.translationCache[languageTag] = translations
+    func save(_ translationsEntry: CatalogCacheEntry<[Translation]>,
+              for languageTag: String) async throws {
+        self.translationCache[languageTag] = translationsEntry
     }
 
     /// Retrieves cached book list for a given translation
-    func books(for translationID: Translation.ID) async throws -> [Book]? {
+    func books(for translationID: Translation.ID) async throws -> CatalogCacheEntry<[Book]>? {
         return self.bookCache[translationID] // this is optional
     }
 
@@ -41,7 +42,8 @@ final class InMemoryCatalogCache: CatalogCache {
     /// (requires translation ID as PK)
     ///
     /// Replaces the key if it already exists
-    func save(_ books: [Book], for translationID: Translation.ID) async throws {
-        self.bookCache[translationID] = books
+    func save(_ booksEntry: CatalogCacheEntry<[Book]>,
+              for translationID: Translation.ID) async throws {
+        self.bookCache[translationID] = booksEntry
     }
 }

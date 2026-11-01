@@ -36,10 +36,14 @@ struct DiskCatalogCacheTests {
 
         let cache = try DiskCatalogCache(baseDirectory: tempDirectory)
 
-        let translations = testTranslations()
+        let entry = testTranslationsEntry()
 
-        try await cache.save(translations, for: "en")
-        #expect(try await cache.translations(for: "en") == translations)
+        try await cache.save(entry, for: "en")
+        let saved = try #require(try await cache.translations(for: "en"))
+
+        #expect(saved.value == entry.value)
+        #expect(saved.createdOn == entry.createdOn)
+        #expect(saved.createdByBuildNumber == entry.createdByBuildNumber)
     }
 
     /// A cache file that isn't valid JSON is treated as a miss rather than a thrown error
@@ -51,17 +55,31 @@ struct DiskCatalogCacheTests {
 
         // Save a valid entry first so the cache directory exists, then clobber the file
         // it wrote with garbage bytes at the same, deterministic path
-        try await cache.save(testTranslations(), for: "en")
+        try await cache.save(testTranslationsEntry(), for: "en")
 
-        let fileUrl = tempDirectory
-            .appending(path: "net.brandonthomas.SwiftBible", directoryHint: .isDirectory)
-            .appending(path: "Cache", directoryHint: .isDirectory)
-            .appending(path: "Catalog", directoryHint: .isDirectory)
-            .appending(path: "sbc_trns_en.json", directoryHint: .notDirectory)
+        let fileUrl = catalogFileUrl(in: tempDirectory, fileName: "sbc_trns_en.json")
 
         try Data("not valid json".utf8).write(to: fileUrl, options: .atomic)
 
         #expect(try await cache.translations(for: "en") == nil)
+    }
+
+    /// A file in the pre-CatalogCacheEntry format (plain JSON array of translations) is
+    /// treated as a miss and deleted
+    @Test func oldFormatTranslationFileReadAsMissAndDeleted() async throws {
+        let tempDirectory = makeTempDirectory()
+        defer { try? FileManager.default.removeItem(at: tempDirectory) }
+
+        let cache = try DiskCatalogCache(baseDirectory: tempDirectory)
+
+        let fileUrl = catalogFileUrl(in: tempDirectory, fileName: "sbc_trns_en.json")
+
+        try FileManager.default.createDirectory(at: fileUrl.deletingLastPathComponent(),
+                                                withIntermediateDirectories: true)
+        try JSONEncoder().encode(testTranslations()).write(to: fileUrl, options: .atomic)
+
+        #expect(try await cache.translations(for: "en") == nil)
+        #expect(!FileManager.default.fileExists(atPath: fileUrl.path(percentEncoded: false)))
     }
 
     /// A second DiskCatalogCache pointed at the same directory sees what the first one wrote,
@@ -73,10 +91,14 @@ struct DiskCatalogCacheTests {
         let firstCache = try DiskCatalogCache(baseDirectory: tempDirectory)
         let secondCache = try DiskCatalogCache(baseDirectory: tempDirectory)
 
-        let translations = testTranslations()
+        let entry = testTranslationsEntry()
 
-        try await firstCache.save(translations, for: "en")
-        #expect(try await secondCache.translations(for: "en") == translations)
+        try await firstCache.save(entry, for: "en")
+        let saved = try #require(try await secondCache.translations(for: "en"))
+
+        #expect(saved.value == entry.value)
+        #expect(saved.createdOn == entry.createdOn)
+        #expect(saved.createdByBuildNumber == entry.createdByBuildNumber)
     }
 
     // MARK: Books
@@ -98,10 +120,14 @@ struct DiskCatalogCacheTests {
 
         let cache = try DiskCatalogCache(baseDirectory: tempDirectory)
 
-        let books = testBooks()
+        let entry = testBooksEntry()
 
-        try await cache.save(books, for: 1849)
-        #expect(try await cache.books(for: 1849) == books)
+        try await cache.save(entry, for: 1849)
+        let saved = try #require(try await cache.books(for: 1849))
+
+        #expect(saved.value == entry.value)
+        #expect(saved.createdOn == entry.createdOn)
+        #expect(saved.createdByBuildNumber == entry.createdByBuildNumber)
     }
 
     /// A cache file that isn't valid JSON is treated as a miss rather than a thrown error
@@ -113,13 +139,9 @@ struct DiskCatalogCacheTests {
 
         // Save a valid entry first so the cache directory exists, then clobber the file
         // it wrote with garbage bytes at the same, deterministic path
-        try await cache.save(testBooks(), for: 1849)
+        try await cache.save(testBooksEntry(), for: 1849)
 
-        let fileUrl = tempDirectory
-            .appending(path: "net.brandonthomas.SwiftBible", directoryHint: .isDirectory)
-            .appending(path: "Cache", directoryHint: .isDirectory)
-            .appending(path: "Catalog", directoryHint: .isDirectory)
-            .appending(path: "sbc_bks_1849.json", directoryHint: .notDirectory)
+        let fileUrl = catalogFileUrl(in: tempDirectory, fileName: "sbc_bks_1849.json")
 
         try Data("not valid json".utf8).write(to: fileUrl, options: .atomic)
 
@@ -135,13 +157,42 @@ struct DiskCatalogCacheTests {
         let firstCache = try DiskCatalogCache(baseDirectory: tempDirectory)
         let secondCache = try DiskCatalogCache(baseDirectory: tempDirectory)
 
-        let books = testBooks()
+        let entry = testBooksEntry()
 
-        try await firstCache.save(books, for: 1849)
-        #expect(try await secondCache.books(for: 1849) == books)
+        try await firstCache.save(entry, for: 1849)
+        let saved = try #require(try await secondCache.books(for: 1849))
+
+        #expect(saved.value == entry.value)
+        #expect(saved.createdOn == entry.createdOn)
+        #expect(saved.createdByBuildNumber == entry.createdByBuildNumber)
     }
 
     // MARK: Private Helpers
+
+    /// Fixed date so round-trip comparisons don't depend on the wall clock
+    private let createdOn = Date(timeIntervalSinceReferenceDate: 815_000_000)
+    private let buildNumber = "42"
+
+    /// Same path DiskCatalogCache builds internally for a given cache file name
+    private func catalogFileUrl(in baseDirectory: URL, fileName: String) -> URL {
+        baseDirectory
+            .appending(path: "net.brandonthomas.SwiftBible", directoryHint: .isDirectory)
+            .appending(path: "Cache", directoryHint: .isDirectory)
+            .appending(path: "Catalog", directoryHint: .isDirectory)
+            .appending(path: fileName, directoryHint: .notDirectory)
+    }
+
+    private func testTranslationsEntry() -> CatalogCacheEntry<[Translation]> {
+        CatalogCacheEntry(value: testTranslations(),
+                          createdOn: createdOn,
+                          createdByBuildNumber: buildNumber)
+    }
+
+    private func testBooksEntry() -> CatalogCacheEntry<[Book]> {
+        CatalogCacheEntry(value: testBooks(),
+                          createdOn: createdOn,
+                          createdByBuildNumber: buildNumber)
+    }
 
     private func testTranslations() -> [Translation] {
         return [

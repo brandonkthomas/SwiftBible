@@ -54,7 +54,7 @@ actor DiskCatalogCache: CatalogCache {
     ///
     /// Any failure counts as a miss so the caller can fall back to the network. Unreadable
     /// files are deleted rather than left to occupy space forever
-    func translations(for languageTag: String) async throws -> [Translation]? {
+    func translations(for languageTag: String) async throws -> CatalogCacheEntry<[Translation]>? {
         let url = translationFileUrl(for: languageTag)
 
         // Nothing cached for this key yet: a plain miss, not a failure
@@ -64,7 +64,7 @@ actor DiskCatalogCache: CatalogCache {
 
         do {
             let fileContents = try Data(contentsOf: url)
-            return try JSONDecoder().decode([Translation].self, from: fileContents)
+            return try JSONDecoder().decode(CatalogCacheEntry<[Translation]>.self, from: fileContents)
         } catch {
             // Corrupt or truncated file: discard it and report a miss
             try? fileManager.removeItem(at: url)
@@ -73,10 +73,11 @@ actor DiskCatalogCache: CatalogCache {
     }
 
     /// Persists a Translation list as JSON, replacing any existing entry for the same key
-    func save(_ translations: [Translation], for languageTag: String) async throws {
+    func save(_ translationsEntry: CatalogCacheEntry<[Translation]>,
+              for languageTag: String) async throws {
         try createCatalogDirectoryIfNeeded()
 
-        let fileContents = try JSONEncoder().encode(translations)
+        let fileContents = try JSONEncoder().encode(translationsEntry)
 
         // atomic: writes to a temp file and swaps it in, so a crash mid-write cannot
         // leave a half-written file behind for the next launch to read
@@ -87,7 +88,7 @@ actor DiskCatalogCache: CatalogCache {
     ///
     /// Any failure counts as a miss so the caller can fall back to the network. Unreadable
     /// files are deleted rather than left to occupy space forever
-    func books(for translationID: Translation.ID) async throws -> [Book]? {
+    func books(for translationID: Translation.ID) async throws -> CatalogCacheEntry<[Book]>? {
         let url = bookFileUrl(for: translationID)
 
         // Nothing cached for this key yet: a plain miss, not a failure
@@ -97,7 +98,7 @@ actor DiskCatalogCache: CatalogCache {
 
         do {
             let fileContents = try Data(contentsOf: url)
-            return try JSONDecoder().decode([Book].self, from: fileContents)
+            return try JSONDecoder().decode(CatalogCacheEntry<[Book]>.self, from: fileContents)
         } catch {
             // Corrupt or truncated file: discard it and report a miss
             try? fileManager.removeItem(at: url)
@@ -106,10 +107,11 @@ actor DiskCatalogCache: CatalogCache {
     }
 
     /// Persists a Book list as JSON, replacing any existing entry for the same key
-    func save(_ books: [Book], for translationID: Translation.ID) async throws {
+    func save(_ booksEntry: CatalogCacheEntry<[Book]>,
+              for translationID: Translation.ID) async throws {
         try createCatalogDirectoryIfNeeded()
 
-        let fileContents = try JSONEncoder().encode(books)
+        let fileContents = try JSONEncoder().encode(booksEntry)
 
         // atomic: writes to a temp file and swaps it in, so a crash mid-write cannot
         // leave a half-written file behind for the next launch to read
