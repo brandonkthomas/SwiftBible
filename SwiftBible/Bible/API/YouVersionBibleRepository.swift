@@ -32,7 +32,7 @@ final class YouVersionBibleRepository: BibleRepository {
     ///
     /// nil languageTag will not pass the filter
     func translations(languageTag: String? = "en") async throws -> [Translation] {
-        Self.logger.debug("ENTRY YouVersionBibleRepository.translations(languageTag: \(languageTag ?? "nil", privacy: .public))")
+        Self.logger.debug("ENTRY YouVersionBibleRepository.translations(languageTag: \(languageTag ?? "nil", privacy: .public)) -- /v1/bibles")
 
         let bibleCollectionPath = baseURL.appending(path: "v1/bibles")
 
@@ -74,7 +74,7 @@ final class YouVersionBibleRepository: BibleRepository {
 
     /// Load all available Books + Chapters + Verses for a given Translation ID
     func books(for translationID: Translation.ID) async throws -> [Book] {
-        Self.logger.debug("ENTRY YouVersionBibleRepository.books(translationID: \(translationID, privacy: .public))")
+        Self.logger.debug("ENTRY YouVersionBibleRepository.books(translationID: \(translationID, privacy: .public)) -- /v1/bibles/:id/index")
 
         let bibleIndexPath = baseURL.appending(path: "v1/bibles/\(translationID)/index")
 
@@ -103,7 +103,7 @@ final class YouVersionBibleRepository: BibleRepository {
     /// YouVersion returns:
     ///  Passage(id: "JHN.1", reference: "John 1", htmlContent: "<div>...</div>")
     func passage(for reference: ScriptureReference) async throws -> Passage {
-        Self.logger.debug("ENTRY YouVersionBibleRepository.passage(reference.passageID: \(reference.passageID, privacy: .public))")
+        Self.logger.debug("ENTRY YouVersionBibleRepository.passage(reference.passageID: \(reference.passageID, privacy: .public)) -- /v1/bibles/:id/passages/:passage")
 
         let passagePath = baseURL.appending(path: "v1/bibles/\(reference.translationID)/passages/\(reference.passageID)")
 

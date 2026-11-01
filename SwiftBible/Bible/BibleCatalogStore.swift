@@ -50,6 +50,7 @@ final class BibleCatalogStore {
 
     private let appBuildNumber: String?
     private static let unknownBuildNumber: String = "unknownBuildNumber"
+    private static let maximumCacheAgeInDays: Int = 7
 
     // MARK: Init
 
@@ -69,17 +70,26 @@ final class BibleCatalogStore {
         // (swallow failures to give network a chance later)
         var didCacheHit = false
         do {
+            // update self.translations w/ cache regardless of freshness
+            // if not fresh, refresh from network below
             if let languageTag,
-               let cachedTranslations = try await catalogCache.translations(for: languageTag) {
-                self.translations = cachedTranslations.value
+               let cachedTranslationsEntry = try await catalogCache.translations(for: languageTag),
+               !cachedTranslationsEntry.value.isEmpty { // ensure validity
+                self.translations = cachedTranslationsEntry.value
                 didCacheHit = true
                 Self.logger.info("CACHE: loadTranslations catalogCache.translations(for: \(languageTag))")
+
+                let isFresh = cachedTranslationsEntry.isEntryFresh(Date.now,
+                                                                   maximumAgeInDays: Self.maximumCacheAgeInDays,
+                                                                   currentBuildNumber: appBuildNumber)
+                if isFresh { return } // we're done here
             }
         } catch {
+            // cache failed for some reason; try network
             Self.logger.error("loadTranslations catalogCache.translations(for:) failed: \(error.localizedDescription)")
         }
 
-        // hit network anyway to replace w/ a new result in the background if necessary
+        // now, update w/ network if cache was NOT fresh to replace it w/ a new result
         do {
             let loadedTranslations = try await repository.translations(languageTag: languageTag)
             self.translations = loadedTranslations
@@ -121,16 +131,25 @@ final class BibleCatalogStore {
         // (swallow failures to give network a chance later)
         var didCacheHit = false
         do {
-            if let cachedBooks = try await catalogCache.books(for: translationID) {
-                self.booksByTranslation[translationID] = cachedBooks.value
+            // update self.booksByTranslation w/ cache regardless of freshness
+            // if not fresh, refresh from network below
+            if let cachedBooksEntry = try await catalogCache.books(for: translationID),
+               !cachedBooksEntry.value.isEmpty { // ensure validity
+                self.booksByTranslation[translationID] = cachedBooksEntry.value
                 didCacheHit = true
                 Self.logger.info("CACHE: loadBooks catalogCache.books(for: \(translationID))")
+
+                let isFresh = cachedBooksEntry.isEntryFresh(Date.now,
+                                                            maximumAgeInDays: Self.maximumCacheAgeInDays,
+                                                            currentBuildNumber: appBuildNumber)
+                if isFresh { return } // we're done here
             }
         } catch {
+            // cache failed for some reason; try network
             Self.logger.error("loadBooks catalogCache.books(for:) failed: \(error.localizedDescription)")
         }
 
-        // hit network anyway to replace w/ a new result in the background if necessary
+        // now, update w/ network if cache was NOT fresh to replace it w/ a new result
         do {
             let loadedBooks = try await repository.books(for: translationID)
             self.booksByTranslation[translationID] = loadedBooks

@@ -51,21 +51,80 @@ struct BibleCatalogStoreTests {
 
     /// A network failure after translations were cached does not throw; the cached translations are kept
     @Test func failedTranslationLoadWithCachedCopyDoesNotThrowAndKeepsTranslations() async throws {
-        // Populate a shared cache through a working repository
+        // Expired entry forces a network attempt; the network always fails
         let catalogCache = InMemoryCatalogCache()
-        let seedingStore = BibleCatalogStore(repository: FakeBibleRepository(),
-                                             catalogCache: catalogCache)
-        try await seedingStore.loadTranslations()
-
-        // A new store using the same cache, whose network always fails
-        let catalogStore = BibleCatalogStore(repository: FakeBibleRepository(throwWhenLoadingTranslations: true),
-                                             catalogCache: catalogCache)
+        try await catalogCache.save(makeEntry(Self.cachedTranslations, ageInDays: 8), for: "en")
+        let repository = StubBibleRepository(translations: Self.repositoryTranslations)
+        repository.failsLoadingTranslations = true
+        let catalogStore = makeStore(repository: repository, catalogCache: catalogCache)
 
         await #expect(throws: Never.self) {
             try await catalogStore.loadTranslations()
         }
 
-        #expect(catalogStore.translations == FakeBibleRepository.defaultTranslations)
+        #expect(repository.translationsCallCount == 1)
+        #expect(catalogStore.translations == Self.cachedTranslations)
+    }
+
+    // MARK: Translations Cache Freshness
+
+    /// A fresh entry from the current build is used as-is; the network is never called
+    @Test func freshCachedTranslationsSkipRepository() async throws {
+        let catalogCache = InMemoryCatalogCache()
+        try await catalogCache.save(makeEntry(Self.cachedTranslations), for: "en")
+        let repository = StubBibleRepository(translations: Self.repositoryTranslations)
+        let catalogStore = makeStore(repository: repository, catalogCache: catalogCache)
+
+        try await catalogStore.loadTranslations()
+
+        #expect(repository.translationsCallCount == 0)
+        #expect(catalogStore.translations == Self.cachedTranslations)
+    }
+
+    /// An entry older than the maximum age is replaced by the repository's list
+    @Test func expiredCachedTranslationsRefreshFromRepository() async throws {
+        let catalogCache = InMemoryCatalogCache()
+        try await catalogCache.save(makeEntry(Self.cachedTranslations, ageInDays: 8), for: "en")
+        let repository = StubBibleRepository(translations: Self.repositoryTranslations)
+        let catalogStore = makeStore(repository: repository, catalogCache: catalogCache)
+
+        try await catalogStore.loadTranslations()
+
+        #expect(repository.translationsCallCount == 1)
+        #expect(catalogStore.translations == Self.repositoryTranslations)
+
+        // The refresh must be saved, otherwise every launch hits the network again
+        let savedEntry = try #require(try await catalogCache.translations(for: "en"))
+        #expect(savedEntry.value == Self.repositoryTranslations)
+        #expect(savedEntry.isEntryFresh(.now,
+                                        maximumAgeInDays: Self.maximumCacheAgeInDays,
+                                        currentBuildNumber: Self.currentBuildNumber))
+    }
+
+    /// A recent, same-build entry with an empty list is treated as a miss; the repository is called
+    @Test func emptyCachedTranslationsRefreshFromRepository() async throws {
+        let catalogCache = InMemoryCatalogCache()
+        try await catalogCache.save(makeEntry([Translation]()), for: "en")
+        let repository = StubBibleRepository(translations: Self.repositoryTranslations)
+        let catalogStore = makeStore(repository: repository, catalogCache: catalogCache)
+
+        try await catalogStore.loadTranslations()
+
+        #expect(repository.translationsCallCount == 1)
+        #expect(catalogStore.translations == Self.repositoryTranslations)
+    }
+
+    /// An entry saved by a different build is replaced by the repository's list
+    @Test func cachedTranslationsFromOtherBuildRefreshFromRepository() async throws {
+        let catalogCache = InMemoryCatalogCache()
+        try await catalogCache.save(makeEntry(Self.cachedTranslations, buildNumber: Self.otherBuildNumber), for: "en")
+        let repository = StubBibleRepository(translations: Self.repositoryTranslations)
+        let catalogStore = makeStore(repository: repository, catalogCache: catalogCache)
+
+        try await catalogStore.loadTranslations()
+
+        #expect(repository.translationsCallCount == 1)
+        #expect(catalogStore.translations == Self.repositoryTranslations)
     }
 
     @Test func booksLoadLosslesslyForTranslation() async throws {
@@ -139,18 +198,20 @@ struct BibleCatalogStoreTests {
 
     /// A network failure after books were cached does not throw; the cached books are kept
     @Test func failedBookLoadWithCachedCopyDoesNotThrowAndKeepsBooks() async throws {
+        // Expired entry forces a network attempt; the network always fails
         let translationID = 1234
-        let expectedBooks = FakeBibleRepository.defaultBooks
-        let repository = StubBibleRepository(booksByTranslation: [translationID: expectedBooks])
-        let catalogStore = BibleCatalogStore(repository: repository)
-        try await catalogStore.loadBooks(for: translationID)
+        let catalogCache = InMemoryCatalogCache()
+        try await catalogCache.save(makeEntry(Self.cachedBooks, ageInDays: 8), for: translationID)
+        let repository = StubBibleRepository(booksByTranslation: [translationID: Self.repositoryBooks])
         repository.failingTranslationIDs.insert(translationID)
+        let catalogStore = makeStore(repository: repository, catalogCache: catalogCache)
 
         await #expect(throws: Never.self) {
             try await catalogStore.loadBooks(for: translationID)
         }
 
-        #expect(catalogStore.books(for: translationID) == expectedBooks)
+        #expect(repository.booksCallCount == 1)
+        #expect(catalogStore.books(for: translationID) == Self.cachedBooks)
     }
 
     /// A network failure with nothing cached throws, and no books are stored
@@ -165,6 +226,77 @@ struct BibleCatalogStoreTests {
         }
 
         #expect(catalogStore.books(for: translationID) == nil)
+    }
+
+    // MARK: Books Cache Freshness
+
+    /// A fresh entry from the current build is used as-is; the network is never called
+    @Test func freshCachedBooksSkipRepository() async throws {
+        let translationID = 1234
+        let catalogCache = InMemoryCatalogCache()
+        try await catalogCache.save(makeEntry(Self.cachedBooks), for: translationID)
+        let repository = StubBibleRepository(booksByTranslation: [translationID: Self.repositoryBooks])
+        let catalogStore = makeStore(repository: repository, catalogCache: catalogCache)
+
+        try await catalogStore.loadBooks(for: translationID)
+
+        #expect(repository.booksCallCount == 0)
+        #expect(catalogStore.books(for: translationID) == Self.cachedBooks)
+    }
+
+    /// An entry older than the maximum age is replaced by the repository's list
+    @Test func expiredCachedBooksRefreshFromRepository() async throws {
+        let translationID = 1234
+        let catalogCache = InMemoryCatalogCache()
+        try await catalogCache.save(makeEntry(Self.cachedBooks, ageInDays: 8), for: translationID)
+        let repository = StubBibleRepository(booksByTranslation: [translationID: Self.repositoryBooks])
+        let catalogStore = makeStore(repository: repository, catalogCache: catalogCache)
+
+        try await catalogStore.loadBooks(for: translationID)
+
+        #expect(repository.booksCallCount == 1)
+        #expect(catalogStore.books(for: translationID) == Self.repositoryBooks)
+
+        // The refresh must be saved, otherwise every launch hits the network again
+        let savedEntry = try #require(try await catalogCache.books(for: translationID))
+        #expect(savedEntry.value == Self.repositoryBooks)
+        #expect(savedEntry.isEntryFresh(.now,
+                                        maximumAgeInDays: Self.maximumCacheAgeInDays,
+                                        currentBuildNumber: Self.currentBuildNumber))
+    }
+
+    /// A recent, same-build entry with an empty list is treated as a miss; the repository is called
+    @Test func emptyCachedBooksRefreshFromRepository() async throws {
+        let translationID = 1234
+        let catalogCache = InMemoryCatalogCache()
+        try await catalogCache.save(makeEntry([Book]()), for: translationID)
+        let repository = StubBibleRepository(booksByTranslation: [translationID: Self.repositoryBooks])
+        let catalogStore = makeStore(repository: repository, catalogCache: catalogCache)
+
+        try await catalogStore.loadBooks(for: translationID)
+
+        #expect(repository.booksCallCount == 1)
+        #expect(catalogStore.books(for: translationID) == Self.repositoryBooks)
+    }
+
+    /// An entry saved by a different build is replaced by the repository's list
+    @Test func cachedBooksFromOtherBuildRefreshFromRepository() async throws {
+        let translationID = 1234
+        let catalogCache = InMemoryCatalogCache()
+        try await catalogCache.save(makeEntry(Self.cachedBooks, buildNumber: Self.otherBuildNumber), for: translationID)
+        let repository = StubBibleRepository(booksByTranslation: [translationID: Self.repositoryBooks])
+        let catalogStore = makeStore(repository: repository, catalogCache: catalogCache)
+
+        try await catalogStore.loadBooks(for: translationID)
+
+        #expect(repository.booksCallCount == 1)
+        #expect(catalogStore.books(for: translationID) == Self.repositoryBooks)
+    }
+
+    /// Fixtures must differ, otherwise a cache answer and a network answer look identical
+    @Test func cacheFixturesDifferFromRepositoryFixtures() {
+        #expect(Self.cachedTranslations != Self.repositoryTranslations)
+        #expect(Self.cachedBooks != Self.repositoryBooks)
     }
 
     // MARK: Friendly Passage Name
@@ -220,7 +352,37 @@ struct BibleCatalogStoreTests {
         #expect(catalogStore.friendlyPassageName(for: reference, selectedVerses: 1...3) == "Genesis 1:1–3")
     }
 
+    // MARK: Fixtures (Cache)
+
+    private static let currentBuildNumber = "100"
+    private static let otherBuildNumber = "99"
+
+    /// Mirrors BibleCatalogStore.maximumCacheAgeInDays (private there)
+    private static let maximumCacheAgeInDays = 7
+
+    /// Cache and repository lists differ so assertions show which source the store used
+    private static let cachedTranslations = Array(FakeBibleRepository.defaultTranslations.suffix(1))
+    private static let repositoryTranslations = FakeBibleRepository.defaultTranslations
+    private static let cachedBooks = FakeBibleRepository.booksWithoutChapters
+    private static let repositoryBooks = FakeBibleRepository.defaultBooks
+
     // MARK: Functions (Private Helpers)
+
+    private func makeStore(repository: StubBibleRepository,
+                           catalogCache: InMemoryCatalogCache) -> BibleCatalogStore {
+        BibleCatalogStore(repository: repository,
+                          catalogCache: catalogCache,
+                          appBuildNumber: Self.currentBuildNumber)
+    }
+
+    private func makeEntry<Value: Codable>(_ value: Value,
+                                           ageInDays: Int = 0,
+                                           buildNumber: String = BibleCatalogStoreTests.currentBuildNumber) -> CatalogCacheEntry<Value> {
+        let createdOn = Calendar.current.date(byAdding: .day, value: -ageInDays, to: .now) ?? .now
+        return CatalogCacheEntry(value: value,
+                                 createdOn: createdOn,
+                                 createdByBuildNumber: buildNumber)
+    }
 
     private func makeAnnotation(startVerse: Int,
                                 endVerse: Int? = nil) -> VerseAnnotation {
@@ -242,18 +404,34 @@ private final class StubBibleRepository: BibleRepository {
         case unsupportedOperation
     }
     
+    let translations: [Translation]
     let booksByTranslation: [Translation.ID: [Book]]
+    var failsLoadingTranslations = false
     var failingTranslationIDs: Set<Translation.ID> = []
-    
-    init(booksByTranslation: [Translation.ID: [Book]]) {
+
+    /// Call counts; 0 proves the store answered from cache without touching the network
+    private(set) var translationsCallCount = 0
+    private(set) var booksCallCount = 0
+
+    init(translations: [Translation] = [],
+         booksByTranslation: [Translation.ID: [Book]] = [:]) {
+        self.translations = translations
         self.booksByTranslation = booksByTranslation
     }
-    
+
     func translations(languageTag: String?) async throws -> [Translation] {
-        []
+        translationsCallCount += 1
+
+        if failsLoadingTranslations {
+            throw RepositoryError.unsupportedOperation
+        }
+
+        return translations
     }
-    
+
     func books(for translationID: Translation.ID) async throws -> [Book] {
+        booksCallCount += 1
+
         if failingTranslationIDs.contains(translationID) {
             throw RepositoryError.unsupportedOperation
         }
