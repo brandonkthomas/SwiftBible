@@ -14,11 +14,11 @@ struct EdgeSwipeCalculator {
 
     /// Required distance before we trigger threshold
     /// Internal (no modifier) so tests can read it via @testable import
-    static let requiredHorizontalDragDistance: CGFloat = 100
+    static let requiredHorizontalDragDistance: CGFloat = 112
 
     /// Maximum total distance we allow the circle to move
     /// Internal (no modifier) so tests can read it via @testable import
-    static let maximumHorizontalDragDistance: CGFloat = 125
+    static let maximumHorizontalDragDistance: CGFloat = 200
 
     /// Factor for end-of-drag circle position calculation "resistance"
     /// Internal (no modifier) so tests can read it via @testable import

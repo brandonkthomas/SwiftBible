@@ -106,6 +106,13 @@ struct ReaderView: View {
             await readerStore.loadSelectedPassage()
         }
         .navigationTitle(readerStore.selectedReferenceFriendlyName ?? String(localized: "No Passage Selected", comment: "Reader navigation short title shown when no passage is selected"))
+        .chapterEdgeSwipe(canGoPrevious: readerStore.loadState == .loaded
+                          && readerStore.previousAdjacentChapterExists,
+                          canGoNext: readerStore.loadState == .loaded
+                          && readerStore.nextAdjacentChapterExists,
+                          onCommit: { direction in
+            await readerStore.selectAdjacentChapter(direction)
+        })
     }
 
     /// Selected Passage is unavailable / doesnt exist
