@@ -142,7 +142,8 @@ struct StoredVerseAnnotationTests {
         
         let schema: Schema = .init(typesToRegister)
         let modelConfiguration = ModelConfiguration(schema: schema,
-                                                    isStoredInMemoryOnly: true)
+                                                    isStoredInMemoryOnly: true,
+                                                    cloudKitDatabase: .none)
         return try ModelContainer(for: schema,
                                   configurations: [modelConfiguration])
     }

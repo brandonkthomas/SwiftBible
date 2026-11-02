@@ -38,6 +38,13 @@ final class AppEnvironment {
 
     private static let logger = Logger(subsystem: "SwiftBible", category: "AppEnvironment")
 
+    /// True when the app process is hosting a test bundle (XCTest or Swift Testing).
+    /// Xcode sets XCTestConfigurationFilePath for hosted runs; the class check covers runners that don't.
+    private static var isRunningTests: Bool {
+        ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
+            || NSClassFromString("XCTestCase") != nil
+    }
+
     // MARK: Init
 
     // Failable init is not desirable here;
@@ -57,7 +64,9 @@ final class AppEnvironment {
 
         do {
             let schema: Schema = .init(typesToRegister)
-            let modelConfiguration = ModelConfiguration(schema: schema)
+            // Hosted test runs launch the app too; keep them off iCloud so they never sync the real store
+            let modelConfiguration = ModelConfiguration(schema: schema,
+                                                        cloudKitDatabase: Self.isRunningTests ? .none : .automatic)
             self.modelContainer = try ModelContainer(for: schema,
                                                      configurations: [modelConfiguration])
         } catch {

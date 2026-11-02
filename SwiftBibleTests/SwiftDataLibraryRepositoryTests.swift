@@ -182,7 +182,8 @@ struct SwiftDataLibraryRepositoryTests {
             StoredTag.self
         ])
         let modelConfiguration = ModelConfiguration(schema: schema,
-                                                    isStoredInMemoryOnly: true)
+                                                    isStoredInMemoryOnly: true,
+                                                    cloudKitDatabase: .none) // disable iCloud for tests
         return try ModelContainer(for: schema,
                                   configurations: [modelConfiguration])
     }
