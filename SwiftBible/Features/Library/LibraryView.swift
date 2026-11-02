@@ -110,7 +110,9 @@ struct LibraryView: View {
                 }
             }
             .toolbar {
-                filterOptionsToolbarItem
+                if !libraryStore.annotations.isEmpty {
+                    filterOptionsToolbar
+                }
             }
         }
         // Deletion failure popup
@@ -325,7 +327,7 @@ struct LibraryView: View {
 
     /// Options for filtering the library (not visible in edit mode)
     @ToolbarContentBuilder
-    private var filterOptionsToolbarItem: some ToolbarContent {
+    private var filterOptionsToolbar: some ToolbarContent {
         @Bindable var store: LibraryStore = libraryStore
 
         if !librarySelection.isSelecting {
@@ -353,7 +355,7 @@ struct LibraryView: View {
     }
 
     /// Filter By menu (for toolbar)
-    /// Styled by filterOptionsToolbarItem based on filter state
+    /// Styled by filterOptionsToolbar based on filter state
     @ViewBuilder
     private var filterMenu: some View {
         @Bindable var store: LibraryStore = libraryStore
