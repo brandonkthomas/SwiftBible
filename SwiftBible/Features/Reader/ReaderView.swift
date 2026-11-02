@@ -70,17 +70,14 @@ struct ReaderView: View {
                     description: Text(message)
                 )
             case .loaded:
-                if readerStore.selectedReference == nil {
-                    // we do NOT have a selected reference
-                    passageUnavailableView
-                } else {
+                if readerStore.selectedReference != nil {
                     // we have a selected reference
                     // Show corresponding View to current passageLoadState
                     // This will automatically refresh when we change @Observable passageLoadState
                     switch readerStore.passageLoadState {
                     case .idle:
                         ProgressView()
-                           .controlSize(.large)
+                            .controlSize(.large)
                     case .loading:
                         ProgressView()
                             .controlSize(.large)
@@ -97,6 +94,9 @@ struct ReaderView: View {
                             passageUnavailableView
                         }
                     }
+                } else {
+                    // we do NOT have a selected reference
+                    passageUnavailableView
                 }
             }
         }
