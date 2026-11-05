@@ -20,81 +20,86 @@ struct SettingsView: View {
 
     var body: some View {
         NavigationStack {
-            List {
-                Section {
-                    NavigationLink {
-                        // TODO
-                    } label: {
-                        settingsRow(title: "Appearance",
-                                    symbol: "paintbrush.fill",
-                                    color: .blue)
+            Group {
+                List {
+                    Section {
+                        NavigationLink {
+                            // TODO
+                        } label: {
+                            settingsRow(title: "Appearance",
+                                        symbol: "paintbrush.fill",
+                                        color: .blue)
+                        }
+                        //                    NavigationLink {
+                        //                        // TODO
+                        //                    } label: {
+                        //                        settingsRow(title: "Language",
+                        //                                    symbol: "globe",
+                        //                                    color: .green)
+                        //                    }
                     }
-//                    NavigationLink {
-//                        // TODO
-//                    } label: {
-//                        settingsRow(title: "Language",
-//                                    symbol: "globe",
-//                                    color: .green)
-//                    }
+                    Section {
+                        NavigationLink {
+                            // TODO
+                        } label: {
+                            settingsRow(title: "Read",
+                                        symbol: "book.fill",
+                                        color: .accent)
+                        }
+                        NavigationLink {
+                            // TODO
+                        } label: {
+                            settingsRow(title: "Annotations",
+                                        symbol: "bookmark.fill",
+                                        color: Color(red: 0.95, green: 0.7, blue: 0.5))
+                        }
+                        NavigationLink {
+                            // TODO
+                        } label: {
+                            settingsRow(title: "Search",
+                                        symbol: "magnifyingglass",
+                                        color: Color(.systemGray2))
+                        }
+                    }
+                    Section {
+                        NavigationLink {
+                            SettingsAboutView()
+                        } label: {
+                            settingsRow(title: "About",
+                                        symbol: "info.circle.fill",
+                                        color: .purple)
+                        }
+                        NavigationLink {
+                            // TODO
+                        } label: {
+                            settingsRow(title: "Acknowledgments",
+                                        symbol: "text.document.fill",
+                                        color: .pink)
+                        }
+                        NavigationLink {
+                            // TODO
+                        } label: {
+                            settingsRow(title: "Help & Support",
+                                        symbol: "envelope.fill",
+                                        color: .blue)
+                        }
+                        NavigationLink {
+                            // TODO
+                        } label: {
+                            settingsRow(title: "Rate Bible",
+                                        symbol: "star.fill",
+                                        color: .yellow)
+                        }
+                    }
                 }
-                Section {
-                    NavigationLink {
-                        // TODO
-                    } label: {
-                        settingsRow(title: "Read",
-                                    symbol: "book.fill",
-                                    color: .accent)
-                    }
-                    NavigationLink {
-                        // TODO
-                    } label: {
-                        settingsRow(title: "Annotations",
-                                    symbol: "bookmark.fill",
-                                    color: Color(red: 0.95, green: 0.7, blue: 0.5))
-                    }
-                    NavigationLink {
-                        // TODO
-                    } label: {
-                        settingsRow(title: "Search",
-                                    symbol: "magnifyingglass",
-                                    color: Color(.systemGray2))
-                    }
-                }
-                Section {
-                    NavigationLink {
-                        // TODO
-                    } label: {
-                        settingsRow(title: "About",
-                                    symbol: "info.circle.fill",
-                                    color: .purple)
-                    }
-                    NavigationLink {
-                        // TODO
-                    } label: {
-                        settingsRow(title: "Acknowledgments",
-                                    symbol: "text.document.fill",
-                                    color: .pink)
-                    }
-                    NavigationLink {
-                        // TODO
-                    } label: {
-                        settingsRow(title: "Help & Support",
-                                    symbol: "envelope.fill",
-                                    color: .blue)
-                    }
-                    NavigationLink {
-                        // TODO
-                    } label: {
-                        settingsRow(title: "Rate Bible",
-                                    symbol: "star.fill",
-                                    color: .yellow)
-                    }
-                }
+                .listStyle(.insetGrouped)
+                .font(.system(size: rowFontSize,
+                              weight: .regular,
+                              design: .default))
+//                .safeAreaInset(edge: .bottom) {
+//                    SettingsAboutView()
+//                }
             }
-            .listStyle(.insetGrouped)
-            .font(.system(size: rowFontSize,
-                          weight: .regular,
-                          design: .default))
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
             .navigationBarHidden(true)
