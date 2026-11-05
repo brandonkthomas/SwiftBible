@@ -19,6 +19,7 @@ nonisolated struct ScriptureReference: Equatable {
 
     // MARK: Properties (Computed)
 
+    /// i.e. JHN.1
     var passageID: Passage.ID {
         return "\(bookCode).\(chapter)"
     }

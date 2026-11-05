@@ -19,5 +19,8 @@ protocol BibleRepository {
 
 enum BibleRepositoryError: Error {
     case invalidRequestURL
+    case invalidTranslation
+    case invalidBook
+    case responseParsingError
     case internalError(String)
 }

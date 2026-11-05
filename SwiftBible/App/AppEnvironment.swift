@@ -83,9 +83,10 @@ final class AppEnvironment {
         }
 
         // deps
-        let bibleRepository = YouVersionBibleRepository(apiKey: apiKey,
-                                                   baseURL: appConfiguration.youVersionBaseURL,
-                                                   urlSession: .shared)
+        let youVersionRepository = YouVersionBibleRepository(apiKey: apiKey,
+                                                             baseURL: appConfiguration.youVersionBaseURL,
+                                                             urlSession: .shared)
+        let bibleRepository = RoutingBibleRepository(fallbackRepository: youVersionRepository)
 
         // BiblePassageStore (+ DiskPassageCache)
         var passageCache: any PassageCache
