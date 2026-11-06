@@ -100,6 +100,17 @@ final class AppEnvironment {
             Self.logger.error("Missing TYNDALE_APP_KEY in bundled Secrets.plist; NLT/KJV routing disabled")
         }
 
+        // Crossway serves the ESV; without its key that ID stays with YouVersion
+        if let crosswayApiKey = appConfiguration.crosswayApiKey {
+            let crosswayRepository = CrosswayBibleRepository(apiKey: crosswayApiKey,
+                                                             baseURL: appConfiguration.crosswayBaseURL,
+                                                             urlSession: .shared)
+            routes.append(.init(translationIDs: [CrosswayBibleRepository.esvTranslation.id],
+                                repository: crosswayRepository))
+        } else {
+            Self.logger.error("Missing CROSSWAY_APP_KEY in bundled Secrets.plist; ESV routing disabled")
+        }
+
         let bibleRepository = RoutingBibleRepository(fallbackRepository: youVersionRepository,
                                                      routes: routes)
 

@@ -35,11 +35,21 @@ struct AppConfigurationTests {
         #expect(configuration.tyndaleApiKey == nil)
     }
 
-    @Test func missingSecretsFileLeavesBothKeysNil() throws {
+    @Test func missingSecretsFileLeavesAllKeysNil() throws {
         let configuration = AppConfiguration(bundle: try makeBundle(secrets: nil))
 
         #expect(configuration.youVersionApiKey == nil)
         #expect(configuration.tyndaleApiKey == nil)
+        #expect(configuration.crosswayApiKey == nil)
+    }
+
+    // MARK: Crossway key
+
+    @Test func crosswayKeyIsReadAndTrimmed() throws {
+        let configuration = try makeConfiguration(secrets: ["CROSSWAY_APP_KEY": " crossway-key "])
+
+        #expect(configuration.crosswayApiKey == "crossway-key")
+        #expect(configuration.crosswayBaseURL.absoluteString == "https://api.esv.org")
     }
 
     @Test func tyndaleBaseURLDefaultsToNLTAPI() throws {
