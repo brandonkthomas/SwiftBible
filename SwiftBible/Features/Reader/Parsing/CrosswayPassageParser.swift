@@ -6,14 +6,30 @@
 //
 
 import Foundation
+import OSLog
 
 /// Handles parsing of ESV API passage HTML (`passages[0]` from /v3/passage/html/)
 nonisolated struct CrosswayPassageParser {
 
+    /// HTML named entities ESV uses that XMLParser doesn't know, keyed by case-sensitive name
+    ///
+    /// Never add XML's five (`amp`, `lt`, `gt`, `quot`, `apos`): XMLParser decodes those
+    /// itself, so decoding them here would decode them twice.
+    private static let namedEntities: [String: String] = [
+        // after verse numbers and as poetry indent padding; a plain space is trimmed like any other
+        "nbsp": " ",
+        "mdash": "\u{2014}",
+        "ndash": "\u{2013}",
+        "lsquo": "\u{2018}",
+        "rsquo": "\u{2019}",
+        "ldquo": "\u{201C}",
+        "rdquo": "\u{201D}",
+        "hellip": "\u{2026}",
+        "thinsp": "\u{2009}",
+    ]
+
     func parse(html: String) throws -> RenderedPassage {
-        // XMLParser only knows XML's five entities; ESV uses &nbsp; after verse numbers
-        // and as poetry indent padding. A plain space is trimmed like any other.
-        let markup = "<div>\(html.replacingOccurrences(of: "&nbsp;", with: " "))</div>"
+        let markup = "<div>\(Self.replacingNamedEntities(in: html))</div>"
 
         let delegate = CrosswayPassageParserDelegate()
 
@@ -26,6 +42,18 @@ nonisolated struct CrosswayPassageParser {
 
         return .init(paragraphs: delegate.paragraphs.normalizingIndentation(),
                      footnotes: delegate.footnotes)
+    }
+
+    /// Replace entities found in `namedEntities`; leave every other `&name;` as-is
+    ///
+    /// Runs on the raw markup, so entities inside attribute values (footnote `title`) are
+    /// covered too. Numeric references don't match the pattern. An unknown name reaches
+    /// XMLParser unchanged, so the parse fails and the delegate logs the entity's name.
+    private static func replacingNamedEntities(in html: String) -> String {
+        // Project builds in Swift 5 mode, where only the #/.../# literal form is enabled
+        html.replacing(#/&(?<name>[A-Za-z][A-Za-z0-9]*);/#) { match in
+            namedEntities[String(match.name)] ?? String(match.output.0)
+        }
     }
 }
 
@@ -84,6 +112,9 @@ private nonisolated final class CrosswayPassageParserDelegate: NSObject, XMLPars
     private static let headingElements: Set<String> = ["h1", "h2", "h3", "h4", "h5", "h6"]
 
     private static let inlineStyleElements: Set<String> = ["span", "i", "em"]
+
+    private static let logger = Logger(subsystem: "SwiftBible",
+                                       category: "CrosswayPassageParserDelegate")
 
     // MARK: Functions (Delegate)
 
@@ -197,6 +228,23 @@ private nonisolated final class CrosswayPassageParserDelegate: NSObject, XMLPars
         if elementName == "p" {
             finishParagraph()
         }
+    }
+
+    /// Log the parser's own failure reason
+    ///
+    /// XMLParser replaces this error with a generic one (code 111) by the time parse()
+    /// returns, so the original code and message are only available here. The message
+    /// names the offending entity or tag, never passage text.
+    func parser(
+        _ parser: XMLParser,
+        parseErrorOccurred parseError: Error
+    ) {
+        let error = parseError as NSError
+        let message = (error.userInfo["NSXMLParserErrorMessage"] as? String)?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            ?? error.localizedDescription
+
+        Self.logger.error("Parse failed: code \(error.code, privacy: .public) @ line \(parser.lineNumber, privacy: .public), column \(parser.columnNumber, privacy: .public): \(message, privacy: .public)")
     }
 
     // MARK: Functions (Private)

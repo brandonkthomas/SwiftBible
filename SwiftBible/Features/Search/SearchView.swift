@@ -9,7 +9,6 @@ import SwiftUI
 
 struct SearchView: View {
     var body: some View {
-        //ContentUnavailableView.search
         ContentUnavailableView(
             "Search",
             systemImage: "magnifyingglass",

@@ -169,6 +169,72 @@ struct CrosswayPassageParserTests {
         #expect(passage.footnotes.first?.text == "Or alpha. 16 Beta")
     }
 
+    // MARK: Entities
+
+    /// Expected characters are spelled out here, not read from the parser's table
+    @Test(arguments: [
+        ("nbsp", " "),
+        ("mdash", "\u{2014}"),
+        ("ndash", "\u{2013}"),
+        ("lsquo", "\u{2018}"),
+        ("rsquo", "\u{2019}"),
+        ("ldquo", "\u{201C}"),
+        ("rdquo", "\u{201D}"),
+        ("hellip", "\u{2026}"),
+        ("thinsp", "\u{2009}")
+    ])
+    func namedEntityDecodesInVerseText(name: String, character: String) throws {
+        let html = #"<p><b class="verse-num" id="v01001001-1">1&nbsp;</b>Alpha&\#(name);beta.</p>"#
+
+        let passage = try parser.parse(html: html)
+
+        #expect(passage.paragraphs[0].runs[1] == .text("Alpha\(character)beta.",
+                                                       verseRange: .init(startVerse: 1)))
+    }
+
+    /// XMLParser decodes XML's own entities; decoding them first would decode twice
+    /// ("&amp;mdash;" would become an em dash, "&lt;" would open a tag)
+    @Test func xmlEntitiesDecodeExactlyOnce() throws {
+        let html = #"<p><b class="verse-num" id="v01001001-1">1&nbsp;</b>Alpha &amp;mdash; beta &lt;gamma&gt; &quot;delta&quot; epsilon&apos;s.</p>"#
+
+        let passage = try parser.parse(html: html)
+
+        #expect(passage.paragraphs[0].runs == [
+            .verseLabel(displayText: "1", verseRange: .init(startVerse: 1)),
+            .text(#"Alpha &mdash; beta <gamma> "delta" epsilon's."#, verseRange: .init(startVerse: 1))
+        ])
+    }
+
+    @Test func numericReferencesDecode() throws {
+        let html = #"<p><b class="verse-num" id="v01001001-1">1&nbsp;</b>Alpha&#8212;beta&#x2014;gamma.</p>"#
+
+        let passage = try parser.parse(html: html)
+
+        #expect(passage.paragraphs[0].runs[1] == .text("Alpha\u{2014}beta\u{2014}gamma.",
+                                                       verseRange: .init(startVerse: 1)))
+    }
+
+    /// Entities are replaced before XMLParser runs, so attribute values are covered too
+    @Test func namedEntityInFootnoteTitleDecodes() throws {
+        let marker = footnoteMarker(
+            number: 1,
+            escapedNote: "&lt;note class=&quot;alternative&quot;&gt;Or alpha&hellip;beta&lt;/note&gt;"
+        )
+        let html = #"<p><b class="verse-num" id="v01001001-1">1&nbsp;</b>Gamma\#(marker) delta.</p>"#
+
+        let passage = try parser.parse(html: html)
+
+        #expect(passage.footnotes.first?.text == "Or alpha\u{2026}beta")
+    }
+
+    /// Unknown and wrong-case names reach XMLParser unchanged, so the parse fails
+    @Test(arguments: ["notanentity", "Mdash"])
+    func unknownEntityThrows(name: String) {
+        #expect(throws: PassageHTMLParserError.self) {
+            try parser.parse(html: #"<p><b class="verse-num" id="v01001001-1">1&nbsp;</b>Alpha&\#(name);beta.</p>"#)
+        }
+    }
+
     // MARK: Errors
 
     @Test func malformedMarkupThrows() {

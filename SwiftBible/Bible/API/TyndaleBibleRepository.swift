@@ -42,7 +42,7 @@ final class TyndaleBibleRepository: BibleRepository {
     /// The KJV text is public domain in the United States; the word notes come from Tyndale's API
     static let kjvCopyrightNotice = """
         King James Version: public domain in the United States. \
-        Text and notes provided by Tyndale House Publishers through the NLT API.
+        Text and notes provided by Tyndale House Publishers.
         """
 
     // MARK: Properties (Private)
