@@ -75,30 +75,37 @@ struct ContentView: View {
                     }
                     .sheet(isPresented: $isListenModeSheetPresented, content: {
                         NavigationStack {
-                            Button {
+//                            Button {
+//
+//                            } label: {
+//                                Label("Play", systemImage: "play.fill")
+//                                    .labelStyle(.iconOnly)
+//                                    .frame(width: 80, height: 80)
+//                                    .foregroundStyle(Color.primary)
+////                                    .imageScale(.large)
+//                                    .font(.system(size: 32))
+//                            }
+//                                .buttonStyle(.automatic)
+//                                .glassEffect(.clear.interactive(), in: .circle)
+//                                .frame(width: 80, height: 80)
 
-                            } label: {
-                                Label("Play", systemImage: "play.fill")
-                                    .labelStyle(.iconOnly)
-                                    .frame(width: 80, height: 80)
-                                    .foregroundStyle(Color.primary)
-//                                    .imageScale(.large)
-                                    .font(.system(size: 32))
-                            }
-                                .buttonStyle(.automatic)
-                                .glassEffect(.clear.interactive(), in: .circle)
-                                .frame(width: 80, height: 80)
-                                .navigationTitle("Listen")
+                            ContentUnavailableView(
+                                "Listen",
+                                systemImage: "waveform",
+                                description: Text("Coming soon.")
+                            )
+//                                .navigationTitle("Listen")
+                                .navigationTitle("")
                                 .navigationBarTitleDisplayMode(.inline)
                                 .toolbar {
                                     ToolbarItem(placement: .cancellationAction) {
                                         Button(role: .close) {
-                                            dismissListenModeSheet()
+                                            isListenModeSheetPresented = false
                                         }
                                     }
                                 }
                         }
-                        .presentationDetents([.fraction(0.3)])
+                        .presentationDetents([.fraction(0.35)])
                         .presentationDragIndicator(.visible)
                         .presentationBackgroundInteraction(.enabled)
                     })
