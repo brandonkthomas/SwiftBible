@@ -17,12 +17,20 @@ final class CrosswayBibleRepository: BibleRepository {
     static let esvTranslation = Translation(
         id: 59,
         abbreviation: "ESV",
-        title: "English Standard Version 2016",
+        title: "English Standard Version",
         languageTag: "en",
-        license: nil,
+        license: CrosswayBibleRepository.esvCopyrightNotice,
         promotionalText: nil,
         availableBookCodes: BookDefaults.defaultBooks.map { $0.code }
     )
+
+    /// Standard notice from https://api.esv.org ("What is the standard copyright notice...")
+    static let esvCopyrightNotice = """
+        Scripture quotations are from the ESV® Bible (The Holy Bible, English Standard Version®), \
+        © 2001 by Crossway, a publishing ministry of Good News Publishers. Used by permission. \
+        All rights reserved. The ESV text may not be quoted in any publication made available to \
+        the public by a Creative Commons license. The ESV may not be translated into any other language.
+        """
 
     // MARK: Properties (Private)
 
@@ -34,6 +42,9 @@ final class CrosswayBibleRepository: BibleRepository {
                                        category: "CrosswayBibleRepository")
 
     private static let books: [Book] = BookDefaults.defaultBooks
+
+    /// From the ESV API terms at https://api.esv.org
+    static let maximumCachedVerseCount = 500
 
     // MARK: Init
 
@@ -112,6 +123,11 @@ final class CrosswayBibleRepository: BibleRepository {
     func renderedPassage(from passage: Passage,
                          translationID: Translation.ID) throws -> RenderedPassage {
         try CrosswayPassageParser().parse(html: passage.htmlContent)
+    }
+
+    /// ESV terms: "You may not locally store more than 500 verses", "You can cache up to 500 verses"
+    func passageCachePolicy(for translationID: Translation.ID) -> PassageCachePolicy {
+        .memoryOnly(maximumVerseCount: Self.maximumCachedVerseCount)
     }
 
     // MARK: Functions (Local)

@@ -154,6 +154,30 @@ struct RenderedPassageTests {
         #expect(result == [firstRun, secondRun, thirdRun])
     }
 
+    // MARK: Verse count
+
+    /// Each verse counts once, however many runs (text, label, footnote) it has
+    @Test func verseCountCountsDistinctVerses() {
+        let passage = makePassage(runs: [
+            .verseLabel(displayText: "1", verseRange: RenderedVerseRange(startVerse: 1)),
+            .text("Verse one", verseRange: RenderedVerseRange(startVerse: 1)),
+            .footnoteMarker(0, verseRange: RenderedVerseRange(startVerse: 1)),
+            .text("Verse two", verseRange: RenderedVerseRange(startVerse: 2))
+        ])
+
+        #expect(passage.verseCount == 2)
+    }
+
+    /// A combined "4-6" label covers three verses; runs without a verse don't count
+    @Test func verseCountExpandsRangesAndIgnoresUntaggedRuns() {
+        let passage = makePassage(runs: [
+            .text("Before any verse", verseRange: nil),
+            .text("Verses four to six", verseRange: RenderedVerseRange(startVerse: 4, endVerse: 6))
+        ])
+
+        #expect(passage.verseCount == 3)
+    }
+
     private func makePassage(runs: [RenderedPassageRun]) -> RenderedPassage {
         RenderedPassage(
             paragraphs: [RenderedParagraph(runs: runs)],

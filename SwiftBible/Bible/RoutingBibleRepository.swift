@@ -66,6 +66,10 @@ final class RoutingBibleRepository: BibleRepository {
                                                            translationID: translationID)
     }
 
+    func passageCachePolicy(for translationID: Translation.ID) -> PassageCachePolicy {
+        repository(for: translationID).passageCachePolicy(for: translationID)
+    }
+
     // MARK: Functions (Private Helpers)
 
     private func repository(for translationID: Translation.ID) -> any BibleRepository {

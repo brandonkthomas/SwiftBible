@@ -91,6 +91,23 @@ struct CrosswayBibleRepositoryTests {
         }
     }
 
+    // MARK: Copyright Notice
+
+    /// Settings > Acknowledgments shows Translation.license; Crossway's notice must be there
+    @Test func esvTranslationCarriesCopyrightNotice() {
+        let license = CrosswayBibleRepository.esvTranslation.license
+
+        #expect(license?.hasPrefix("Scripture quotations are from the ESV® Bible") == true)
+        #expect(license?.contains("© 2001 by Crossway") == true)
+    }
+
+    // MARK: Cache Policy
+
+    /// ESV terms: no more than 500 verses cached or stored locally
+    @Test func cachePolicyIsMemoryOnly500Verses() throws {
+        #expect(try makeRepository().passageCachePolicy(for: esvID) == .memoryOnly(maximumVerseCount: 500))
+    }
+
     // MARK: Rendered Passage
 
     /// PassageHTMLParser would fail on ESV's &nbsp; entities

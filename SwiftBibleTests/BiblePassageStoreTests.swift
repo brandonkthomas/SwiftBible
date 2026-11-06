@@ -59,6 +59,73 @@ struct BiblePassageStoreTests {
         #expect(loadedPassage.renderedPassage.paragraphs.first?.runs == CustomRenderingBibleRepository.runs)
     }
 
+    // MARK: Memory-only policy (ESV terms)
+
+    /// A .memoryOnly passage is neither read from nor written to the disk cache
+    @Test func memoryOnlyPolicySkipsDiskCache() async throws {
+        let repository = VerseLimitedBibleRepository(maximumVerseCount: 500, versesPerChapter: 3)
+        let passageCache = InMemoryPassageCache()
+        let seededKey = makeKey(chapter: 1)
+        let seededPassage = Passage(id: "GEN.1", reference: "Genesis 1", htmlContent: "<p>seeded")
+        try await passageCache.save(seededPassage, for: seededKey)
+
+        let store = BiblePassageStore(repository: repository, passageCache: passageCache)
+
+        _ = try await store.passage(for: seededKey)
+        _ = try await store.passage(for: makeKey(chapter: 2))
+
+        #expect(repository.passageRequests == [1, 2])
+        #expect(try await passageCache.passage(for: seededKey) == seededPassage)
+        #expect(try await passageCache.passage(for: makeKey(chapter: 2)) == nil)
+    }
+
+    /// Over the verse limit, the least recently used chapter is dropped and fetched again later
+    @Test func memoryOnlyPolicyEvictsOldestChapterOverVerseLimit() async throws {
+        let repository = VerseLimitedBibleRepository(maximumVerseCount: 5, versesPerChapter: 3)
+        let store = BiblePassageStore(repository: repository, passageCache: InMemoryPassageCache())
+
+        _ = try await store.passage(for: makeKey(chapter: 1))
+        _ = try await store.passage(for: makeKey(chapter: 2)) // 6 verses > 5: drops chapter 1
+        _ = try await store.passage(for: makeKey(chapter: 2)) // still cached
+        _ = try await store.passage(for: makeKey(chapter: 1)) // fetched again
+
+        #expect(repository.passageRequests == [1, 2, 1])
+    }
+
+    /// Reading a cached chapter makes it the most recently used, so another is dropped first
+    @Test func memoryOnlyCacheHitRefreshesRecency() async throws {
+        let repository = VerseLimitedBibleRepository(maximumVerseCount: 6, versesPerChapter: 3)
+        let store = BiblePassageStore(repository: repository, passageCache: InMemoryPassageCache())
+
+        _ = try await store.passage(for: makeKey(chapter: 1))
+        _ = try await store.passage(for: makeKey(chapter: 2))
+        _ = try await store.passage(for: makeKey(chapter: 1)) // hit: chapter 2 is now oldest
+        _ = try await store.passage(for: makeKey(chapter: 3)) // 9 verses > 6: drops chapter 2
+        _ = try await store.passage(for: makeKey(chapter: 1)) // still cached
+        _ = try await store.passage(for: makeKey(chapter: 2)) // fetched again
+
+        #expect(repository.passageRequests == [1, 2, 3, 2])
+    }
+
+    /// The limit applies per translation; an unlimited translation's chapters don't count
+    @Test func memoryOnlyLimitIgnoresOtherTranslations() async throws {
+        let repository = VerseLimitedBibleRepository(maximumVerseCount: 5,
+                                                     versesPerChapter: 3,
+                                                     limitedTranslationID: 59)
+        let store = BiblePassageStore(repository: repository, passageCache: InMemoryPassageCache())
+
+        _ = try await store.passage(for: makeKey(translationID: 1234, chapter: 1))
+        _ = try await store.passage(for: makeKey(translationID: 59, chapter: 1))
+        _ = try await store.passage(for: makeKey(translationID: 1234, chapter: 1)) // still cached
+        _ = try await store.passage(for: makeKey(translationID: 59, chapter: 1)) // still cached
+
+        #expect(repository.passageRequests == [1, 1])
+    }
+
+    private func makeKey(translationID: Translation.ID = 59, chapter: Int) -> BiblePassageKey {
+        BiblePassageKey(translationID: translationID, bookCode: "GEN", chapter: chapter)
+    }
+
     @Test func cacheHitAvoidsAnotherRequest() async throws {
         let repository = PassageCountingBibleRepository()
         let store = BiblePassageStore(repository: repository,
@@ -529,5 +596,50 @@ private final class CustomRenderingBibleRepository: BibleRepository {
         renderRequests.append(translationID)
         return RenderedPassage(paragraphs: [RenderedParagraph(runs: Self.runs)],
                                footnotes: [])
+    }
+}
+
+/// Applies .memoryOnly(maximumVerseCount:) to one translation and serves chapters of a fixed
+/// verse count in YouVersion markup; records the chapter of every network request
+@MainActor
+private final class VerseLimitedBibleRepository: BibleRepository {
+    private let maximumVerseCount: Int
+    private let versesPerChapter: Int
+    private let limitedTranslationID: Translation.ID
+
+    private(set) var passageRequests: [Int] = []
+
+    init(maximumVerseCount: Int,
+         versesPerChapter: Int,
+         limitedTranslationID: Translation.ID = 59) {
+        self.maximumVerseCount = maximumVerseCount
+        self.versesPerChapter = versesPerChapter
+        self.limitedTranslationID = limitedTranslationID
+    }
+
+    func translations(languageTag: String?) async throws -> [Translation] {
+        []
+    }
+
+    func books(for translationID: Translation.ID) async throws -> [Book] {
+        []
+    }
+
+    func passage(for reference: ScriptureReference) async throws -> Passage {
+        passageRequests.append(reference.chapter)
+
+        let verses = (1...versesPerChapter).map { verse in
+            #"<span class="yv-v" v="\#(verse)"></span><span class="yv-vlbl">\#(verse)</span>Verse text."#
+        }
+
+        return Passage(id: reference.passageID,
+                       reference: "Genesis \(reference.chapter)",
+                       htmlContent: #"<div class="p">\#(verses.joined())</div>"#)
+    }
+
+    func passageCachePolicy(for translationID: Translation.ID) -> PassageCachePolicy {
+        translationID == limitedTranslationID
+            ? .memoryOnly(maximumVerseCount: maximumVerseCount)
+            : .unlimited
     }
 }

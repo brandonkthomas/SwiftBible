@@ -83,6 +83,15 @@ struct RoutingBibleRepositoryTests {
         #expect(fallback.renderRequests.isEmpty)
     }
 
+    /// Each provider's terms set its cache policy, so the owning provider must answer
+    @Test func cachePolicyComesFromOwningProvider() {
+        let (router, routed, _) = makeRouter()
+        routed.cachePolicy = .memoryOnly(maximumVerseCount: 500)
+
+        #expect(router.passageCachePolicy(for: routedTranslationID) == .memoryOnly(maximumVerseCount: 500))
+        #expect(router.passageCachePolicy(for: unclaimedTranslationID) == .unlimited)
+    }
+
     @Test func unclaimedRenderReachesFallback() throws {
         let (router, routed, fallback) = makeRouter()
 
@@ -194,6 +203,7 @@ private final class RecordingBibleRepository: BibleRepository {
 
     let translations: [Translation]
     var failsLoadingTranslations = false
+    var cachePolicy: PassageCachePolicy = .unlimited
 
     private(set) var translationsLanguageTags: [String?] = []
     private(set) var booksRequests: [Translation.ID] = []
@@ -228,5 +238,9 @@ private final class RecordingBibleRepository: BibleRepository {
                          translationID: Translation.ID) throws -> RenderedPassage {
         renderRequests.append(translationID)
         return RenderedPassage(paragraphs: [], footnotes: [])
+    }
+
+    func passageCachePolicy(for translationID: Translation.ID) -> PassageCachePolicy {
+        cachePolicy
     }
 }

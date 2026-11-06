@@ -5,6 +5,8 @@
 //  Created by Brandon Thomas on 6/28/26.
 //
 
+import Foundation
+
 /// YouVersion bible object + SwiftBible Translation mapper
 nonisolated struct YouVersionBible: Decodable {
     let id: Int
@@ -37,8 +39,25 @@ nonisolated struct YouVersionBible: Decodable {
             abbreviation: self.localizedAbbreviation ?? self.abbreviation,
             title: self.localizedTitle ?? self.title,
             languageTag: self.languageTag,
-            license: self.copyright,
-            promotionalText: self.promotionalContent,
+            license: Self.unquoted(self.copyright),
+            promotionalText: Self.unquoted(self.promotionalContent),
             availableBookCodes: self.books)
+    }
+
+    /// YouVersion wraps some values in literal quotes ("\"The Holy Bible...\"");
+    /// return the text without them, or nil when nothing is left
+    private static func unquoted(_ value: String?) -> String? {
+        guard var text = value?.trimmingCharacters(in: .whitespacesAndNewlines) else {
+            return nil
+        }
+
+        if text.count >= 2,
+           text.hasPrefix("\""),
+           text.hasSuffix("\"") {
+            text = String(text.dropFirst().dropLast())
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+
+        return text.isEmpty ? nil : text
     }
 }

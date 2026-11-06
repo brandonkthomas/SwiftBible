@@ -16,7 +16,7 @@ final class TyndaleBibleRepository: BibleRepository {
         abbreviation: "NLT",
         title: "New Living Translation",
         languageTag: "en",
-        license: nil,
+        license: TyndaleBibleRepository.nltCopyrightNotice,
         promotionalText: nil,
         availableBookCodes: BookDefaults.defaultBooks.map { $0.code }
     )
@@ -26,10 +26,24 @@ final class TyndaleBibleRepository: BibleRepository {
         abbreviation: "KJV",
         title: "King James Version",
         languageTag: "en",
-        license: nil,
+        license: TyndaleBibleRepository.kjvCopyrightNotice,
         promotionalText: nil,
         availableBookCodes: BookDefaults.defaultBooks.map { $0.code }
     )
+
+    /// Tyndale's standard NLT permission statement
+    /// (confirm against https://www.tyndale.com/permissions)
+    static let nltCopyrightNotice = """
+        Scripture quotations are taken from the Holy Bible, New Living Translation, \
+        copyright © 1996, 2004, 2015 by Tyndale House Foundation. Used by permission of \
+        Tyndale House Publishers, Carol Stream, Illinois 60188. All rights reserved.
+        """
+
+    /// The KJV text is public domain in the United States; the word notes come from Tyndale's API
+    static let kjvCopyrightNotice = """
+        King James Version: public domain in the United States. \
+        Text and notes provided by Tyndale House Publishers through the NLT API.
+        """
 
     // MARK: Properties (Private)
 

@@ -87,4 +87,64 @@ struct YouVersionBibleCollectionResponseTests {
         }
     }
 
+    // MARK: Copyright
+
+    /// YouVersion wraps some copyright/promotional values in literal quotes
+    @Test(arguments: [
+        (#""\"Alpha copyright.\"""#, "Alpha copyright."),
+        (#""Alpha copyright.""#, "Alpha copyright."),
+        (#""  \" Alpha copyright. \"  ""#, "Alpha copyright.")
+    ])
+    func wrappingQuotesAreRemoved(jsonValue: String, expectedText: String) throws {
+        let translation = try decodeTranslation(copyright: jsonValue,
+                                                promotionalContent: jsonValue)
+
+        #expect(translation.license == expectedText)
+        #expect(translation.promotionalText == expectedText)
+    }
+
+    /// Quotes inside the text are kept; only a pair around the whole value is removed
+    @Test func innerQuotesAreKept() throws {
+        let translation = try decodeTranslation(copyright: #""Alpha \"beta\" gamma.""#,
+                                                promotionalContent: "null")
+
+        #expect(translation.license == #"Alpha "beta" gamma."#)
+        #expect(translation.promotionalText == nil)
+    }
+
+    @Test(arguments: [#""\"\"""#, #""   ""#, "null"])
+    func emptyOrMissingCopyrightIsNil(jsonValue: String) throws {
+        let translation = try decodeTranslation(copyright: jsonValue,
+                                                promotionalContent: jsonValue)
+
+        #expect(translation.license == nil)
+        #expect(translation.promotionalText == nil)
+    }
+
+    // MARK: Functions (Private Helpers)
+
+    /// Decode one bible object; values are raw JSON (a quoted string or null)
+    private func decodeTranslation(copyright: String,
+                                   promotionalContent: String) throws -> Translation {
+        let json = """
+            {
+                "data": [
+                  {
+                    "id": 3034,
+                    "abbreviation": "BSB",
+                    "promotional_content": \(promotionalContent),
+                    "copyright": \(copyright),
+                    "language_tag": "en",
+                    "title": "Sample Bible",
+                    "books": ["GEN"]
+                  }
+                ]
+            }
+            """
+
+        let decoded = try JSONDecoder().decode(YouVersionBibleCollectionResponse.self,
+                                               from: Data(json.utf8))
+
+        return try #require(decoded.translationsForApp().first)
+    }
 }

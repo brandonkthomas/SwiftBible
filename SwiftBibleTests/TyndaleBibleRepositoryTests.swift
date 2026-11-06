@@ -99,6 +99,14 @@ struct TyndaleBibleRepositoryTests {
         #expect(books.count == 66)
     }
 
+    // MARK: Copyright Notices
+
+    /// Settings > Acknowledgments shows Translation.license; neither notice may be missing
+    @Test func translationsCarryCopyrightNotices() {
+        #expect(TyndaleBibleRepository.nltTranslation.license?.contains("Tyndale House Foundation") == true)
+        #expect(TyndaleBibleRepository.kjvTranslation.license?.contains("public domain") == true)
+    }
+
     // MARK: Rendered Passage
 
     /// PassageHTMLParser would find no <div> paragraphs in this markup
