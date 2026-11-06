@@ -86,7 +86,22 @@ final class AppEnvironment {
         let youVersionRepository = YouVersionBibleRepository(apiKey: apiKey,
                                                              baseURL: appConfiguration.youVersionBaseURL,
                                                              urlSession: .shared)
-        let bibleRepository = RoutingBibleRepository(fallbackRepository: youVersionRepository)
+        // Tyndale serves NLT and KJV; without its key those IDs stay with YouVersion
+        var routes: [RoutingBibleRepository.Route] = []
+
+        if let tyndaleApiKey = appConfiguration.tyndaleApiKey {
+            let tyndaleRepository = TyndaleBibleRepository(apiKey: tyndaleApiKey,
+                                                           baseURL: appConfiguration.tyndaleBaseURL,
+                                                           urlSession: .shared)
+            routes.append(.init(translationIDs: [TyndaleBibleRepository.nltTranslation.id,
+                                                 TyndaleBibleRepository.kjvTranslation.id],
+                                repository: tyndaleRepository))
+        } else {
+            Self.logger.error("Missing TYNDALE_APP_KEY in bundled Secrets.plist; NLT/KJV routing disabled")
+        }
+
+        let bibleRepository = RoutingBibleRepository(fallbackRepository: youVersionRepository,
+                                                     routes: routes)
 
         // BiblePassageStore (+ DiskPassageCache)
         var passageCache: any PassageCache

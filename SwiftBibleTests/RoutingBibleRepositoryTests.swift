@@ -71,6 +71,27 @@ struct RoutingBibleRepositoryTests {
         #expect(routed.passageRequests.isEmpty)
     }
 
+    // MARK: Rendered Passages
+
+    /// The provider that fetched a passage is the one that parses it
+    @Test func claimedRenderReachesOnlyOwningProvider() throws {
+        let (router, routed, fallback) = makeRouter()
+
+        _ = try router.renderedPassage(from: makePassage(), translationID: routedTranslationID)
+
+        #expect(routed.renderRequests == [routedTranslationID])
+        #expect(fallback.renderRequests.isEmpty)
+    }
+
+    @Test func unclaimedRenderReachesFallback() throws {
+        let (router, routed, fallback) = makeRouter()
+
+        _ = try router.renderedPassage(from: makePassage(), translationID: unclaimedTranslationID)
+
+        #expect(fallback.renderRequests == [unclaimedTranslationID])
+        #expect(routed.renderRequests.isEmpty)
+    }
+
     // MARK: Translations
 
     /// A provider owning two IDs is asked once, so its translations aren't listed twice
@@ -150,6 +171,10 @@ struct RoutingBibleRepositoryTests {
         try #require(ScriptureReference(translationID: translationID, bookCode: "GEN", chapter: 1))
     }
 
+    private func makePassage() -> Passage {
+        Passage(id: "GEN.1", reference: "Genesis 1", htmlContent: "")
+    }
+
     private func makeTranslation(id: Translation.ID, abbreviation: String) -> Translation {
         Translation(id: id,
                     abbreviation: abbreviation,
@@ -173,6 +198,7 @@ private final class RecordingBibleRepository: BibleRepository {
     private(set) var translationsLanguageTags: [String?] = []
     private(set) var booksRequests: [Translation.ID] = []
     private(set) var passageRequests: [ScriptureReference] = []
+    private(set) var renderRequests: [Translation.ID] = []
 
     init(translations: [Translation]) {
         self.translations = translations
@@ -196,5 +222,11 @@ private final class RecordingBibleRepository: BibleRepository {
     func passage(for reference: ScriptureReference) async throws -> Passage {
         passageRequests.append(reference)
         return Passage(id: reference.passageID, reference: "", htmlContent: "")
+    }
+
+    func renderedPassage(from passage: Passage,
+                         translationID: Translation.ID) throws -> RenderedPassage {
+        renderRequests.append(translationID)
+        return RenderedPassage(paragraphs: [], footnotes: [])
     }
 }

@@ -330,4 +330,24 @@ struct PassageHTMLParserTests {
         #expect(passage.paragraphs[0].runs[1] == .text("Multi-verse label text.",
                                                        verseRange: verseRange))
     }
+
+    /// XMLParser splits some text nodes at a curly apostrophe ("John’" + "s")
+    @Test func parserKeepsTextNodeSplitByXMLParserAsOneRun() async throws {
+        let html = """
+            <div class="p">
+            <span class="yv-v" v="1"></span>
+            <span class="yv-vlbl">1</span>
+            John’s disciples didn’t go.
+            </div>
+            """
+
+        let parser = PassageHTMLParser()
+        let passage = try parser.parse(html: html)
+
+        let verseRange = RenderedVerseRange(startVerse: 1)
+
+        #expect(passage.paragraphs[0].runs.count == 2)
+        #expect(passage.paragraphs[0].runs[1] == .text("John’s disciples didn’t go.",
+                                                       verseRange: verseRange))
+    }
 }

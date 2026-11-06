@@ -44,6 +44,21 @@ struct BiblePassageStoreTests {
         #expect(repository.passageRequestCount == 1)
     }
 
+    /// Each provider parses its own HTML, so the store must not pick a parser itself
+    @Test func repositoryParsesTheFetchedPassage() async throws {
+        let repository = CustomRenderingBibleRepository()
+        let store = BiblePassageStore(repository: repository,
+                                      passageCache: InMemoryPassageCache())
+        let key = BiblePassageKey(translationID: 1234,
+                                  bookCode: "GEN",
+                                  chapter: 1)
+
+        let loadedPassage = try await store.passage(for: key)
+
+        #expect(repository.renderRequests == [key.translationID])
+        #expect(loadedPassage.renderedPassage.paragraphs.first?.runs == CustomRenderingBibleRepository.runs)
+    }
+
     @Test func cacheHitAvoidsAnotherRequest() async throws {
         let repository = PassageCountingBibleRepository()
         let store = BiblePassageStore(repository: repository,
@@ -201,6 +216,34 @@ struct BiblePassageStoreTests {
 
         #expect(retriedResult.passage == expectedPassage)
         #expect(repository.passageRequestCount == 2)
+    }
+
+    /// A cached passage the repository can no longer parse is fetched again and replaced
+    @Test func unparseableCachedPassageIsFetchedAgain() async throws {
+        let key = BiblePassageKey(translationID: 1234,
+                                  bookCode: "GEN",
+                                  chapter: 1)
+        let expectedPassage = try #require(
+            FakeBibleRepository.defaultPassages.first {
+                $0.translationID == key.translationID
+            }?.passage
+        )
+
+        let passageCache = InMemoryPassageCache()
+        let stalePassage = Passage(id: expectedPassage.id,
+                                   reference: expectedPassage.reference,
+                                   htmlContent: "<p>unclosed")
+        try await passageCache.save(stalePassage, for: key)
+
+        let repository = PassageCountingBibleRepository()
+        let store = BiblePassageStore(repository: repository,
+                                      passageCache: passageCache)
+
+        let loadedPassage = try await store.passage(for: key)
+
+        #expect(loadedPassage.passage == expectedPassage)
+        #expect(repository.passageRequestCount == 1)
+        #expect(try await passageCache.passage(for: key) == expectedPassage)
     }
 
     @Test func diskCacheHitAvoidsNetworkRequest() async throws {
@@ -457,5 +500,34 @@ private final class PassageCountingBibleRepository: BibleRepository {
     func passage(for reference: ScriptureReference) async throws -> Passage {
         passageRequestCount += 1
         return try await repository.passage(for: reference)
+    }
+}
+
+/// Returns fixed runs from renderedPassage, so a test can tell its parser was used
+@MainActor
+private final class CustomRenderingBibleRepository: BibleRepository {
+    static let runs: [RenderedPassageRun] = [.text("Custom parser output", verseRange: nil)]
+
+    private let repository = FakeBibleRepository()
+
+    private(set) var renderRequests: [Translation.ID] = []
+
+    func translations(languageTag: String?) async throws -> [Translation] {
+        try await repository.translations(languageTag: languageTag)
+    }
+
+    func books(for translationID: Translation.ID) async throws -> [Book] {
+        try await repository.books(for: translationID)
+    }
+
+    func passage(for reference: ScriptureReference) async throws -> Passage {
+        try await repository.passage(for: reference)
+    }
+
+    func renderedPassage(from passage: Passage,
+                         translationID: Translation.ID) throws -> RenderedPassage {
+        renderRequests.append(translationID)
+        return RenderedPassage(paragraphs: [RenderedParagraph(runs: Self.runs)],
+                               footnotes: [])
     }
 }

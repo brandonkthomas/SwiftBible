@@ -12,24 +12,39 @@ struct AppConfiguration {
     let youVersionApiKey: String?
     let youVersionBaseURL: URL
 
+    let tyndaleApiKey: String?
+    let tyndaleBaseURL: URL
+
     static let defaultYouVersionBaseURL = URL(string: "https://api.youversion.com")!
+    static let defaultTyndaleBaseURL = URL(string: "https://api.nlt.to")!
     private static let secretsResourceName = "Secrets"
     private static let youVersionApiKeyName = "YOUVERSION_APP_KEY"
+    private static let tyndaleApiKeyName = "TYNDALE_APP_KEY"
 
     init(bundle: Bundle = .main,
-         youVersionBaseURL: URL = Self.defaultYouVersionBaseURL) {
+         youVersionBaseURL: URL = Self.defaultYouVersionBaseURL,
+         tyndaleBaseURL: URL = Self.defaultTyndaleBaseURL) {
         self.youVersionBaseURL = youVersionBaseURL
+        self.tyndaleBaseURL = tyndaleBaseURL
 
-        let rawApiKey = Self.secretString(named: Self.youVersionApiKeyName, in: bundle)
+        self.youVersionApiKey = Self.apiKey(named: Self.youVersionApiKeyName, in: bundle)
+        self.tyndaleApiKey = Self.apiKey(named: Self.tyndaleApiKeyName, in: bundle)
+    }
+
+    /// Retrieve a trimmed API key from Secrets.plist
+    ///
+    /// Returns nil when the key is missing, empty, or still the unexpanded "$(NAME)" placeholder.
+    private static func apiKey(named key: String, in bundle: Bundle) -> String? {
+        let rawApiKey = secretString(named: key, in: bundle)
         let trimmedApiKey = rawApiKey?.trimmingCharacters(in: .whitespacesAndNewlines)
 
-        if let trimmedApiKey,
-           !trimmedApiKey.isEmpty,
-           trimmedApiKey != "$(\(Self.youVersionApiKeyName))" {
-            self.youVersionApiKey = trimmedApiKey
-        } else {
-            self.youVersionApiKey = nil
+        guard let trimmedApiKey,
+              !trimmedApiKey.isEmpty,
+              trimmedApiKey != "$(\(key))" else {
+            return nil
         }
+
+        return trimmedApiKey
     }
 
     /// Retrieve a string from Secrets.plist

@@ -121,6 +121,12 @@ final class TyndaleBibleRepository: BibleRepository {
                            htmlContent: dataString)
     }
 
+    /// Tyndale HTML needs TyndaleMarkupCleaner before XMLParser can read it
+    func renderedPassage(from passage: Passage,
+                         translationID: Translation.ID) throws -> RenderedPassage {
+        try TyndalePassageParser().parse(html: passage.htmlContent)
+    }
+
     // MARK: Functions (Local)
 
     /// Build full request URL for Passage request

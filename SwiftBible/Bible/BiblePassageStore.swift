@@ -73,37 +73,34 @@ final class BiblePassageStore {
         //   We do NOT need to wire this up though because other cards may be waiting on this
         //   We may need to cancel per-URL-request and only when no one wants the chapter anymore...
         let task = Task<LoadedBiblePassage, Error> {
-            // retrieve passage (check network cache first; else send network request + add
-            // cache entry later)
-            let passage: Passage
-            var needsPassageCacheEntry: Bool = false
-
-            // swallow throws here
+            // 1. disk cache (swallow read throws here)
+            //    A cached passage that no longer parses (e.g. saved before its translation
+            //    moved to another provider) is treated as a miss, and the fetch below replaces it.
             if let cached = try? await passageCache.passage(for: key) {
-                passage = cached
-            } else {
-                passage = try await repository.passage(for: reference)
-                needsPassageCacheEntry = true
-            }
-
-            // parse HTML
-            let parser = PassageHTMLParser()
-            let renderedPassage = try parser.parse(html: passage.htmlContent)
-
-            // build LoadedBiblePassage; store @ in-memory cache; return
-            let loadedBiblePassage = LoadedBiblePassage(passage: passage,
-                                                        renderedPassage: renderedPassage)
-
-            // cache network request we just made to disk if necessary
-            if needsPassageCacheEntry {
                 do {
-                    try await passageCache.save(passage, for: key)
+                    let renderedPassage = try repository.renderedPassage(from: cached,
+                                                                         translationID: reference.translationID)
+                    return LoadedBiblePassage(passage: cached,
+                                              renderedPassage: renderedPassage)
                 } catch {
-                    Self.logger.error("Unable to cache passage: \(error.localizedDescription)")
+                    Self.logger.error("Cached passage failed to parse; fetching again: \(error.localizedDescription)")
                 }
             }
 
-            return loadedBiblePassage
+            // 2. network; parse with the parser for this passage's provider
+            let passage = try await repository.passage(for: reference)
+            let renderedPassage = try repository.renderedPassage(from: passage,
+                                                                 translationID: reference.translationID)
+
+            // cache to disk only after the passage parses
+            do {
+                try await passageCache.save(passage, for: key)
+            } catch {
+                Self.logger.error("Unable to cache passage: \(error.localizedDescription)")
+            }
+
+            return LoadedBiblePassage(passage: passage,
+                                      renderedPassage: renderedPassage)
         }
 
         // set tracking; then clear it as soon as this function exits

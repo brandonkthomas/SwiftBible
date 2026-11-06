@@ -99,6 +99,23 @@ struct TyndaleBibleRepositoryTests {
         #expect(books.count == 66)
     }
 
+    // MARK: Rendered Passage
+
+    /// PassageHTMLParser would find no <div> paragraphs in this markup
+    @Test func renderedPassageUsesTyndaleParser() throws {
+        let passage = Passage(id: "JHN.3",
+                              reference: "John 3",
+                              htmlContent: #"<html><body><section><p class="body"><span class="vn">1</span>Alpha text.</p></section></body></html>"#)
+
+        let renderedPassage = try makeRepository().renderedPassage(from: passage, translationID: nltID)
+
+        #expect(renderedPassage.paragraphs.count == 1)
+        #expect(renderedPassage.paragraphs.first?.runs == [
+            .verseLabel(displayText: "1", verseRange: .init(startVerse: 1)),
+            .text("Alpha text.", verseRange: .init(startVerse: 1))
+        ])
+    }
+
     // MARK: Live
 
 //    /// Hits https://api.nlt.to over the network

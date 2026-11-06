@@ -15,6 +15,21 @@ protocol BibleRepository {
 
     /// Retrieves HTML passage content for the selected reference
     func passage(for reference: ScriptureReference) async throws -> Passage
+
+    /// Parses a passage this repository returned into paragraphs and footnotes
+    ///
+    /// Each provider's HTML needs its own parser. translationID lets
+    /// RoutingBibleRepository send the passage to the provider that fetched it.
+    func renderedPassage(from passage: Passage,
+                         translationID: Translation.ID) throws -> RenderedPassage
+}
+
+extension BibleRepository {
+    /// Default: YouVersion passage HTML
+    func renderedPassage(from passage: Passage,
+                         translationID: Translation.ID) throws -> RenderedPassage {
+        try PassageHTMLParser().parse(html: passage.htmlContent)
+    }
 }
 
 enum BibleRepositoryError: Error {

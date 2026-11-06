@@ -32,21 +32,8 @@ nonisolated struct PassageHTMLParser {
         }
 
         // return parser/delegate results
-        return .init(paragraphs: normalizedParagraphs(delegate.paragraphs),
+        return .init(paragraphs: delegate.paragraphs.normalizingIndentation(),
                      footnotes: delegate.footnotes)
-    }
-
-    /// If every paragraph is indented, treat the passage as regular body text
-    private func normalizedParagraphs(_ paragraphs: [RenderedParagraph]) -> [RenderedParagraph] {
-        let hasBodyParagraph = paragraphs.contains { $0.style == .paragraph }
-
-        guard !hasBodyParagraph else {
-            return paragraphs
-        }
-
-        return paragraphs.map { paragraph in
-            RenderedParagraph(style: .paragraph, runs: paragraph.runs)
-        }
     }
 }
 
@@ -67,7 +54,7 @@ private nonisolated final class PassageHTMLParserDelegate: NSObject, XMLParserDe
     private var nextFootnoteID: Footnote.ID = 0
 
     /// buffer for footnote text we're currently rendering (XMLParser is streaming)
-    private var currentFootnoteText: String = ""
+    private var footnoteText = FootnoteTextBuffer()
 
     /// Which verse range are we currently rendering?
     private var currentVerseRange: RenderedVerseRange?
@@ -85,7 +72,13 @@ private nonisolated final class PassageHTMLParserDelegate: NSObject, XMLParserDe
     private var ignoredFootnoteReferenceDepth: Int = 0
 
     /// Tracks inline span styles that apply to passage text.
-    private var spanStyleStack: [RenderedPassageTextStyle?] = []
+    private var spanStyles = TextStyleStack()
+
+    /// Text received since the last tag
+    ///
+    /// XMLParser can split one text node across several foundCharacters calls
+    /// (e.g. "John’" + "s"), so text is appended once per node, at the next tag.
+    private var pendingText: String = ""
 
     // MARK: Functions (Delegate)
 
@@ -99,6 +92,8 @@ private nonisolated final class PassageHTMLParserDelegate: NSObject, XMLParserDe
         qualifiedName qName: String?,
         attributes attributeDict: [String : String] = [:]
     ) {
+        flushPendingText()
+
         if footnoteDepth > 0 {
             // we're already inside a footnote; keep tracking depth + short-circuit
             footnoteDepth += 1
@@ -119,7 +114,7 @@ private nonisolated final class PassageHTMLParserDelegate: NSObject, XMLParserDe
             // we're opening a new footnote; start tracking depth + short-circuit
             footnoteDepth = 1
             ignoredFootnoteReferenceDepth = 0
-            currentFootnoteText = ""
+            footnoteText.reset()
 
             let footnoteID = nextFootnoteID
             nextFootnoteID += 1
@@ -163,7 +158,7 @@ private nonisolated final class PassageHTMLParserDelegate: NSObject, XMLParserDe
         }
 
         if elementName == "span" {
-            spanStyleStack.append(textStyle(for: attributeDict))
+            spanStyles.push(textStyle(for: attributeDict))
         }
     }
 
@@ -179,32 +174,11 @@ private nonisolated final class PassageHTMLParserDelegate: NSObject, XMLParserDe
                 return
             }
 
-            appendFootnoteText(string)
+            footnoteText.append(string)
             return
         }
 
-        // Clean up input
-        let trimmedCharacters = string.trimmingCharacters(in: .whitespacesAndNewlines)
-
-        // Validation
-        guard !trimmedCharacters.isEmpty,
-              var currentParagraph else {
-            return
-        }
-
-        // Append results
-        if isInsideVerseLabel {
-            // Verse Label
-            currentVerseLabelText.append(trimmedCharacters)
-        } else {
-            // Text (Verse Content)
-            appendPassageText(trimmedCharacters,
-                              style: currentTextStyle,
-                              to: &currentParagraph)
-        }
-
-        // Assign locally-unwrapped copy back to parent
-        self.currentParagraph = currentParagraph
+        pendingText.append(string)
     }
 
     /// Sent by parser when it encounters an end tags for a given element
@@ -216,6 +190,8 @@ private nonisolated final class PassageHTMLParserDelegate: NSObject, XMLParserDe
         namespaceURI: String?,
         qualifiedName qName: String?
     ) {
+        flushPendingText()
+
         // we're already inside a footnote; keep tracking depth + short-circuit
         if footnoteDepth > 0 {
             footnoteDepth -= 1
@@ -230,12 +206,12 @@ private nonisolated final class PassageHTMLParserDelegate: NSObject, XMLParserDe
                let currentVerseRange {
                 let footnote = Footnote(id: currentFootnoteID,
                                         verseRange: currentVerseRange,
-                                        text: currentFootnoteText.trimmingCharacters(in: .whitespacesAndNewlines))
+                                        text: footnoteText.trimmedText)
 
                 footnotes.append(footnote)
 
                 self.currentFootnoteID = nil
-                self.currentFootnoteText = ""
+                self.footnoteText.reset()
             }
 
             // we're done here
@@ -255,9 +231,8 @@ private nonisolated final class PassageHTMLParserDelegate: NSObject, XMLParserDe
             self.currentVerseLabelText = ""
         }
 
-        if elementName == "span",
-           !spanStyleStack.isEmpty {
-            _ = spanStyleStack.removeLast()
+        if elementName == "span" {
+            spanStyles.pop()
         }
 
         // Paragraph ended: </div>
@@ -270,12 +245,28 @@ private nonisolated final class PassageHTMLParserDelegate: NSObject, XMLParserDe
 
     // MARK: Functions (Private)
 
-    private var currentTextStyle: RenderedPassageTextStyle {
-        spanStyleStack.reduce(into: []) { style, activeStyle in
-            if let activeStyle {
-                style.formUnion(activeStyle)
-            }
+    /// Append the text node collected since the last tag
+    private func flushPendingText() {
+        let trimmedText = pendingText.trimmingCharacters(in: .whitespacesAndNewlines)
+        pendingText = ""
+
+        guard !trimmedText.isEmpty,
+              var currentParagraph else {
+            return
         }
+
+        if isInsideVerseLabel {
+            // Verse Label
+            currentVerseLabelText.append(trimmedText)
+        } else {
+            // Text (Verse Content)
+            currentParagraph.appendText(trimmedText,
+                                        style: spanStyles.current,
+                                        verseRange: currentVerseRange)
+        }
+
+        // Assign locally-unwrapped copy back to parent
+        self.currentParagraph = currentParagraph
     }
 
     /// Map YouVersion passage HTML classes to SwiftBible render elements.
@@ -305,7 +296,7 @@ private nonisolated final class PassageHTMLParserDelegate: NSObject, XMLParserDe
     private func paragraphStyle(
         for attributes: [String: String]
     ) -> RenderedParagraphStyle? {
-        let classes = classNames(in: attributes)
+        let classes = HTMLClassList.names(in: attributes)
 
         for className in classes {
             switch className {
@@ -324,8 +315,8 @@ private nonisolated final class PassageHTMLParserDelegate: NSObject, XMLParserDe
                     return .indentedLine
                 }
 
-                if let quoteLevel = numberedClassLevel(
-                    className,
+                if let quoteLevel = HTMLClassList.numberedLevel(
+                    of: className,
                     prefix: "q"
                 ) {
                     return quoteLevel == 1
@@ -342,24 +333,7 @@ private nonisolated final class PassageHTMLParserDelegate: NSObject, XMLParserDe
         _ className: Substring,
         prefix: String
     ) -> Bool {
-        numberedClassLevel(className, prefix: prefix) != nil
-    }
-
-    private func numberedClassLevel(
-        _ className: Substring,
-        prefix: String
-    ) -> Int? {
-        guard className.hasPrefix(prefix) else {
-            return nil
-        }
-
-        let levelText = className.dropFirst(prefix.count)
-
-        guard !levelText.isEmpty else {
-            return nil
-        }
-
-        return Int(levelText)
+        HTMLClassList.numberedLevel(of: className, prefix: prefix) != nil
     }
 
     /// Parse YouVersion HTML classes into corresponding text styles (italic, words of Jesus, divine name)
@@ -386,111 +360,7 @@ private nonisolated final class PassageHTMLParserDelegate: NSObject, XMLParserDe
         _ expectedClass: String,
         in attributes: [String: String]
     ) -> Bool {
-        classNames(in: attributes).contains { $0 == expectedClass }
-    }
-
-    /// Return every whitespace-separated HTML class in its original order.
-    private func classNames(
-        in attributes: [String: String]
-    ) -> [Substring] {
-        guard let classValue = attributes["class"] else {
-            return []
-        }
-
-        return classValue.split(whereSeparator: \.isWhitespace)
-    }
-
-    /// Append passage text
-    private func appendPassageText(_ text: String,
-                                   style: RenderedPassageTextStyle,
-                                   to paragraph: inout RenderedParagraph) {
-        var textToAppend = text
-
-        if shouldAttachToPreviousRun(textToAppend),
-           let lastIndex = paragraph.runs.indices.last,
-           let splitText = splitLeadingPunctuation(from: textToAppend) {
-            var didAttachLeadingPunctuation = false
-
-            switch paragraph.runs[lastIndex] {
-            case .text(let previousText, verseRange: let verseRange):
-                paragraph.runs[lastIndex] = .text(previousText + splitText.leadingPunctuation,
-                                                  verseRange: verseRange)
-                didAttachLeadingPunctuation = true
-            case .styledText(let previousText,
-                             style: let previousStyle,
-                             verseRange: let verseRange):
-                paragraph.runs[lastIndex] = .styledText(previousText + splitText.leadingPunctuation,
-                                                        style: previousStyle,
-                                                        verseRange: verseRange)
-                didAttachLeadingPunctuation = true
-            case .verseLabel, .footnoteMarker:
-                break
-            }
-
-            if didAttachLeadingPunctuation {
-                textToAppend = splitText.remainder
-            }
-        }
-
-        guard !textToAppend.isEmpty else {
-            return
-        }
-
-        if style.isEmpty {
-            paragraph.runs.append(.text(textToAppend,
-                                        verseRange: currentVerseRange))
-        } else {
-            paragraph.runs.append(.styledText(textToAppend,
-                                              style: style,
-                                              verseRange: currentVerseRange))
-        }
-    }
-
-    /// Append footnote text
-    private func appendFootnoteText(_ text: String) {
-        let collapsedText = text.replacingOccurrences(of: "\\s+",
-                                                      with: " ",
-                                                      options: .regularExpression)
-
-        guard !collapsedText.isEmpty else {
-            return
-        }
-
-        if collapsedText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            if !currentFootnoteText.isEmpty,
-               !currentFootnoteText.hasSuffix(" ") {
-                currentFootnoteText.append(" ")
-            }
-        } else {
-            currentFootnoteText.append(collapsedText)
-        }
-    }
-
-    /// Should this attach to the previous run (i.e. does this start w/ punctuation)?
-    private func shouldAttachToPreviousRun(_ text: String) -> Bool {
-        guard let firstCharacter = text.first else {
-            return false
-        }
-
-        return ",.;:!?)”’".contains(firstCharacter)
-    }
-
-    private func splitLeadingPunctuation(from text: String) -> (leadingPunctuation: String, remainder: String)? {
-        let punctuationCharacters = CharacterSet(charactersIn: ",.;:!?)”’")
-        let leadingPunctuation = text.prefix { character in
-            String(character).rangeOfCharacter(from: punctuationCharacters.inverted) == nil
-        }
-
-        guard !leadingPunctuation.isEmpty else {
-            return nil
-        }
-
-        let remainderStartIndex = text.index(text.startIndex,
-                                             offsetBy: leadingPunctuation.count)
-        let remainder = text[remainderStartIndex...]
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-
-        return (String(leadingPunctuation), remainder)
+        HTMLClassList.contains(expectedClass, in: attributes)
     }
 }
 /// PassageHTMLParser error definitions

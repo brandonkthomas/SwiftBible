@@ -60,6 +60,12 @@ final class RoutingBibleRepository: BibleRepository {
         try await repository(for: reference.translationID).passage(for: reference)
     }
 
+    func renderedPassage(from passage: Passage,
+                         translationID: Translation.ID) throws -> RenderedPassage {
+        try repository(for: translationID).renderedPassage(from: passage,
+                                                           translationID: translationID)
+    }
+
     // MARK: Functions (Private Helpers)
 
     private func repository(for translationID: Translation.ID) -> any BibleRepository {
