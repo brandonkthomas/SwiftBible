@@ -65,9 +65,46 @@ final class YouVersionBibleRepository: BibleRepository {
 
         var translations = collectionResponse.translationsForApp()
 
-        // Manual cleanup
+        // Manual cleanup -- unwanted English translations
         let unwantedTranslations = ["amp","bsb","cpdv","easy","fbv","gnv","lsv","nasb1995","nivuk","pev","tojb2011","tcent","webus","wmb","wmbbe"]
         translations.removeAll(where: { unwantedTranslations.contains($0.abbreviation.lowercased()) })
+
+        // Manual cleanup -- NASB
+        if let nasb2020Index = translations.firstIndex(where: { $0.abbreviation.lowercased() == "nasb2020" }) {
+            var nasb2020Old = translations[nasb2020Index]
+            var nasb2020New = Translation(
+                id: nasb2020Old.id,
+                abbreviation: nasb2020Old.abbreviation.replacing("2020", with: ""),
+                title: nasb2020Old.title.replacing(" - NASB", with: ""),
+                languageTag: nasb2020Old.languageTag,
+                license: nasb2020Old.license,
+                promotionalText: nasb2020Old.promotionalText,
+                availableBookCodes: nasb2020Old.availableBookCodes
+            )
+
+            translations.remove(at: nasb2020Index)
+            translations.append(nasb2020New)
+        }
+
+        // Manual cleanup -- TPT
+        if let tptIndex = translations.firstIndex(where: {
+            $0.abbreviation.lowercased() == "tpt"
+            && $0.title.contains("(In Review)")
+        }) {
+            var tptOld = translations[tptIndex]
+            var tptNew = Translation(
+                id: tptOld.id,
+                abbreviation: tptOld.abbreviation,
+                title: tptOld.title.replacing(" (In Review)", with: ""),
+                languageTag: tptOld.languageTag,
+                license: tptOld.license,
+                promotionalText: tptOld.promotionalText,
+                availableBookCodes: tptOld.availableBookCodes
+            )
+
+            translations.remove(at: tptIndex)
+            translations.append(tptNew)
+        }
 
         return translations
     }
