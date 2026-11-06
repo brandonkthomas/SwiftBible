@@ -77,7 +77,7 @@ struct SettingsAboutView: View {
 
     // MARK: Properties (Static, Private)
 
-    private static let createdVerbs = ["Created", "Hand-crafted", "Built"]
+    private static let createdVerbs = ["Created", "Handcrafted", "Built"]
 
     /// Scroll speed of the background passage (points per second)
     private static let scrollSpeed: CGFloat = 8

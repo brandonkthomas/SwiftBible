@@ -13,8 +13,6 @@ nonisolated struct RenderedPassage {
 
     var referenceBookAndChapterDisplayName: String? = nil
 
-    /// Retrieve all runs from this RenderedPassage for a given RenderedVerseRange
-    /// Number of distinct verses in this passage; a "16-17" range counts as 2
     var verseCount: Int {
         var verses = Set<Int>()
 
@@ -30,6 +28,8 @@ nonisolated struct RenderedPassage {
         return verses.count
     }
 
+    /// Retrieve all runs from this RenderedPassage for a given RenderedVerseRange
+    /// Number of distinct verses in this passage; a "16-17" range counts as 2
     func runs(for verseRange: RenderedVerseRange) -> [RenderedPassageRun] {
         // iterate all paragraphs' runs in order; keep only verse range matches + append to list
         return paragraphs.flatMap(\.runs).filter { $0.verseRange?.overlaps(verseRange: verseRange) == true }
