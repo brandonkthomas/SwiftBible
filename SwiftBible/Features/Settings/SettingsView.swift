@@ -70,7 +70,7 @@ struct SettingsView: View {
                                         color: .purple)
                         }
                         NavigationLink {
-                            // TODO
+                            SettingsAcknowledgmentsView()
                         } label: {
                             settingsRow(title: "Acknowledgments",
                                         symbol: "text.document.fill",
@@ -129,4 +129,5 @@ struct SettingsView: View {
 
 #Preview {
     SettingsView()
+        .previewEnvironment() // SettingsAcknowledgmentsView reads BibleCatalogStore
 }
