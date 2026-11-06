@@ -71,8 +71,8 @@ final class YouVersionBibleRepository: BibleRepository {
 
         // Manual cleanup -- NASB
         if let nasb2020Index = translations.firstIndex(where: { $0.abbreviation.lowercased() == "nasb2020" }) {
-            var nasb2020Old = translations[nasb2020Index]
-            var nasb2020New = Translation(
+            let nasb2020Old = translations[nasb2020Index]
+            let nasb2020New = Translation(
                 id: nasb2020Old.id,
                 abbreviation: nasb2020Old.abbreviation.replacing("2020", with: ""),
                 title: nasb2020Old.title.replacing(" - NASB", with: ""),
@@ -91,8 +91,8 @@ final class YouVersionBibleRepository: BibleRepository {
             $0.abbreviation.lowercased() == "tpt"
             && $0.title.contains("(In Review)")
         }) {
-            var tptOld = translations[tptIndex]
-            var tptNew = Translation(
+            let tptOld = translations[tptIndex]
+            let tptNew = Translation(
                 id: tptOld.id,
                 abbreviation: tptOld.abbreviation,
                 title: tptOld.title.replacing(" (In Review)", with: ""),
