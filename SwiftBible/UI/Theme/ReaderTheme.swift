@@ -9,7 +9,7 @@ import SwiftUI
 
 enum ReaderTheme: String, CaseIterable, Codable, Identifiable {
     case classic
-    case vesper
+    case quiet
     case folio
     case ink
     case linen
@@ -25,7 +25,7 @@ enum ReaderTheme: String, CaseIterable, Codable, Identifiable {
     var displayName: LocalizedStringResource {
         switch self {
         case .classic: "Classic"
-        case .vesper: "Vesper"
+        case .quiet: "Quiet"
         case .folio: "Folio"
         case .ink: "Ink"
         case .linen: "Linen"
@@ -36,7 +36,7 @@ enum ReaderTheme: String, CaseIterable, Codable, Identifiable {
     var backgroundColor: Color {
         switch self {
         case .classic: .readerThemeClassicBackground
-        case .vesper: .readerThemeVesperBackground
+        case .quiet: .readerThemeQuietBackground
         case .folio: .readerThemeFolioBackground
         case .ink: .readerThemeInkBackground
         case .linen: .readerThemeLinenBackground
@@ -47,7 +47,7 @@ enum ReaderTheme: String, CaseIterable, Codable, Identifiable {
     var primaryTextColor: Color {
         switch self {
         case .classic: .readerThemeClassicPrimaryText
-        case .vesper: .readerThemeVesperPrimaryText
+        case .quiet: .readerThemeQuietPrimaryText
         case .folio: .readerThemeFolioPrimaryText
         case .ink: .readerThemeInkPrimaryText
         case .linen: .readerThemeLinenPrimaryText
@@ -58,7 +58,7 @@ enum ReaderTheme: String, CaseIterable, Codable, Identifiable {
     var secondaryTextColor: Color {
         switch self {
         case .classic: .readerThemeClassicSecondaryText
-        case .vesper: .readerThemeVesperSecondaryText
+        case .quiet: .readerThemeQuietSecondaryText
         case .folio: .readerThemeFolioSecondaryText
         case .ink: .readerThemeInkSecondaryText
         case .linen: .readerThemeLinenSecondaryText
@@ -68,8 +68,8 @@ enum ReaderTheme: String, CaseIterable, Codable, Identifiable {
 
     var fontDesign: Font.Design {
         switch self {
-        case .classic: .default
-        case .vesper: .serif
+        case .classic: .serif
+        case .quiet: .default
         case .folio: .serif
         case .ink: .default
         case .linen: .serif
@@ -80,7 +80,7 @@ enum ReaderTheme: String, CaseIterable, Codable, Identifiable {
     var fontWeight: Font.Weight {
         switch self {
         case .classic: .regular
-        case .vesper: .regular
+        case .quiet: .regular
         case .folio: .regular
         case .ink: .medium
         case .linen: .regular

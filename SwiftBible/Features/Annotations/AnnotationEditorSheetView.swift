@@ -29,6 +29,9 @@ struct AnnotationEditorSheetView: View {
     /// for sheet close button
     @Environment(\.dismiss) private var dismiss
 
+    /// What's our current configured theme?
+    @Environment(\.readerTheme) private var readerTheme
+
     // MARK: Properties (Private, State)
 
     private enum FocusedField: Hashable {
@@ -84,7 +87,7 @@ struct AnnotationEditorSheetView: View {
                 // Tags section
                 Label("Tags", systemImage: "tag")
                     .textCase(.uppercase)
-                    .font(.system(.caption2, design: .serif))
+                    .font(.system(.caption2, design: readerTheme.fontDesign))
                     .foregroundStyle(.secondary)
 
                 tagChipsView
@@ -94,7 +97,7 @@ struct AnnotationEditorSheetView: View {
                 // Note section
                 Label("Note", systemImage: "text.alignleft")
                     .textCase(.uppercase)
-                    .font(.system(.caption2, design: .serif))
+                    .font(.system(.caption2, design: readerTheme.fontDesign))
                     .foregroundStyle(.secondary)
 
                 TextField("Write a note about this passage...",
@@ -106,7 +109,7 @@ struct AnnotationEditorSheetView: View {
                 .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 16))
                 .focused($focusedField, equals: .note)
             }
-            .font(.system(.body, design: .serif))
+            .font(.system(.body, design: readerTheme.fontDesign))
             .padding(EdgeInsets(top: 4, leading: 20, bottom: 16, trailing: 20))
             // Measure padded content so sheet can hug it; add fixed allowance for inline navigation bar
             .onGeometryChange(for: CGFloat.self) { proxy in
@@ -204,7 +207,7 @@ struct AnnotationEditorSheetView: View {
                 Image(systemName: "plus")
                 Text("Tag")
             }
-            .font(.system(.caption, design: .serif))
+            .font(.system(.caption, design: readerTheme.fontDesign))
             .fontWeight(.semibold)
             .padding(.horizontal, 14)
             .padding(.vertical, 8)
@@ -219,7 +222,7 @@ struct AnnotationEditorSheetView: View {
     private var tagInputField: some View {
         HStack(spacing: 6) {
             TextField("New tag", text: $newTagText)
-                .font(.system(.caption, design: .serif))
+                .font(.system(.caption, design: readerTheme.fontDesign))
                 .fontWeight(.semibold)
                 .textInputAutocapitalization(.words)
                 .autocorrectionDisabled()
@@ -267,7 +270,7 @@ struct AnnotationEditorSheetView: View {
                         .font(.system(size: captionSymbolSize9, weight: .bold))
                 }
             }
-            .font(.system(.caption, design: .serif))
+            .font(.system(.caption, design: readerTheme.fontDesign))
             .fontWeight(.semibold)
             .foregroundStyle(isSelected ? Color.white : Color.primary)
             .padding(.horizontal, 12)

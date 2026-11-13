@@ -17,6 +17,9 @@ struct PassagePickerView: View {
     /// placed into the environment: .environment(readerStore))
     @Environment(ReaderStore.self) private var readerStore: ReaderStore
 
+    /// What's our current configured theme?
+    @Environment(\.readerTheme) private var readerTheme
+
     // MARK: Properties (Private, Computed)
 
     /// disable if we are loading OR at start of Bible
@@ -117,7 +120,7 @@ struct PassagePickerView: View {
             tabBarAccessoryLabel
                 .font(.system(size: labelFontSize,
                               weight: .medium,
-                              design: .serif))
+                              design: readerTheme.fontDesign))
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .contentShape(Rectangle())
         }

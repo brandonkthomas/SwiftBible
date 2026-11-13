@@ -24,6 +24,9 @@ struct LibraryView: View {
     /// Read appEnvironment.libraryStore environment value from current view environment
     @Environment(LibraryStore.self) private var libraryStore: LibraryStore
 
+    /// What's our current configured theme?
+    @Environment(\.readerTheme) private var readerTheme
+
     /// Read appEnvironment.catalogStore environment value from current view environment
     @Environment(BibleCatalogStore.self) private var catalogStore: BibleCatalogStore
 
@@ -248,7 +251,9 @@ struct LibraryView: View {
         } label: {
             HStack {
                 Text(title)
-                    .font(.system(.title3, design: .serif, weight: .semibold))
+                    .font(.system(.title3,
+                                  design: readerTheme.fontDesign,
+                                  weight: .semibold))
                 Spacer()
                 Image(systemName: "chevron.down")
                     .font(.system(.subheadline, weight: .semibold))

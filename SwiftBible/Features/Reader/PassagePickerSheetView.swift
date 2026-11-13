@@ -22,6 +22,9 @@ struct PassagePickerSheetView: View {
 
     @Environment(ReaderStore.self) private var readerStore: ReaderStore
 
+    /// What's our current configured theme?
+    @Environment(\.readerTheme) private var readerTheme
+
     /// for sheet close button / dismiss after selection
     @Environment(\.dismiss) private var dismiss
 
@@ -73,7 +76,7 @@ struct PassagePickerSheetView: View {
                 translationsListView
                     .modeVisibility(mode == .translations)
             }
-            .font(.system(.body, design: .serif))
+            .font(.system(.body, design: readerTheme.fontDesign))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .principal) {
@@ -225,7 +228,7 @@ struct PassagePickerSheetView: View {
                     VStack(alignment: .leading, spacing: 2) {
                         Text(verbatim: translation.title)
                         Text(verbatim: translation.abbreviation)
-                            .font(.system(.caption, design: .serif))
+                            .font(.system(.caption, design: readerTheme.fontDesign))
                             .foregroundStyle(.secondary)
                     }
                     Spacer()

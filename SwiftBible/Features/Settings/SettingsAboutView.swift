@@ -239,7 +239,7 @@ struct SettingsAboutView: View {
                     }
             }
         }
-        .font(.system(.body, design: .serif))
+        .font(.system(.body, design: readerTheme.fontDesign))
         .lineHeight(AttributedString.LineHeight.exact(points: passageLineHeight))
         .fixedSize(horizontal: false, vertical: true)
     }

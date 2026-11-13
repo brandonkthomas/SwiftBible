@@ -14,11 +14,11 @@ import OSLog
 @Observable
 final class PreferencesStore {
 
-    // MARK: Properties
+    // MARK: Properties (UserDefaults)
+    // Each automatically calls UserDefaults.set/remove on any modification
 
     /// Last-used reader position (if any)
     ///
-    /// Automatically calls UserDefaults.set/remove on any modification
     var readerPosition: ReaderPosition? {
         didSet {
             if let readerPosition {
@@ -36,11 +36,16 @@ final class PreferencesStore {
     }
 
     /// Configured reader theme
-    ///
-    /// Automatically calls UserDefaults.set/remove on any modification
     var readerTheme: ReaderTheme = .default {
         didSet {
             userDefaults.set(readerTheme.rawValue, forKey: Self.readerThemeKey)
+        }
+    }
+
+    /// Configured color scheme preference (light/dark/system)
+    var preferredColorScheme: PreferredColorScheme = .default {
+        didSet {
+            userDefaults.set(preferredColorScheme.rawValue, forKey: Self.preferredColorSchemeKey)
         }
     }
 
@@ -55,6 +60,9 @@ final class PreferencesStore {
     /// Stable UserDefaults key for ReaderTheme storage
     private static let readerThemeKey = "net.brandonthomas.SwiftBible.readerTheme"
 
+    /// Stable UserDefaults key for preferred ColorScheme storage
+    private static let preferredColorSchemeKey = "net.brandonthomas.SwiftBible.preferredColorScheme"
+
     private static let logger = Logger(subsystem: "SwiftBible", category: "PreferencesStore")
 
     // MARK: Init
@@ -63,20 +71,20 @@ final class PreferencesStore {
     init(userDefaults: UserDefaults) {
         self.userDefaults = userDefaults
 
-        // try to retrieve any saved Reader position
+        // try to retrieve any saved elements
         if let savedPositionData = userDefaults.data(forKey: Self.readerPositionKey),
            let savedPosition = try? JSONDecoder().decode(ReaderPosition.self, from: savedPositionData) {
             self.readerPosition = savedPosition
         }
 
-        // try to retrieve any saved Reader theme
         if let savedThemeString = userDefaults.string(forKey: Self.readerThemeKey),
            let savedTheme = ReaderTheme.preset(withID: savedThemeString) {
             self.readerTheme = savedTheme
         }
+
+        if let preferredColorSchemeString = userDefaults.string(forKey: Self.preferredColorSchemeKey),
+           let preferredColorScheme = PreferredColorScheme.scheme(withID: preferredColorSchemeString) {
+            self.preferredColorScheme = preferredColorScheme
+        }
     }
-
-    // MARK: Functions
-
-
 }

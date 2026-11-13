@@ -53,6 +53,8 @@ struct SwiftBibleApp: App {
                 .environment(\.libraryRepository, appEnvironment.libraryRepository)
                 // default theme
                 .environment(\.readerTheme, appEnvironment.preferencesStore.readerTheme)
+                // ColorScheme preference
+                .preferredColorScheme(appEnvironment.preferencesStore.preferredColorScheme.colorScheme)
         }
     }
 }

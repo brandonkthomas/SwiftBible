@@ -25,6 +25,9 @@ struct VerseActionsView: View {
     /// Required for AnnotationEditorSheetView
     @Environment(BibleCatalogStore.self) private var bibleCatalogStore: BibleCatalogStore
 
+    /// What's our current configured theme?
+    @Environment(\.readerTheme) private var readerTheme
+
     /// Used for Liquid Glass effects in highlight popover
     @Namespace private var highlightColorPopoverNamespace
 
@@ -151,7 +154,7 @@ struct VerseActionsView: View {
         // font, color
         .font(.system(size: labelFontSize,
                       weight: .medium,
-                      design: .serif))
+                      design: readerTheme.fontDesign))
         .foregroundStyle(.primary)
         // frame, padding, bounding
         .frame(maxWidth: .infinity, maxHeight: .infinity)

@@ -152,7 +152,8 @@ struct PassageTextRenderer {
                     beginVerseIfChanged(currentVerseRange)
 
                     // append a lettered footnote marker (a, b, c...) at this exact spot
-                    let marker = styledInlineMarker(index: inlineFootnoteIndex)
+                    let marker = styledInlineMarker(index: inlineFootnoteIndex,
+                                                    readerTheme: readerTheme)
                     inlineFootnoteIndex += 1
 
                     result = Text("\(result)\(marker)")
@@ -247,7 +248,7 @@ struct PassageTextRenderer {
                                          useLinkAttribute: Bool = false) -> AttributedString {
         var result = AttributedString("\(displayText) ")
         result.baselineOffset = markerBaselineOffset
-        result.font = .system(.caption2, design: .serif)
+        result.font = .system(.caption2, design: readerTheme.fontDesign)
         // Explicit color so link styling doesn't recolor the label
         result.foregroundColor = readerTheme.secondaryTextColor
 
@@ -265,10 +266,11 @@ struct PassageTextRenderer {
     }
 
     /// Generate an inline footnote marker for a given verseRange
-    private static func styledInlineMarker(index: Int) -> AttributedString {
+    private static func styledInlineMarker(index: Int,
+                                           readerTheme: ReaderTheme) -> AttributedString {
         var result = AttributedString("\(footnoteSymbol(for: index)) ")
         result.baselineOffset = markerBaselineOffset
-        result.font = .system(.caption2, design: .serif, weight: .bold)
+        result.font = .system(.caption2, design: readerTheme.fontDesign, weight: .bold)
         result.foregroundColor = .accentColor
 
         return result
