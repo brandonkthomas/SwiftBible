@@ -82,7 +82,7 @@ struct ReaderPassageFootnoteSheetView: View {
                 .navigationBarTitleDisplayMode(.inline)
             }
             .lineHeight(AttributedString.LineHeight.exact(points: passageLineHeight))
-            .font(.system(.body, design: readerTheme.fontDesign))
+            .font(.system(.body, design: readerTheme.fontDesign, weight: readerTheme.fontWeight))
             .frame(maxWidth: .infinity, alignment: .topLeading)
             // toolbar for NavigationStack (for Close button)
             .toolbar {

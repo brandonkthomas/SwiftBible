@@ -31,8 +31,8 @@ struct ContentView: View {
     /// Read appEnvironment.libraryStore environment value from current view environment
     @Environment(LibraryStore.self) private var libraryStore: LibraryStore
 
-    /// Read appEnvironment.preferencesStore environment value from current view environment
-    @Environment(PreferencesStore.self) private var preferencesStore: PreferencesStore
+    /// What's our currently saved theme preference?
+    @Environment(\.readerTheme) private var readerTheme: ReaderTheme
 
     /// Observed for changeCount only; see .onChange below
     @Environment(\.libraryRepository) private var libraryRepository
@@ -123,7 +123,7 @@ struct ContentView: View {
                 SearchView()
             }
         }
-        .font(.system(.body, design: preferencesStore.readerTheme.fontDesign))
+        .font(.system(.body, design: readerTheme.fontDesign))
         .tabBarMinimizeBehavior($selectedTab.wrappedValue == CurrentTab.read ? .onScrollDown : .never) // added in iOS 26
 //        .tabViewSearchActivation(.searchTabSelection) // added in iOS 26
         // "isEnabled" param added in iOS 26.1

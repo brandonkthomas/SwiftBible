@@ -278,7 +278,7 @@ struct AnnotationEditorSheetView: View {
         }
         .buttonStyle(.plain)
         .glassEffect(isSelected
-                     ? .regular.tint(.brown).interactive()
+                     ? .regular.tint(.accentColor).interactive()
                      : .regular.interactive(),
                      in: .capsule)
     }

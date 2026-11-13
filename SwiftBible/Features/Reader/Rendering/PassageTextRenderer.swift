@@ -50,6 +50,7 @@ struct PassageTextRenderer {
                   let verseRange = accumulatingVerseRange else { return }
 
             let marker = styledVerseEndMarker(for: verseRange,
+                                              readerTheme: readerTheme,
                                               useLinkAttribute: produceLinkAttributes)
 
             // '+' was deprecated in iOS 26.0:
@@ -84,7 +85,7 @@ struct PassageTextRenderer {
                 let text = styledText(runText,
                                       style: [],
                                       verseRange: currentVerseRange,
-                                      foregroundColor: readerTheme.primaryTextColor,
+                                      readerTheme: readerTheme,
                                       useLinkAttribute: produceLinkAttributes)
 
                 var segment = Text(text)
@@ -107,7 +108,7 @@ struct PassageTextRenderer {
                 let text = styledText(runText,
                                       style: style,
                                       verseRange: currentVerseRange,
-                                      foregroundColor: readerTheme.primaryTextColor,
+                                      readerTheme: readerTheme,
                                       useLinkAttribute: produceLinkAttributes)
 
                 var segment = Text(text)
@@ -195,13 +196,13 @@ struct PassageTextRenderer {
     private static func styledText(_ text: String,
                                    style: RenderedPassageTextStyle,
                                    verseRange: RenderedVerseRange?,
-                                   foregroundColor: Color,
+                                   readerTheme: ReaderTheme,
                                    useLinkAttribute: Bool = false) -> AttributedString {
         var result = AttributedString("\(text)\(trailingSeparator(after: text))")
 
         // Explicit color so neither link styling nor a containing Button's tint
         // recolors Scripture text
-        result.foregroundColor = foregroundColor
+        result.foregroundColor = readerTheme.primaryTextColor
 
         // Tap link (adds support for verse selection via tap action)
         if useLinkAttribute,
@@ -223,7 +224,7 @@ struct PassageTextRenderer {
         }
 
         if style.contains(.divineName) {
-            result.font = .system(.body, design: .serif, weight: .semibold)
+            result.font = .system(.body, design: readerTheme.fontDesign, weight: .semibold)
         }
 
         return result
@@ -290,10 +291,11 @@ struct PassageTextRenderer {
 
     /// Generate an end footnote marker for a given verseRange
     private static func styledVerseEndMarker(for verseRange: RenderedVerseRange,
+                                             readerTheme: ReaderTheme,
                                              useLinkAttribute: Bool = true) -> AttributedString {
         var result = AttributedString("† ")
         result.baselineOffset = markerBaselineOffset
-        result.font = .system(.caption2, design: .serif, weight: .bold)
+        result.font = .system(.caption2, design: readerTheme.fontDesign, weight: .bold)
         result.foregroundColor = .accentColor
 
         // Tap link (adds support for opening ReaderPassageFootnoteSheetView via tap action)
