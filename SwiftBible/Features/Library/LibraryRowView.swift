@@ -32,6 +32,11 @@ struct LibraryRowView: View {
     /// What should we do when we need to mark this row as selected in Library's edit mode?
     let onRowSelected: () -> Void
 
+    // MARK: Properties (Private, Environment)
+
+    /// What's our current configured theme?
+    @Environment(\.readerTheme) private var readerTheme
+
     // MARK: Properties (Private, Passage Truncation)
 
     /// Same value used in ReaderPassageView
@@ -345,7 +350,8 @@ struct LibraryRowView: View {
     private func passageText(for runs: [RenderedPassageRun]) -> some View {
         PassageTextRenderer.text(for: runs,
                                  footnoteMarkerMode: .hidden,
-                                 produceLinkAttributes: false) // do NOT want these tap events here
+                                 produceLinkAttributes: false, // do NOT want these tap events here
+                                 styledTextForegroundColor: readerTheme.primaryTextColor)
             .font(.system(.body, design: .serif))
             .lineHeight(AttributedString.LineHeight.exact(points: passageLineHeight))
             // Button labels center multi-line text by default
@@ -359,6 +365,7 @@ struct LibraryRowView: View {
                 tapOrigin: nil,
                 progress: 0,
                 fadeProgress: 0,
+                bookmarkColor: readerTheme.backgroundColor,
                 persistedHighlights: data.annotation.highlightedVerses,
                 opacity: 0.5)) // custom for this view only (default 1)
     }

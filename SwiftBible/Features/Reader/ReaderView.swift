@@ -18,23 +18,17 @@ struct ReaderView: View {
     /// placed into the environment: .environment(readerStore))
     @Environment(ReaderStore.self) private var readerStore: ReaderStore
 
-    /// Calculated -- what is our current system theme?
-    @Environment(\.colorScheme) private var colorScheme
+    /// What's our current configured theme?
+    @Environment(\.readerTheme) private var readerTheme
 
     // MARK: Views
 
     /// Reader view
     var body: some View {
         ZStack {
-            // TODO: Store user preference + fix font color to match
-            // aka store font alongside theme background
-            if colorScheme == .dark {
-                AppTheme.themeOffBlack
-                    .ignoresSafeArea()
-            } else {
-                AppTheme.themeOffWhite
-                    .ignoresSafeArea()
-            }
+            // Background color
+            readerTheme.backgroundColor
+                .ignoresSafeArea() // keep extending under the safe areas
 
             // Show corresponding View to current loadState
             // This will automatically refresh when we change @Observable loadState

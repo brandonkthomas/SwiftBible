@@ -38,6 +38,10 @@ struct VerseHighlightRenderer: TextRenderer {
     /// Progress for fading-out highlights on deselection
     var fadeProgress: CGFloat
 
+    /// What's our current configured theme?
+    @AnimatableIgnored
+    var bookmarkColor: Color
+
     /// Keep track of all highlighted verse ranges + their colors (according to LibraryRepository)
     @AnimatableIgnored
     let persistedHighlights: [Int: VerseAnnotationHighlightColor]
@@ -159,7 +163,7 @@ struct VerseHighlightRenderer: TextRenderer {
                             .union(run.typographicBounds.rect)
                             .insetBy(dx: -4, dy: -4)
                         layer.blendMode = .sourceIn
-                        layer.fill(Path(paintRect), with: .color(.readerBackground))
+                        layer.fill(Path(paintRect), with: .color(bookmarkColor))
                     }
                     continue
                 }

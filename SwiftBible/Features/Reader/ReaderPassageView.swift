@@ -21,6 +21,9 @@ struct ReaderPassageView: View {
     /// Is the tab bar accessory currently collapsed or expanded?
     @Environment(\.tabViewBottomAccessoryPlacement) private var placement
 
+    /// What's our current configured theme?
+    @Environment(\.readerTheme) private var readerTheme
+
     // MARK: Properties (Proj Env, Private)
 
     /// Read appEnvironment.readerStore environment value from current view environment
@@ -92,7 +95,8 @@ struct ReaderPassageView: View {
 
                         // build this paragraph into a Text view
                         PassageTextRenderer.text(for: paragraphs[paragraphIndex].runs,
-                                                 footnoteMarkerMode: .collapsed)
+                                                 footnoteMarkerMode: .collapsed,
+                                                 styledTextForegroundColor: readerTheme.primaryTextColor)
                             // custom leading padding for inline/block quote styles
                             .padding(.leading,
                                      leadingPadding(for: paragraphs[paragraphIndex].style))
@@ -105,6 +109,7 @@ struct ReaderPassageView: View {
                                 tapOrigin: origin,
                                 progress: revealProgress,
                                 fadeProgress: fadeProgress,
+                                bookmarkColor: readerTheme.backgroundColor,
                                 persistedHighlights: readerStore.passageHighlightColors))
                             // record tap gestures for use with VerseHighlightRenderer
                             .simultaneousGesture(SpatialTapGesture(coordinateSpace: .local)

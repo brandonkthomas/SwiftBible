@@ -31,6 +31,9 @@ struct SettingsAboutView: View {
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
+    /// What's our current configured theme?
+    @Environment(\.readerTheme) private var readerTheme
+
     // MARK: Properties (Private, Dynamic Type)
 
     @ScaledMetric(relativeTo: .body) private var imageSize44: CGFloat = 44
@@ -215,7 +218,8 @@ struct SettingsAboutView: View {
             ForEach(paragraphs) { paragraph in
                 PassageTextRenderer.text(for: paragraph.runs,
                                          footnoteMarkerMode: .hidden,
-                                         produceLinkAttributes: false) // decorative; no taps
+                                         produceLinkAttributes: false, // decorative; no taps
+                                         styledTextForegroundColor: readerTheme.primaryTextColor)
                     .textRenderer(VerseHighlightRenderer(
                         settledVerses: nil,
                         revealingVerses: revealingVerses,
@@ -223,6 +227,7 @@ struct SettingsAboutView: View {
                         tapOrigin: nil,
                         progress: revealProgress,
                         fadeProgress: fadeProgress,
+                        bookmarkColor: readerTheme.backgroundColor,
                         persistedHighlights: [:]))
                     .frame(maxWidth: .infinity, alignment: .leading)
                     // spacing lives in padding (not VStack spacing) so measured heights include it

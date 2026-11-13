@@ -16,6 +16,8 @@ struct ReaderPassageFootnoteSheetView: View {
 
     @Environment(\.dismiss) var dismiss
 
+    @Environment(\.readerTheme) private var readerTheme
+
     // MARK: Properties (Private)
 
     @ScaledMetric(relativeTo: .body) private var passageLineHeight: CGFloat = 30
@@ -57,7 +59,8 @@ struct ReaderPassageFootnoteSheetView: View {
                 VStack(alignment: .leading, spacing: 20) {
                     // Verse content
                     PassageTextRenderer.text(for: passage.runs(for: verseRange),
-                                                  footnoteMarkerMode: .inline)
+                                             footnoteMarkerMode: .inline,
+                                             styledTextForegroundColor: readerTheme.primaryTextColor)
 
                     Divider()
 

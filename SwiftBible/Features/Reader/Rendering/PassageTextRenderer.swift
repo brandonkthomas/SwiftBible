@@ -29,7 +29,8 @@ struct PassageTextRenderer {
     /// see https://alexanderweiss.dev/blog/2024-06-24-using-textrenderer-to-create-highlighted-text
     static func text(for runs: [RenderedPassageRun],
                      footnoteMarkerMode: MarkerMode,
-                     produceLinkAttributes: Bool = true) -> Text {
+                     produceLinkAttributes: Bool = true,
+                     styledTextForegroundColor: Color) -> Text {
         var result = Text(verbatim: "")
 
         // If mode.collapsed:
@@ -83,6 +84,7 @@ struct PassageTextRenderer {
                 let text = styledText(runText,
                                       style: [],
                                       verseRange: currentVerseRange,
+                                      foregroundColor: styledTextForegroundColor,
                                       useLinkAttribute: produceLinkAttributes)
 
                 var segment = Text(text)
@@ -105,6 +107,7 @@ struct PassageTextRenderer {
                 let text = styledText(runText,
                                       style: style,
                                       verseRange: currentVerseRange,
+                                      foregroundColor: styledTextForegroundColor,
                                       useLinkAttribute: produceLinkAttributes)
 
                 var segment = Text(text)
@@ -178,12 +181,13 @@ struct PassageTextRenderer {
     private static func styledText(_ text: String,
                                    style: RenderedPassageTextStyle,
                                    verseRange: RenderedVerseRange?,
+                                   foregroundColor: Color,
                                    useLinkAttribute: Bool = false) -> AttributedString {
         var result = AttributedString("\(text)\(trailingSeparator(after: text))")
 
         // Explicit color so neither link styling nor a containing Button's tint
         // recolors Scripture text
-        result.foregroundColor = .primary
+        result.foregroundColor = foregroundColor
 
         // Tap link (adds support for verse selection via tap action)
         if useLinkAttribute,

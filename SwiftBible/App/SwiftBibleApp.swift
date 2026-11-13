@@ -51,6 +51,8 @@ struct SwiftBibleApp: App {
                 // this is a service/dependency, so we need key-path environment
                 // Keypath-keyed is for existential (anything: value types, services, protocols)
                 .environment(\.libraryRepository, appEnvironment.libraryRepository)
+                // default theme
+                .environment(\.readerTheme, appEnvironment.preferencesStore.readerTheme)
         }
     }
 }

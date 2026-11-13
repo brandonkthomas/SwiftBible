@@ -35,6 +35,15 @@ final class PreferencesStore {
         }
     }
 
+    /// Configured reader theme
+    ///
+    /// Automatically calls UserDefaults.set/remove on any modification
+    var readerTheme: ReaderTheme = .default {
+        didSet {
+            userDefaults.set(readerTheme.rawValue, forKey: Self.readerThemeKey)
+        }
+    }
+
     // MARK: Properties (Private)
 
     /// Provided UserDefaults instance
@@ -42,6 +51,9 @@ final class PreferencesStore {
 
     /// Stable UserDefaults key for ReaderPosition storage
     private static let readerPositionKey = "net.brandonthomas.SwiftBible.readerPosition"
+
+    /// Stable UserDefaults key for ReaderTheme storage
+    private static let readerThemeKey = "net.brandonthomas.SwiftBible.readerTheme"
 
     private static let logger = Logger(subsystem: "SwiftBible", category: "PreferencesStore")
 
@@ -55,6 +67,12 @@ final class PreferencesStore {
         if let savedPositionData = userDefaults.data(forKey: Self.readerPositionKey),
            let savedPosition = try? JSONDecoder().decode(ReaderPosition.self, from: savedPositionData) {
             self.readerPosition = savedPosition
+        }
+
+        // try to retrieve any saved Reader theme
+        if let savedThemeString = userDefaults.string(forKey: Self.readerThemeKey),
+           let savedTheme = ReaderTheme.preset(withID: savedThemeString) {
+            self.readerTheme = savedTheme
         }
     }
 
