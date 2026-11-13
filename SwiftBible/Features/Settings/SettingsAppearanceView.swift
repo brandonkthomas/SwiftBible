@@ -18,8 +18,29 @@ struct SettingsAppearanceView: View {
 
     /// Main view
     var body: some View {
-        themePresetsGridView
+        VStack(spacing: 16) {
+            // Preview
+            PassagePreviewView(verses: Self.previewVerses,
+                               readerTheme: preferencesStore.readerTheme)
+//            .mask(
+//                LinearGradient(gradient: Gradient(colors: [Color.black, Color.black, Color.black.opacity(0)]),
+//                               startPoint: .center,
+//                               endPoint: .bottom)
+//            )
+            // Settings
+            ScrollView {
+                themePresetsGridView
+            }
+        }
+        .navigationTitle("Appearance")
     }
+
+    /// Sample text for the theme preview window
+    private static let previewVerses = [
+        "In the beginning, God created the heavens and the earth.",
+        "The earth was without form and void, and darkness was over the face of the deep. And the Spirit of God was hovering over the face of the waters.",
+        "And God said, “Let there be light,” and there was light.",
+    ]
 
     /// Grid of all theme presets (max 2 rows)
     private var themePresetsGridView: some View {
@@ -41,7 +62,7 @@ struct SettingsAppearanceView: View {
                     // font
                     .fontDesign(theme.fontDesign)
                     .fontWeight(theme.fontWeight)
-                    // external padding
+                    // internal padding
                     .padding(5)
                     // fill the column widths
                     .frame(maxWidth: .infinity)
@@ -63,6 +84,7 @@ struct SettingsAppearanceView: View {
                 }
             }
         }
+        .padding([.leading, .trailing], 1) // fix glass border clipping on edges
     }
 }
 
