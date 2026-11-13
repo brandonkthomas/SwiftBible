@@ -27,7 +27,6 @@ struct SettingsView: View {
                         // Appearance
                         NavigationLink {
                             SettingsAppearanceView()
-                                .padding([.leading, .trailing], 16)
                         } label: {
                             settingsRow(title: "Appearance",
                                         symbol: "paintbrush.fill",

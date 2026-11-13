@@ -18,20 +18,43 @@ struct SettingsAppearanceView: View {
 
     /// Main view
     var body: some View {
-        VStack(spacing: 16) {
-            // Preview
-            PassagePreviewView(verses: Self.previewVerses,
-                               readerTheme: preferencesStore.readerTheme)
-//            .mask(
-//                LinearGradient(gradient: Gradient(colors: [Color.black, Color.black, Color.black.opacity(0)]),
-//                               startPoint: .center,
-//                               endPoint: .bottom)
-//            )
-            // Settings
-            ScrollView {
+        @Bindable var preferencesStore = preferencesStore
+
+        // Settings list
+        List {
+            Section {
+                // Color Scheme
+                Picker(selection: $preferencesStore.preferredColorScheme,
+                       label: Text("Appearance")) {
+                    ForEach(PreferredColorScheme.allCases) { scheme in
+                        Text(scheme.displayName)
+                            .tag(scheme)
+                    }
+                }
+            } header: {
+                // Presets (in the header so the section's rounded clip doesn't cut the corners)
                 themePresetsGridView
+                    // undo the header's default text styling
+                    .font(.body)
+                    .textCase(nil)
+                    .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 16, trailing: 0))
             }
         }
+        .listStyle(.insetGrouped)
+        // remove the default top margin above the first section
+        .contentMargins(.top, 0, for: .scrollContent)
+        // pin the preview above the scrolling list
+        .safeAreaInset(edge: .top, spacing: 16) {
+            VStack(spacing: 16) {
+                PassagePreviewView(verses: Self.previewVerses,
+                                   readerTheme: preferencesStore.readerTheme)
+                    .padding(.horizontal)
+                Divider()
+            }
+            .background(Color(.systemGroupedBackground))
+        }
+        // default system font
+        .font(.system(.body))
         .navigationTitle("Appearance")
     }
 
@@ -56,6 +79,7 @@ struct SettingsAppearanceView: View {
                     VStack {
                         Text("Aa")
                             .dynamicTypeSize(.xxxLarge)
+                            .accessibilityHidden(true)
                         Text(theme.displayName)
                             .dynamicTypeSize(.large)
                     }
@@ -82,6 +106,9 @@ struct SettingsAppearanceView: View {
                     .glassEffect(.regular.interactive(),
                                  in: .rect(cornerRadius: 10))
                 }
+                // without this, a List row forwards every tap to its first/last button
+                .buttonStyle(.borderless)
+                .accessibilityAddTraits(preferencesStore.readerTheme == theme ? .isSelected : [])
             }
         }
         .padding([.leading, .trailing], 1) // fix glass border clipping on edges
@@ -89,6 +116,8 @@ struct SettingsAppearanceView: View {
 }
 
 #Preview {
-    SettingsAppearanceView()
+    NavigationStack {
+        SettingsAppearanceView()
+    }
         .previewEnvironment(PreviewEnvironment(repository: FakeBibleRepository(throwWhenLoadingTranslations: true)))
 }
