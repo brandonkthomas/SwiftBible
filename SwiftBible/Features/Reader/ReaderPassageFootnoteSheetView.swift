@@ -59,8 +59,8 @@ struct ReaderPassageFootnoteSheetView: View {
                 VStack(alignment: .leading, spacing: 20) {
                     // Verse content
                     PassageTextRenderer.text(for: passage.runs(for: verseRange),
-                                             footnoteMarkerMode: .inline,
-                                             styledTextForegroundColor: readerTheme.primaryTextColor)
+                                             readerTheme: readerTheme,
+                                             footnoteMarkerMode: .inline)
 
                     Divider()
 

@@ -95,8 +95,8 @@ struct ReaderPassageView: View {
 
                         // build this paragraph into a Text view
                         PassageTextRenderer.text(for: paragraphs[paragraphIndex].runs,
-                                                 footnoteMarkerMode: .collapsed,
-                                                 styledTextForegroundColor: readerTheme.primaryTextColor)
+                                                 readerTheme: readerTheme,
+                                                 footnoteMarkerMode: .collapsed)
                             // custom leading padding for inline/block quote styles
                             .padding(.leading,
                                      leadingPadding(for: paragraphs[paragraphIndex].style))

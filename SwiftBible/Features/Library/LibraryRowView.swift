@@ -349,9 +349,9 @@ struct LibraryRowView: View {
     /// Passage text styling
     private func passageText(for runs: [RenderedPassageRun]) -> some View {
         PassageTextRenderer.text(for: runs,
+                                 readerTheme: readerTheme,
                                  footnoteMarkerMode: .hidden,
-                                 produceLinkAttributes: false, // do NOT want these tap events here
-                                 styledTextForegroundColor: readerTheme.primaryTextColor)
+                                 produceLinkAttributes: false) // do NOT want these tap events here
             .font(.system(.body, design: .serif))
             .lineHeight(AttributedString.LineHeight.exact(points: passageLineHeight))
             // Button labels center multi-line text by default

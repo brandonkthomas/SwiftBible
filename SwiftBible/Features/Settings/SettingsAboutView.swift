@@ -217,9 +217,9 @@ struct SettingsAboutView: View {
         VStack(spacing: 0) {
             ForEach(paragraphs) { paragraph in
                 PassageTextRenderer.text(for: paragraph.runs,
+                                         readerTheme: readerTheme,
                                          footnoteMarkerMode: .hidden,
-                                         produceLinkAttributes: false, // decorative; no taps
-                                         styledTextForegroundColor: readerTheme.primaryTextColor)
+                                         produceLinkAttributes: false) // decorative; no taps
                     .textRenderer(VerseHighlightRenderer(
                         settledVerses: nil,
                         revealingVerses: revealingVerses,

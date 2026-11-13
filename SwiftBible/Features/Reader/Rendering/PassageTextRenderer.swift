@@ -28,9 +28,9 @@ struct PassageTextRenderer {
     /// Each verse is rendered w/ customAttribute for use in highlight rendering later...
     /// see https://alexanderweiss.dev/blog/2024-06-24-using-textrenderer-to-create-highlighted-text
     static func text(for runs: [RenderedPassageRun],
+                     readerTheme: ReaderTheme,
                      footnoteMarkerMode: MarkerMode,
-                     produceLinkAttributes: Bool = true,
-                     styledTextForegroundColor: Color) -> Text {
+                     produceLinkAttributes: Bool = true) -> Text {
         var result = Text(verbatim: "")
 
         // If mode.collapsed:
@@ -84,7 +84,7 @@ struct PassageTextRenderer {
                 let text = styledText(runText,
                                       style: [],
                                       verseRange: currentVerseRange,
-                                      foregroundColor: styledTextForegroundColor,
+                                      foregroundColor: readerTheme.primaryTextColor,
                                       useLinkAttribute: produceLinkAttributes)
 
                 var segment = Text(text)
@@ -107,7 +107,7 @@ struct PassageTextRenderer {
                 let text = styledText(runText,
                                       style: style,
                                       verseRange: currentVerseRange,
-                                      foregroundColor: styledTextForegroundColor,
+                                      foregroundColor: readerTheme.primaryTextColor,
                                       useLinkAttribute: produceLinkAttributes)
 
                 var segment = Text(text)
@@ -128,6 +128,7 @@ struct PassageTextRenderer {
                 // append verse label immediately
                 let label = styledVerseLabel(displayText: displayText,
                                              verseRange: currentVerseRange,
+                                             readerTheme: readerTheme,
                                              useLinkAttribute: produceLinkAttributes)
 
                 var segment = Text(label)
@@ -242,12 +243,13 @@ struct PassageTextRenderer {
     /// Generate a verse label
     private static func styledVerseLabel(displayText: String,
                                          verseRange: RenderedVerseRange?,
+                                         readerTheme: ReaderTheme,
                                          useLinkAttribute: Bool = false) -> AttributedString {
         var result = AttributedString("\(displayText) ")
         result.baselineOffset = markerBaselineOffset
         result.font = .system(.caption2, design: .serif)
         // Explicit color so link styling doesn't recolor the label
-        result.foregroundColor = .secondary
+        result.foregroundColor = readerTheme.secondaryTextColor
 
         // Tap link (adds support for opening a verse's note/tags via tap action)
         if useLinkAttribute,
