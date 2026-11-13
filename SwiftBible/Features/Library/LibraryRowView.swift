@@ -220,22 +220,36 @@ struct LibraryRowView: View {
                     .lineHeight(AttributedString.LineHeight.exact(points: annotationTagsLineHeight)) // try to match AnnotationEditorSheetView Note TextInput
             } else if case .tags(let tags) = data.annotation.content {
                 Divider()
-                Text(tags.joined(separator: ", "))
-                    .font(.system(size: fontSize16,
-                                  weight: .regular,
-                                  design: .serif))
-                    .lineHeight(AttributedString.LineHeight.exact(points: annotationTagsLineHeight)) // try to match AnnotationEditorSheetView Note TextInput
+                FlowLayout {
+                    ForEach(tags, id: \.self) { tag in
+                        Button {
+                            // nothing
+                        } label: {
+                            Text(tag)
+                                .font(.system(.caption, design: .serif))
+                                .fontWeight(.semibold)
+                                .foregroundStyle(Color.white)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 8)
+                        }
+                        .buttonStyle(.plain)
+                        .glassEffect(.regular.tint(.brown),
+                                     in: .capsule)
+                        .allowsHitTesting(false)
+                    }
+                }
+//                ScrollView(.horizontal, showsIndicators: false) {
+//                    TwoRowFlowLayout(spacing: 8) {
+//
+//                    }
+//                    .padding(.horizontal, 4)
+//                    .padding(.vertical, 2)
+//                }
             }
-
-            // TODO: Date; pending view refactor
-
-            // TODO: limit verse text to 2 lines w/ ellipsis,
-            // move tag/note to own full line,
-            // move date (small) to annotationItemType
         }
         .padding(10)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color(.secondarySystemGroupedBackground),
+        .background(readerTheme.backgroundColor,
                     in: RoundedRectangle(cornerRadius: 16, style: .continuous))
         // Selected border: always present and faded with opacity (rather than inserted with
         // `if`) so the change animates in place
