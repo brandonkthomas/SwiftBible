@@ -24,7 +24,11 @@ struct SettingsView: View {
                 List {
                     Section {
                         NavigationLink {
-                            // TODO
+                            ContentUnavailableView(
+                                "Appearance",
+                                systemImage: "paintbrush",
+                                description: Text("Coming soon.")
+                            )
                         } label: {
                             settingsRow(title: "Appearance",
                                         symbol: "paintbrush.fill",
@@ -40,21 +44,33 @@ struct SettingsView: View {
                     }
                     Section {
                         NavigationLink {
-                            // TODO
+                            ContentUnavailableView(
+                                "Read",
+                                systemImage: "book",
+                                description: Text("Coming soon.")
+                            )
                         } label: {
                             settingsRow(title: "Read",
                                         symbol: "book.fill",
                                         color: .accent)
                         }
                         NavigationLink {
-                            // TODO
+                            ContentUnavailableView(
+                                "Annotations",
+                                systemImage: "bookmark",
+                                description: Text("Coming soon.")
+                            )
                         } label: {
                             settingsRow(title: "Annotations",
                                         symbol: "bookmark.fill",
                                         color: Color(red: 0.95, green: 0.7, blue: 0.5))
                         }
                         NavigationLink {
-                            // TODO
+                            ContentUnavailableView(
+                                "Search",
+                                systemImage: "magnifyingglass",
+                                description: Text("Coming soon.")
+                            )
                         } label: {
                             settingsRow(title: "Search",
                                         symbol: "magnifyingglass",
@@ -77,10 +93,14 @@ struct SettingsView: View {
                                         color: .pink)
                         }
                         NavigationLink {
-                            // TODO
+                            ContentUnavailableView(
+                                "Help & Support",
+                                systemImage: "questionmark.circle",
+                                description: Text("Coming soon.")
+                            )
                         } label: {
                             settingsRow(title: "Help & Support",
-                                        symbol: "envelope.fill",
+                                        symbol: "questionmark.circle.fill",
                                         color: .blue)
                         }
                         NavigationLink {
