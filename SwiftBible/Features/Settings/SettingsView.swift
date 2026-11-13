@@ -22,18 +22,17 @@ struct SettingsView: View {
         NavigationStack {
             Group {
                 List {
+                    // Themes
                     Section {
+                        // Appearance
                         NavigationLink {
-                            ContentUnavailableView(
-                                "Appearance",
-                                systemImage: "paintbrush",
-                                description: Text("Coming soon.")
-                            )
+                            SettingsAppearanceView()
                         } label: {
                             settingsRow(title: "Appearance",
                                         symbol: "paintbrush.fill",
                                         color: .blue)
                         }
+                        // Language
                         //                    NavigationLink {
                         //                        // TODO
                         //                    } label: {
@@ -42,7 +41,10 @@ struct SettingsView: View {
                         //                                    color: .green)
                         //                    }
                     }
+
+                    // Modules
                     Section {
+                        // Reader
                         NavigationLink {
                             ContentUnavailableView(
                                 "Read",
@@ -54,6 +56,7 @@ struct SettingsView: View {
                                         symbol: "book.fill",
                                         color: .accent)
                         }
+                        // Library
                         NavigationLink {
                             ContentUnavailableView(
                                 "Annotations",
@@ -65,6 +68,7 @@ struct SettingsView: View {
                                         symbol: "bookmark.fill",
                                         color: Color(red: 0.95, green: 0.7, blue: 0.5))
                         }
+                        // Search
                         NavigationLink {
                             ContentUnavailableView(
                                 "Search",
@@ -77,7 +81,10 @@ struct SettingsView: View {
                                         color: Color(.systemGray2))
                         }
                     }
+
+                    // About / Help
                     Section {
+                        // About
                         NavigationLink {
                             SettingsAboutView()
                         } label: {
@@ -85,6 +92,7 @@ struct SettingsView: View {
                                         symbol: "info.circle.fill",
                                         color: .purple)
                         }
+                        // Acknowledgments
                         NavigationLink {
                             SettingsAcknowledgmentsView()
                         } label: {
@@ -92,6 +100,7 @@ struct SettingsView: View {
                                         symbol: "text.document.fill",
                                         color: .pink)
                         }
+                        // Help/Email
                         NavigationLink {
                             ContentUnavailableView(
                                 "Help & Support",
@@ -103,6 +112,7 @@ struct SettingsView: View {
                                         symbol: "questionmark.circle.fill",
                                         color: .blue)
                         }
+                        // Rate link (app store)
                         NavigationLink {
                             // TODO
                         } label: {

@@ -16,13 +16,21 @@ struct SettingsAppearanceView: View {
 
     // MARK: Views
 
+    /// Main view
     var body: some View {
-        Grid(alignment: .center,
-             horizontalSpacing: 10,
-             verticalSpacing: 10) {
+        themePresetsGridView
+    }
+
+    /// Grid of all theme presets (max 2 rows)
+    private var themePresetsGridView: some View {
+        let columnCount = (ReaderTheme.allCases.count + 1) / 2
+        let columns = Array(repeating: GridItem(.flexible(), spacing: 10),
+                            count: columnCount)
+
+        return LazyVGrid(columns: columns, spacing: 10) {
             ForEach(ReaderTheme.allCases, id: \.self) { theme in
                 Button {
-
+                    preferencesStore.readerTheme = theme
                 } label: {
                     VStack {
                         Text("Aa")
@@ -35,8 +43,8 @@ struct SettingsAppearanceView: View {
                     .fontWeight(theme.fontWeight)
                     // external padding
                     .padding(5)
-                    // min width
-                    .frame(minWidth: 100)
+                    // fill the column widths
+                    .frame(maxWidth: .infinity)
                     // checkmark overlay (must be BEFORE glassEffect & colors)
                     .overlay(alignment: .topTrailing) {
                         if preferencesStore.readerTheme == theme {
