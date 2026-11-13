@@ -170,6 +170,18 @@ struct PassageTextRenderer {
         return result
     }
 
+    /// Leading indent for a paragraph style (inline/block quote styles)
+    static func leadingPadding(for style: RenderedParagraphStyle) -> CGFloat {
+        switch style {
+        case .paragraph:
+            return 0
+        case .quoteLine:
+            return 18
+        case .indentedLine:
+            return 36
+        }
+    }
+
     /// Map zero-based footnote index within a verse to its display label (a, b, c...)
     ///
     /// Shared so inline markers and the footnote list below always use identical labels
