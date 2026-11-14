@@ -14,6 +14,10 @@ struct SettingsAppearanceView: View {
     /// Read appEnvironment.preferencesStore environment value from current view environment
     @Environment(PreferencesStore.self) private var preferencesStore: PreferencesStore
 
+    @State private var fontList: [String] = ["SF Pro","SF Pro 2","SF Pro 3"]
+
+    @State private var lineSpacing: Double = 1.2
+
     // MARK: Views
 
     /// Main view
@@ -25,7 +29,9 @@ struct SettingsAppearanceView: View {
             Section {
                 // Color Scheme
                 Picker(selection: $preferencesStore.preferredColorScheme,
-                       label: Text("Appearance")) {
+                       label: Label("Appearance", systemImage: "circle.righthalf.filled")
+                              .imageScale(.medium)
+                              .foregroundStyle(.primary)) {
                     ForEach(PreferredColorScheme.allCases) { scheme in
                         Text(scheme.displayName)
                             .tag(scheme)
@@ -38,6 +44,74 @@ struct SettingsAppearanceView: View {
                     .font(.body)
                     .textCase(nil)
                     .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 16, trailing: 0))
+            }
+
+            // Font, Weight, Style
+            Section {
+                // Font
+                Picker(selection: $fontList,
+                       label: Label("Font", systemImage: "textformat")
+                    .imageScale(.medium)
+                    .foregroundStyle(.primary)) {
+                        Text("SF Pro")
+                            .tag("SF Pro")
+                        Text("SF Pro 2")
+                            .tag("SF Pro 2")
+                        Text("SF Pro 3")
+                            .tag("SF Pro 3")
+                    }
+                // Weight
+                Picker(selection: $fontList,
+                       label: Label("Weight", systemImage: "bold")
+                    .imageScale(.medium)
+                    .foregroundStyle(.primary)) {
+                        Text("SF Pro")
+                            .tag("SF Pro")
+                        Text("SF Pro 2")
+                            .tag("SF Pro 2")
+                        Text("SF Pro 3")
+                            .tag("SF Pro 3")
+                    }
+                // Style
+                Picker(selection: $fontList,
+                       label: Label("Style", systemImage: "italic")
+                    .imageScale(.medium)
+                    .foregroundStyle(.primary)) {
+                        Text("SF Pro")
+                            .tag("SF Pro")
+                        Text("SF Pro 2")
+                            .tag("SF Pro 2")
+                        Text("SF Pro 3")
+                            .tag("SF Pro 3")
+                    }
+            } header: {
+                Text("Text")
+            }
+
+            // Font, Weight, Style
+            Section {
+                // Line Spacing
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack(spacing: 16) {
+                        Image(systemName: "arrow.up.and.down.text.horizontal")
+                            .imageScale(.small)
+                            .accessibilityHidden(true)
+                            .padding([.leading], 4)
+                        Text("Line Spacing")
+                            .font(.body)
+                    }
+                    HStack(spacing: 16) {
+                        Slider(value: $lineSpacing, in: 1...2, step: 0.05) {
+                            Text("Line Spacing")
+                        }
+                        Text(lineSpacing, format: .number.precision(.fractionLength(2)))
+                            .monospacedDigit()
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .padding(.vertical, 2)
+            } header: {
+                Text("Layout")
             }
         }
         .listStyle(.insetGrouped)
@@ -63,6 +137,7 @@ struct SettingsAppearanceView: View {
         "In the beginning, God created the heavens and the earth.",
         "The earth was without form and void, and darkness was over the face of the deep. And the Spirit of God was hovering over the face of the waters.",
         "And God said, “Let there be light,” and there was light.",
+        "And God saw that the light was good. And God separated the light from the darkness."
     ]
 
     /// Grid of all theme presets (max 2 rows)
@@ -95,7 +170,7 @@ struct SettingsAppearanceView: View {
                         if preferencesStore.readerTheme == theme {
                             Image(systemName: "checkmark")
                                 .font(.system(size: 12, weight: .medium))
-                                .padding([.top, .trailing], 5)
+                                .padding([.top, .trailing], 8)
                         }
                     }
                     // colors

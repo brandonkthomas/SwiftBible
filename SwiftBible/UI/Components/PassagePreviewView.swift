@@ -464,6 +464,7 @@ struct PassagePreviewView: View {
             "In the beginning, God created the heavens and the earth.",
             "The earth was without form and void, and darkness was over the face of the deep.",
             "And God said, “Let there be light,” and there was light.",
+            "And God saw that the light was good. And God separated the light from the darkness."
         ])
 
         PassagePreviewView(verses: [
@@ -479,5 +480,6 @@ struct PassagePreviewView: View {
         "In the beginning, God created the heavens and the earth.",
         "The earth was without form and void, and darkness was over the face of the deep.",
         "And God said, “Let there be light,” and there was light.",
+        "And God saw that the light was good. And God separated the light from the darkness."
     ], style: .fill, scrolls: true, highlights: true)
 }
