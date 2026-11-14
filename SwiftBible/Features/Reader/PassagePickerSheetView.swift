@@ -76,7 +76,7 @@ struct PassagePickerSheetView: View {
                 translationsListView
                     .modeVisibility(mode == .translations)
             }
-            .font(.system(.body, design: readerTheme.fontDesign.design))
+            .font(readerTheme.font(.body))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .principal) {
@@ -149,7 +149,7 @@ struct PassagePickerSheetView: View {
             } label: {
                 HStack {
                     Text(book.displayName)
-                        .fontWeight(isSelected ? .semibold : .regular)
+                        .font(readerTheme.font(.body, weight: isSelected ? .semibold : .regular))
                     Spacer()
                     Image(systemName: "chevron.right")
                         .font(.footnote.weight(.semibold))
@@ -228,8 +228,7 @@ struct PassagePickerSheetView: View {
                     VStack(alignment: .leading, spacing: 2) {
                         Text(verbatim: translation.title)
                         Text(verbatim: translation.abbreviation)
-                            .font(.system(.caption,
-                                          design: readerTheme.fontDesign.design))
+                            .font(readerTheme.font(.caption))
                             .foregroundStyle(.secondary)
                     }
                     Spacer()

@@ -118,9 +118,7 @@ struct PassagePickerView: View {
         } label: {
             // Label: selected Book/Chapter names & Translation abbreviation
             tabBarAccessoryLabel
-                .font(.system(size: labelFontSize,
-                              weight: .medium,
-                              design: readerTheme.fontDesign.design))
+                .font(readerTheme.font(fixedSize: labelFontSize, weight: .medium))
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .contentShape(Rectangle())
         }

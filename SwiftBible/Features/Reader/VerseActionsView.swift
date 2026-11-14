@@ -152,9 +152,7 @@ struct VerseActionsView: View {
 //            }
         }
         // font, color
-        .font(.system(size: labelFontSize,
-                      weight: .medium,
-                      design: readerTheme.fontDesign.design))
+        .font(readerTheme.font(fixedSize: labelFontSize, weight: .medium))
         .foregroundStyle(.primary)
         // frame, padding, bounding
         .frame(maxWidth: .infinity, maxHeight: .infinity)

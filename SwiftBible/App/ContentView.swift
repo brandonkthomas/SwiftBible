@@ -118,13 +118,14 @@ struct ContentView: View {
             }
             Tab("Settings", systemImage: "switch.2", value: CurrentTab.settings) {
                 SettingsView()
+                    .font(.body)
             }
             Tab("Search", systemImage: "magnifyingglass", value: CurrentTab.search) {
                 SearchView()
+                    .font(.body)
             }
         }
-        .font(.system(.body,
-                      design: readerTheme.fontDesign.design))
+        .font(readerTheme.font(.body))
         .tabBarMinimizeBehavior($selectedTab.wrappedValue == CurrentTab.read ? .onScrollDown : .never) // added in iOS 26
 //        .tabViewSearchActivation(.searchTabSelection) // added in iOS 26
         // "isEnabled" param added in iOS 26.1
