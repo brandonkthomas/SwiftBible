@@ -224,9 +224,7 @@ struct PassageTextRenderer {
         }
 
         if style.contains(.divineName) {
-            result.font = .system(.body,
-                                  design: readerTheme.fontDesign.design,
-                                  weight: .semibold)
+            result.font = readerTheme.divineNameFont
         }
 
         return result
@@ -263,7 +261,7 @@ struct PassageTextRenderer {
                                          useLinkAttribute: Bool = false) -> AttributedString {
         var result = AttributedString("\(displayText) ")
         result.baselineOffset = markerBaselineOffset
-        result.font = .system(.caption2, design: readerTheme.fontDesign.design)
+        result.font = readerTheme.verseLabelFont
         // Explicit color so link styling doesn't recolor the label
         result.foregroundColor = readerTheme.secondaryTextColor
 
@@ -285,7 +283,7 @@ struct PassageTextRenderer {
                                            readerTheme: ReaderThemeResolved) -> AttributedString {
         var result = AttributedString("\(footnoteSymbol(for: index)) ")
         result.baselineOffset = markerBaselineOffset
-        result.font = .system(.caption2, design: readerTheme.fontDesign.design, weight: .bold)
+        result.font = readerTheme.markerFont
         result.foregroundColor = .accentColor
 
         return result
@@ -297,7 +295,7 @@ struct PassageTextRenderer {
                                              useLinkAttribute: Bool = true) -> AttributedString {
         var result = AttributedString("† ")
         result.baselineOffset = markerBaselineOffset
-        result.font = .system(.caption2, design: readerTheme.fontDesign.design, weight: .bold)
+        result.font = readerTheme.markerFont
         result.foregroundColor = .accentColor
 
         // Tap link (adds support for opening ReaderPassageFootnoteSheetView via tap action)

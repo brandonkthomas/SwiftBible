@@ -369,9 +369,7 @@ struct LibraryRowView: View {
                                  readerTheme: readerTheme,
                                  footnoteMarkerMode: .hidden,
                                  produceLinkAttributes: false) // do NOT want these tap events here
-            .font(.system(.body,
-                          design: readerTheme.fontDesign.design,
-                          weight: readerTheme.fontWeight.weight))
+        .font(readerTheme.scriptureFont)
             .lineHeight(AttributedString.LineHeight.exact(points: passageLineHeight))
             // Button labels center multi-line text by default
             .multilineTextAlignment(.leading)

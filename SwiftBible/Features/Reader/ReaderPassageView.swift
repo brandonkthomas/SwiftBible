@@ -122,7 +122,7 @@ struct ReaderPassageView: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .lineHeight(AttributedString.LineHeight.exact(points: passageLineHeight)) // same value used in LibraryRowView
-                .fontWeight(readerTheme.fontWeight.weight)
+                .font(readerTheme.scriptureFont)
                 // inset on L/R edges; spacing between paragraphs
                 .padding(EdgeInsets(top: 2, leading: 24, bottom: 2, trailing: 24))
             }

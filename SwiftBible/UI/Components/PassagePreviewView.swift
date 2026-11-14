@@ -243,8 +243,7 @@ struct PassagePreviewView: View {
                     }
             }
         }
-        .font(.system(.body, design: theme.fontDesign.design))
-        .fontWeight(theme.fontWeight.weight)
+        .font(theme.scriptureFont)
         .lineHeight(AttributedString.LineHeight.exact(points: passageLineHeight))
         .fixedSize(horizontal: false, vertical: true)
     }
