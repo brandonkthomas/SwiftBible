@@ -127,7 +127,7 @@ final class PreferencesStore {
         // we have a weight preference
         if let stagedCustomFontWeight = stagedChanges.fontWeight {
             // equal to preset; don't override
-            if stagedCustomFontWeight.weight == preset.fontWeight {
+            if stagedCustomFontWeight == preset.fontWeight {
                 stagedChanges.fontWeight = nil
             }
             // NOT equal to preset; allow overriding (we already have the value set)

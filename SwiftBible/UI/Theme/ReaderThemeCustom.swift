@@ -38,14 +38,20 @@ nonisolated struct ReaderThemeCustom: Equatable, Codable {
     /// Custom font weight (`nil` = the preset's weight)
     var fontWeight: ReaderThemeCustomFontWeight?
 
+    /// Custom font family (`nil` = the preset's family)
+    var font: ReaderThemeFont?
+
+    /// Custom font design (`nil` = the preset's design)
+    var fontDesign: ReaderThemeCustomFontDesign?
+
     /// Does any field differ from the preset? (Drives the `*` marker.)
     var isCustomized: Bool {
         self != ReaderThemeCustom()
     }
 }
 
-/// App-owned font weight, because `Font.Weight` is not `Codable`.
-/// Raw values are saved; never rename a case.
+/// App-owned font weight because `Font.Weight` is not `Codable`
+/// Raw values are saved-- never rename a case
 nonisolated enum ReaderThemeCustomFontWeight: String, Codable, CaseIterable {
     case ultraLight
     case thin
@@ -69,6 +75,19 @@ nonisolated enum ReaderThemeCustomFontWeight: String, Codable, CaseIterable {
         case .bold: .bold
         case .heavy: .heavy
         case .black: .black
+        }
+    }
+}
+
+/// App-owned font design because `Font.Design` is not `Codable`
+nonisolated enum ReaderThemeCustomFontDesign: String, Codable, CaseIterable {
+    case `default`
+    case serif
+
+    var design: Font.Design {
+        switch self {
+        case .default: .default
+        case .serif: .serif
         }
     }
 }

@@ -47,21 +47,32 @@ struct ReaderThemeResolved: Equatable {
         )
     }
 
-    /// Font edits arrive in the font slice; the preset's design for now.
-    var fontDesign: Font.Design {
-        basePreset.fontDesign
+    /// Custom font (base preset if not customized)
+    var font: ReaderThemeFont {
+        customizedPreset?.font ?? basePreset.font
     }
 
-    var fontWeight: Font.Weight {
-        customizedPreset?.fontWeight?.weight ?? basePreset.fontWeight
+    /// Custom font design (base preset if not customized)
+    var fontDesign: ReaderThemeCustomFontDesign {
+        customizedPreset?.fontDesign ?? basePreset.fontDesign
+    }
+
+    /// edit's weight (else the preset's) snapped to nearest supported weight
+    var fontWeight: ReaderThemeCustomFontWeight {
+        let requestedWeight = customizedPreset?.fontWeight ?? basePreset.fontWeight
+        return font.nearestWeight(to: requestedWeight, design: fontDesign.design)
+    }
+
+    /// All available font weights for this resolved font choice
+    var availableFontWeights: [ReaderThemeCustomFontWeight] {
+        font.availableWeights(design: fontDesign.design)
     }
 
     /// One color that picks the light or dark value when it is drawn.
     ///
     /// UIKit calls the provider closure with the trait collection of whatever
     /// is drawing the color; `.preferredColorScheme` sets its
-    /// `userInterfaceStyle`. A mode with no custom value falls back to the
-    /// preset's asset color for that same mode.
+    /// `userInterfaceStyle`
     nonisolated private static func adaptiveColor(
         presetColor: Color,
         light: Color.Resolved?,

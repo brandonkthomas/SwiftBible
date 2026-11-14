@@ -33,7 +33,9 @@ struct ReaderPassageFootnoteSheetView: View {
         // Same a/b/c label that Renderer places inline so list/text stay in sync
         var attributedLabel = AttributedString("\(PassageTextRenderer.footnoteSymbol(for: index)) ")
         attributedLabel.baselineOffset = PassageTextRenderer.markerBaselineOffset
-        attributedLabel.font = .system(.caption2, design: readerTheme.fontDesign, weight: .bold)
+        attributedLabel.font = .system(.caption2,
+                                       design: readerTheme.fontDesign.design,
+                                       weight: .bold)
         attributedLabel.foregroundColor = .accentColor
 
         return attributedLabel
@@ -71,7 +73,8 @@ struct ReaderPassageFootnoteSheetView: View {
                         let label = footnoteLabel(for: footnote,
                                                   index: index)
                         Text("\(label)\(footnote.text)")
-                            .font(.system(.footnote, design: readerTheme.fontDesign))
+                            .font(.system(.footnote,
+                                          design: readerTheme.fontDesign.design))
                     }
                 }
                 .scrollTargetLayout()
@@ -82,7 +85,9 @@ struct ReaderPassageFootnoteSheetView: View {
                 .navigationBarTitleDisplayMode(.inline)
             }
             .lineHeight(AttributedString.LineHeight.exact(points: passageLineHeight))
-            .font(.system(.body, design: readerTheme.fontDesign, weight: readerTheme.fontWeight))
+            .font(.system(.body,
+                          design: readerTheme.fontDesign.design,
+                          weight: readerTheme.fontWeight.weight))
             .frame(maxWidth: .infinity, alignment: .topLeading)
             // toolbar for NavigationStack (for Close button)
             .toolbar {

@@ -154,7 +154,7 @@ struct VerseActionsView: View {
         // font, color
         .font(.system(size: labelFontSize,
                       weight: .medium,
-                      design: readerTheme.fontDesign))
+                      design: readerTheme.fontDesign.design))
         .foregroundStyle(.primary)
         // frame, padding, bounding
         .frame(maxWidth: .infinity, maxHeight: .infinity)

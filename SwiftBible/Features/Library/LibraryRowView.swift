@@ -143,7 +143,7 @@ struct LibraryRowView: View {
                 .frame(width: frameSize16, height: frameSize16)
                 .font(.system(size: fontSize16,
                               weight: .regular,
-                              design: readerTheme.fontDesign))
+                              design: readerTheme.fontDesign.design))
                 .foregroundStyle(.secondary)
 
                 // Chapter / verse range / translation
@@ -154,7 +154,7 @@ struct LibraryRowView: View {
                 }
                 .font(.system(size: fontSize16,
                               weight: .medium,
-                              design: readerTheme.fontDesign))
+                              design: readerTheme.fontDesign.design))
                 .contentShape(Rectangle())
 
                 Spacer()
@@ -218,7 +218,7 @@ struct LibraryRowView: View {
                 Text(noteText)
                     .font(.system(size: fontSize16,
                                   weight: .regular,
-                                  design: readerTheme.fontDesign))
+                                  design: readerTheme.fontDesign.design))
                     .lineHeight(AttributedString.LineHeight.exact(points: annotationTagsLineHeight)) // try to match AnnotationEditorSheetView Note TextInput
             } else if case .tags(let tags) = data.annotation.content {
                 Divider()
@@ -228,7 +228,8 @@ struct LibraryRowView: View {
                             // nothing
                         } label: {
                             Text(tag)
-                                .font(.system(.caption, design: readerTheme.fontDesign))
+                                .font(.system(.caption,
+                                              design: readerTheme.fontDesign.design))
                                 .fontWeight(.semibold)
                                 .foregroundStyle(Color.white)
                                 .padding(.horizontal, 12)
@@ -368,7 +369,9 @@ struct LibraryRowView: View {
                                  readerTheme: readerTheme,
                                  footnoteMarkerMode: .hidden,
                                  produceLinkAttributes: false) // do NOT want these tap events here
-            .font(.system(.body, design: readerTheme.fontDesign, weight: readerTheme.fontWeight))
+            .font(.system(.body,
+                          design: readerTheme.fontDesign.design,
+                          weight: readerTheme.fontWeight.weight))
             .lineHeight(AttributedString.LineHeight.exact(points: passageLineHeight))
             // Button labels center multi-line text by default
             .multilineTextAlignment(.leading)

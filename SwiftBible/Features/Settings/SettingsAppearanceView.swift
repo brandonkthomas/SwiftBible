@@ -169,8 +169,8 @@ struct SettingsAppearanceView: View {
                                 .dynamicTypeSize(.large)
                         }
                         // font
-                        .fontDesign(themeResolved.fontDesign)
-                        .fontWeight(themeResolved.fontWeight)
+                        .fontDesign(themeResolved.fontDesign.design)
+                        .fontWeight(themeResolved.fontWeight.weight)
                         // internal padding
                         .padding(5)
                         // fill the column widths

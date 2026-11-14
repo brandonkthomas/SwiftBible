@@ -252,7 +252,7 @@ struct LibraryView: View {
             HStack {
                 Text(title)
                     .font(.system(.title3,
-                                  design: readerTheme.fontDesign,
+                                  design: readerTheme.fontDesign.design,
                                   weight: .semibold))
                 Spacer()
                 Image(systemName: "chevron.down")

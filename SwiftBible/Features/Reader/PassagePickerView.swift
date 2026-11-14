@@ -120,7 +120,7 @@ struct PassagePickerView: View {
             tabBarAccessoryLabel
                 .font(.system(size: labelFontSize,
                               weight: .medium,
-                              design: readerTheme.fontDesign))
+                              design: readerTheme.fontDesign.design))
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .contentShape(Rectangle())
         }

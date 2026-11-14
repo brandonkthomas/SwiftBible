@@ -66,7 +66,11 @@ enum ReaderTheme: String, CaseIterable, Codable, Identifiable {
         }
     }
 
-    var fontDesign: Font.Design {
+    var font: ReaderThemeFont {
+        .system
+    }
+
+    var fontDesign: ReaderThemeCustomFontDesign {
         switch self {
         case .classic: .serif
         case .quiet: .default
@@ -77,7 +81,7 @@ enum ReaderTheme: String, CaseIterable, Codable, Identifiable {
         }
     }
 
-    var fontWeight: Font.Weight {
+    var fontWeight: ReaderThemeCustomFontWeight {
         switch self {
         case .classic: .regular
         case .quiet: .regular

@@ -76,7 +76,7 @@ struct PassagePickerSheetView: View {
                 translationsListView
                     .modeVisibility(mode == .translations)
             }
-            .font(.system(.body, design: readerTheme.fontDesign))
+            .font(.system(.body, design: readerTheme.fontDesign.design))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .principal) {
@@ -228,7 +228,8 @@ struct PassagePickerSheetView: View {
                     VStack(alignment: .leading, spacing: 2) {
                         Text(verbatim: translation.title)
                         Text(verbatim: translation.abbreviation)
-                            .font(.system(.caption, design: readerTheme.fontDesign))
+                            .font(.system(.caption,
+                                          design: readerTheme.fontDesign.design))
                             .foregroundStyle(.secondary)
                     }
                     Spacer()

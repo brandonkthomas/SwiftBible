@@ -224,7 +224,9 @@ struct PassageTextRenderer {
         }
 
         if style.contains(.divineName) {
-            result.font = .system(.body, design: readerTheme.fontDesign, weight: .semibold)
+            result.font = .system(.body,
+                                  design: readerTheme.fontDesign.design,
+                                  weight: .semibold)
         }
 
         return result
@@ -261,7 +263,7 @@ struct PassageTextRenderer {
                                          useLinkAttribute: Bool = false) -> AttributedString {
         var result = AttributedString("\(displayText) ")
         result.baselineOffset = markerBaselineOffset
-        result.font = .system(.caption2, design: readerTheme.fontDesign)
+        result.font = .system(.caption2, design: readerTheme.fontDesign.design)
         // Explicit color so link styling doesn't recolor the label
         result.foregroundColor = readerTheme.secondaryTextColor
 
@@ -283,7 +285,7 @@ struct PassageTextRenderer {
                                            readerTheme: ReaderThemeResolved) -> AttributedString {
         var result = AttributedString("\(footnoteSymbol(for: index)) ")
         result.baselineOffset = markerBaselineOffset
-        result.font = .system(.caption2, design: readerTheme.fontDesign, weight: .bold)
+        result.font = .system(.caption2, design: readerTheme.fontDesign.design, weight: .bold)
         result.foregroundColor = .accentColor
 
         return result
@@ -295,7 +297,7 @@ struct PassageTextRenderer {
                                              useLinkAttribute: Bool = true) -> AttributedString {
         var result = AttributedString("† ")
         result.baselineOffset = markerBaselineOffset
-        result.font = .system(.caption2, design: readerTheme.fontDesign, weight: .bold)
+        result.font = .system(.caption2, design: readerTheme.fontDesign.design, weight: .bold)
         result.foregroundColor = .accentColor
 
         // Tap link (adds support for opening ReaderPassageFootnoteSheetView via tap action)
