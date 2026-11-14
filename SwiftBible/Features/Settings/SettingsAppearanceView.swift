@@ -14,8 +14,9 @@ struct SettingsAppearanceView: View {
     /// Read appEnvironment.preferencesStore environment value from current view environment
     @Environment(PreferencesStore.self) private var preferencesStore: PreferencesStore
 
-    @State private var fontList: [String] = ["SF Pro","SF Pro 2","SF Pro 3"]
+    @Namespace private var themePresetsGridNamespace
 
+    @State private var fontList: [String] = ["SF Pro","SF Pro 2","SF Pro 3"]
     @State private var lineSpacing: Double = 1.2
 
     // MARK: Views
@@ -146,44 +147,47 @@ struct SettingsAppearanceView: View {
         let columns = Array(repeating: GridItem(.flexible(), spacing: 10),
                             count: columnCount)
 
-        return LazyVGrid(columns: columns, spacing: 10) {
-            ForEach(ReaderTheme.allCases, id: \.self) { theme in
-                Button {
-                    preferencesStore.readerTheme = theme
-                } label: {
-                    VStack {
-                        Text("Aa")
-                            .dynamicTypeSize(.xxxLarge)
-                            .accessibilityHidden(true)
-                        Text(theme.displayName)
-                            .dynamicTypeSize(.large)
-                    }
-                    // font
-                    .fontDesign(theme.fontDesign)
-                    .fontWeight(theme.fontWeight)
-                    // internal padding
-                    .padding(5)
-                    // fill the column widths
-                    .frame(maxWidth: .infinity)
-                    // checkmark overlay (must be BEFORE glassEffect & colors)
-                    .overlay(alignment: .topTrailing) {
-                        if preferencesStore.readerTheme == theme {
-                            Image(systemName: "checkmark")
-                                .font(.system(size: 12, weight: .medium))
-                                .padding([.top, .trailing], 8)
+        return GlassEffectContainer(spacing: 10) {
+            LazyVGrid(columns: columns, spacing: 10) {
+                ForEach(ReaderTheme.allCases, id: \.self) { theme in
+                    Button {
+                        preferencesStore.readerTheme = theme
+                    } label: {
+                        VStack {
+                            Text("Aa")
+                                .dynamicTypeSize(.xxxLarge)
+                                .accessibilityHidden(true)
+                            Text(theme.displayName)
+                                .dynamicTypeSize(.large)
                         }
+                        // font
+                        .fontDesign(theme.fontDesign)
+                        .fontWeight(theme.fontWeight)
+                        // internal padding
+                        .padding(5)
+                        // fill the column widths
+                        .frame(maxWidth: .infinity)
+                        // checkmark overlay (must be BEFORE glassEffect & colors)
+                        .overlay(alignment: .topTrailing) {
+                            if preferencesStore.readerTheme == theme {
+                                Image(systemName: "checkmark")
+                                    .font(.system(size: 12, weight: .medium))
+                                    .padding([.top, .trailing], 8)
+                            }
+                        }
+                        // colors
+                        .background(theme.backgroundColor)
+                        .foregroundStyle(theme.primaryTextColor)
+                        // size
+                        .cornerRadius(10)
+                        .glassEffect(.regular.interactive(),
+                                     in: .rect(cornerRadius: 10))
+                        .glassEffectID(theme.id, in: themePresetsGridNamespace)
                     }
-                    // colors
-                    .background(theme.backgroundColor)
-                    .foregroundStyle(theme.primaryTextColor)
-                    // size
-                    .cornerRadius(10)
-                    .glassEffect(.regular.interactive(),
-                                 in: .rect(cornerRadius: 10))
+                    // without this, a List row forwards every tap to its first/last button
+                    .buttonStyle(.borderless)
+                    .accessibilityAddTraits(preferencesStore.readerTheme == theme ? .isSelected : [])
                 }
-                // without this, a List row forwards every tap to its first/last button
-                .buttonStyle(.borderless)
-                .accessibilityAddTraits(preferencesStore.readerTheme == theme ? .isSelected : [])
             }
         }
         .padding([.leading, .trailing], 1) // fix glass border clipping on edges
