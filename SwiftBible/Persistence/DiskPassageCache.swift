@@ -83,7 +83,86 @@ actor DiskPassageCache: PassageCache {
         }
     }
 
+    /// Deletes the cached Passage for a key; a key with no file is not an error
+    func removePassage(for key: BiblePassageKey) async throws {
+        let url = fileUrl(for: key)
+
+        guard fileManager.fileExists(atPath: url.path(percentEncoded: false)) else {
+            return
+        }
+
+        try fileManager.removeItem(at: url)
+    }
+
+    /// Reads one translation's verse-limited chapter list, then deletes that translation's
+    /// passage files the list does not include
+    ///
+    /// Files can be left out when the app quits between saving a passage and saving the list,
+    /// or when passages were cached under another policy. A missing or unreadable list counts
+    /// as empty, so every passage file of the translation is deleted
+    func verseLimitEntries(for translationID: Translation.ID) async throws -> [PassageCacheEntry] {
+        let indexUrl = indexFileUrl(for: translationID)
+        var entries: [PassageCacheEntry] = []
+
+        if fileManager.fileExists(atPath: indexUrl.path(percentEncoded: false)) {
+            do {
+                let fileContents = try Data(contentsOf: indexUrl)
+                entries = try JSONDecoder().decode([PassageCacheEntry].self, from: fileContents)
+            } catch {
+                try? fileManager.removeItem(at: indexUrl)
+            }
+        }
+
+        // An entry whose file is gone (deleted as corrupt, or purged by iOS) no longer counts
+        entries.removeAll { entry in
+            !fileManager.fileExists(atPath: fileUrl(for: entry.key).path(percentEncoded: false))
+        }
+
+        try removePassageFiles(of: translationID,
+                               keeping: Set(entries.map { fileUrl(for: $0.key).lastPathComponent }))
+
+        return entries
+    }
+
+    /// Replaces one translation's verse-limited chapter list
+    func saveVerseLimitEntries(_ entries: [PassageCacheEntry],
+                               for translationID: Translation.ID) async throws {
+        try createPassageDirectoryIfNeeded()
+
+        let fileContents = try JSONEncoder().encode(entries)
+        try fileContents.write(to: indexFileUrl(for: translationID), options: .atomic)
+    }
+
     // MARK: Functions (Private Helpers)
+
+    /// Deletes every passage file of one translation whose name is not in keptFileNames
+    private func removePassageFiles(of translationID: Translation.ID,
+                                    keeping keptFileNames: Set<String>) throws {
+        // Nothing has been cached yet
+        guard fileManager.fileExists(atPath: passageDirectory.path(percentEncoded: false)) else {
+            return
+        }
+
+        // Trailing underscore: translation 5's prefix must not match translation 59's files
+        let translationPrefix = "sbc_\(translationID)_"
+
+        let fileUrls = try fileManager.contentsOfDirectory(at: passageDirectory,
+                                                           includingPropertiesForKeys: nil)
+
+        for fileUrl in fileUrls {
+            let fileName = fileUrl.lastPathComponent
+
+            if fileName.hasPrefix(translationPrefix), !keptFileNames.contains(fileName) {
+                try fileManager.removeItem(at: fileUrl)
+            }
+        }
+    }
+
+    /// Location of one translation's verse-limited chapter list; "sbi_" so it never matches
+    /// the "sbc_" passage file prefix
+    private func indexFileUrl(for translationID: Translation.ID) -> URL {
+        passageDirectory.appending(path: "sbi_\(translationID).json", directoryHint: .notDirectory)
+    }
 
     /// File location for one key; does not touch the filesystem
     ///

@@ -13,4 +13,19 @@ nonisolated enum PassageCachePolicy: Equatable {
     /// Never written to disk; in memory, least recently used passages of the same
     /// translation are dropped once their verses add up to more than maximumVerseCount
     case memoryOnly(maximumVerseCount: Int)
+
+    /// Disk and memory, kept across launches; whole chapters of the same translation are
+    /// dropped from both, least recently used first, once their verses add up to more
+    /// than maximumVerseCount
+    case diskLimited(maximumVerseCount: Int)
+
+    /// Whether passages under this policy are read from and written to the disk cache
+    var storesOnDisk: Bool {
+        switch self {
+        case .unlimited, .diskLimited:
+            true
+        case .memoryOnly:
+            false
+        }
+    }
 }

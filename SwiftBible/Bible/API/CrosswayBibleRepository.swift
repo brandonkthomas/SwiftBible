@@ -126,8 +126,11 @@ final class CrosswayBibleRepository: BibleRepository {
     }
 
     /// ESV terms: "You may not locally store more than 500 verses", "You can cache up to 500 verses"
+    ///
+    /// Stored on disk, so ESV survives relaunches; whole chapters are dropped once the
+    /// cached ESV verses add up to more than 500
     func passageCachePolicy(for translationID: Translation.ID) -> PassageCachePolicy {
-        .memoryOnly(maximumVerseCount: Self.maximumCachedVerseCount)
+        .diskLimited(maximumVerseCount: Self.maximumCachedVerseCount)
     }
 
     // MARK: Functions (Local)

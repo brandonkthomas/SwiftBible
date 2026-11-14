@@ -36,6 +36,14 @@ final class BiblePassageStore {
     /// Keys of in-memory passages under a .memoryOnly policy, least recently used first
     private var memoryOnlyKeysByLastUse: [BiblePassageKey] = []
 
+    /// Cached chapters per translation under a .diskLimited policy, least recently used first
+    ///
+    /// Read from the passage cache the first time each translation is requested this launch
+    private var diskLimitedEntries: [Translation.ID: [PassageCacheEntry]] = [:]
+
+    /// In-flight reads of diskLimitedEntries, so concurrent requests read each translation once
+    private var diskLimitedEntryLoads: [Translation.ID: Task<[PassageCacheEntry], Never>] = [:]
+
     // MARK: Init
 
     init(repository: any BibleRepository,
@@ -52,11 +60,24 @@ final class BiblePassageStore {
         // the provider's terms decide where (and how much of) its passages may be kept
         let cachePolicy = repository.passageCachePolicy(for: key.translationID)
 
+        // The saved chapter list must be read before any disk access: reading it deletes
+        // passage files it does not include, which would otherwise catch a just-saved file
+        if case .diskLimited = cachePolicy {
+            await loadDiskLimitedEntriesIfNeeded(for: key.translationID)
+        }
+
         // BiblePassageKey is Hashable, so we can use it in dict lookup like this
         if let existingCacheHit = loadedBiblePassageCache[key] {
             // we have a cached match; return it immediately
-            if case .memoryOnly = cachePolicy {
+            switch cachePolicy {
+            case .memoryOnly:
                 markUsed(key)
+            case .diskLimited(let maximumVerseCount):
+                await recordDiskLimitedUse(of: key,
+                                           verseCount: existingCacheHit.renderedPassage.verseCount,
+                                           maximumVerseCount: maximumVerseCount)
+            case .unlimited:
+                break
             }
             return existingCacheHit
         }
@@ -81,7 +102,7 @@ final class BiblePassageStore {
         //   Basically we don't have any C# "CancellationToken" here
         //   We do NOT need to wire this up though because other cards may be waiting on this
         //   We may need to cancel per-URL-request and only when no one wants the chapter anymore...
-        let usesDiskCache = cachePolicy == .unlimited
+        let usesDiskCache = cachePolicy.storesOnDisk
 
         let task = Task<LoadedBiblePassage, Error> {
             // 1. disk cache (swallow read throws here)
@@ -128,14 +149,102 @@ final class BiblePassageStore {
         let loadedBiblePassage = try await task.value
         loadedBiblePassageCache[key] = loadedBiblePassage
 
-        if case .memoryOnly(let maximumVerseCount) = cachePolicy {
+        switch cachePolicy {
+        case .memoryOnly(let maximumVerseCount):
             markUsed(key)
             evictLeastRecentlyUsed(translationID: key.translationID,
                                    maximumVerseCount: maximumVerseCount,
                                    keeping: key)
+        case .diskLimited(let maximumVerseCount):
+            await recordDiskLimitedUse(of: key,
+                                       verseCount: loadedBiblePassage.renderedPassage.verseCount,
+                                       maximumVerseCount: maximumVerseCount)
+        case .unlimited:
+            break
         }
 
         return loadedBiblePassage
+    }
+
+    // MARK: Functions (Private, Disk Verse Limit)
+
+    /// Reads a translation's saved chapter list once per launch
+    ///
+    /// A read that fails counts as empty; the next launch reads (and cleans up) again
+    private func loadDiskLimitedEntriesIfNeeded(for translationID: Translation.ID) async {
+        guard diskLimitedEntries[translationID] == nil else {
+            return
+        }
+
+        let load: Task<[PassageCacheEntry], Never>
+
+        if let existingLoad = diskLimitedEntryLoads[translationID] {
+            load = existingLoad
+        } else {
+            let passageCache = self.passageCache
+
+            load = Task {
+                do {
+                    return try await passageCache.verseLimitEntries(for: translationID)
+                } catch {
+                    Self.logger.error("Unable to read verse-limited cache list: \(error.localizedDescription)")
+                    return []
+                }
+            }
+
+            diskLimitedEntryLoads[translationID] = load
+        }
+
+        let entries = await load.value
+
+        // Every waiter resumes here in no fixed order; whichever runs first stores the result
+        diskLimitedEntryLoads[translationID] = nil
+
+        if diskLimitedEntries[translationID] == nil {
+            diskLimitedEntries[translationID] = entries
+        }
+    }
+
+    /// Make a chapter the most recently used, drop this translation's least recently used
+    /// chapters from memory and disk until its verses fit the limit, then save the list
+    ///
+    /// The chapter just returned always stays, even if it alone is over the limit.
+    private func recordDiskLimitedUse(of key: BiblePassageKey,
+                                      verseCount: Int,
+                                      maximumVerseCount: Int) async {
+        var entries = diskLimitedEntries[key.translationID] ?? []
+        entries.removeAll { $0.key == key }
+        entries.append(PassageCacheEntry(key: key, verseCount: verseCount))
+
+        var cachedVerseCount = entries.reduce(0) { total, entry in total + entry.verseCount }
+        var evictedKeys: [BiblePassageKey] = []
+
+        while cachedVerseCount > maximumVerseCount,
+              let oldestEntry = entries.first,
+              oldestEntry.key != key {
+            entries.removeFirst()
+            cachedVerseCount -= oldestEntry.verseCount
+            evictedKeys.append(oldestEntry.key)
+            loadedBiblePassageCache[oldestEntry.key] = nil
+        }
+
+        diskLimitedEntries[key.translationID] = entries
+
+        // Save the list before deleting files: if the app quits in between, the next
+        // launch's read deletes the files the list no longer includes
+        do {
+            try await passageCache.saveVerseLimitEntries(entries, for: key.translationID)
+        } catch {
+            Self.logger.error("Unable to save verse-limited cache list: \(error.localizedDescription)")
+        }
+
+        for evictedKey in evictedKeys {
+            do {
+                try await passageCache.removePassage(for: evictedKey)
+            } catch {
+                Self.logger.error("Unable to remove evicted passage: \(error.localizedDescription)")
+            }
+        }
     }
 
     // MARK: Functions (Private, Verse Limit)

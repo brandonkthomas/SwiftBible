@@ -52,6 +52,13 @@ final class BibleCatalogStore {
     private static let unknownBuildNumber: String = "unknownBuildNumber"
     private static let maximumCacheAgeInDays: Int = 7
 
+    /// In-flight book loads per translation, so concurrent callers (ReaderStore and
+    /// LibraryStore at launch) share one cache read and network request
+    ///
+    /// @ObservationIgnored: bookkeeping only; views never read it
+    @ObservationIgnored
+    private var inFlightBookLoads: [Translation.ID: Task<Void, Error>] = [:]
+
     // MARK: Init
 
     init(repository: any BibleRepository,
@@ -126,7 +133,30 @@ final class BibleCatalogStore {
     // MARK: Functions (Books)
 
     /// Load books using given BibleRepository implementation (try cache first)
+    ///
+    /// A call while another load of the same translation is running waits for that load
+    /// (and gets its error, if any) instead of starting a second one
     func loadBooks(for translationID: Translation.ID) async throws {
+        if let existingLoad = inFlightBookLoads[translationID] {
+            return try await existingLoad.value
+        }
+
+        // Registered before the first await, so a second caller always finds it
+        let load = Task {
+            try await self.loadBooksFromCacheOrRepository(for: translationID)
+        }
+
+        inFlightBookLoads[translationID] = load
+
+        defer {
+            inFlightBookLoads[translationID] = nil
+        }
+
+        try await load.value
+    }
+
+    /// Cache first; network when the cache is missing or stale; then save the refresh
+    private func loadBooksFromCacheOrRepository(for translationID: Translation.ID) async throws {
         // try from the cache first-and-foremost; fast assignment if it hits
         // (swallow failures to give network a chance later)
         var didCacheHit = false

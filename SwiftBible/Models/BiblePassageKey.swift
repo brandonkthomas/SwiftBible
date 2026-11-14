@@ -10,7 +10,9 @@ import Foundation
 /// Stable hashable (+ equatable) identity for one translation-specific chapter
 ///
 /// Passage.ID cannot do this since it only gives us book + chapter
-nonisolated struct BiblePassageKey: Hashable {
+///
+/// Codable so the disk cache can save its list of verse-limited chapters
+nonisolated struct BiblePassageKey: Hashable, Codable {
     let translationID: Translation.ID
     let bookCode: String
     let chapter: Int

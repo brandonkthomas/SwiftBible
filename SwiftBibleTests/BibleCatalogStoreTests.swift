@@ -244,6 +244,24 @@ struct BibleCatalogStoreTests {
         #expect(catalogStore.books(for: translationID) == Self.cachedBooks)
     }
 
+    /// Two concurrent loads of one translation (ReaderStore + LibraryStore at launch) share
+    /// a single repository request
+    @Test func concurrentBookLoadsShareOneRequest() async throws {
+        let translationID = 1234
+        let catalogCache = InMemoryCatalogCache()
+        try await catalogCache.save(makeEntry(Self.cachedBooks, buildNumber: Self.otherBuildNumber),
+                                    for: translationID)
+        let repository = StubBibleRepository(booksByTranslation: [translationID: Self.repositoryBooks])
+        let catalogStore = makeStore(repository: repository, catalogCache: catalogCache)
+
+        async let firstLoad: Void = catalogStore.loadBooks(for: translationID)
+        async let secondLoad: Void = catalogStore.loadBooks(for: translationID)
+        _ = try await (firstLoad, secondLoad)
+
+        #expect(repository.booksCallCount == 1)
+        #expect(catalogStore.books(for: translationID) == Self.repositoryBooks)
+    }
+
     /// An entry older than the maximum age is replaced by the repository's list
     @Test func expiredCachedBooksRefreshFromRepository() async throws {
         let translationID = 1234
@@ -431,6 +449,9 @@ private final class StubBibleRepository: BibleRepository {
 
     func books(for translationID: Translation.ID) async throws -> [Book] {
         booksCallCount += 1
+
+        // Suspend like a real network call, so a concurrent caller can run in between
+        await Task.yield()
 
         if failingTranslationIDs.contains(translationID) {
             throw RepositoryError.unsupportedOperation

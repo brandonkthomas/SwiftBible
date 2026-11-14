@@ -95,4 +95,96 @@ struct DiskPassageCacheTests {
         try await firstCache.save(passage, for: key)
         #expect(try await secondCache.passage(for: key) == passage)
     }
+
+    // MARK: Removal and verse-limit list
+
+    /// A removed passage reads as a miss
+    @Test func removeDeletesSavedPassage() async throws {
+        let tempDirectory = makeTempDirectory()
+        defer { try? FileManager.default.removeItem(at: tempDirectory) }
+
+        let cache = try DiskPassageCache(baseDirectory: tempDirectory)
+        let key = BiblePassageKey(translationID: 59, bookCode: "GEN", chapter: 1)
+
+        try await cache.save(Passage(id: "GEN.1", reference: "Test", htmlContent: "<div></div>"),
+                             for: key)
+        try await cache.removePassage(for: key)
+
+        #expect(try await cache.passage(for: key) == nil)
+    }
+
+    /// Removing a key that was never cached is not an error
+    @Test func removeMissingPassageDoesNotThrow() async throws {
+        let tempDirectory = makeTempDirectory()
+        defer { try? FileManager.default.removeItem(at: tempDirectory) }
+
+        let cache = try DiskPassageCache(baseDirectory: tempDirectory)
+
+        try await cache.removePassage(for: BiblePassageKey(translationID: 59, bookCode: "GEN", chapter: 1))
+    }
+
+    /// The saved list survives a new DiskPassageCache (next launch) in its saved order
+    @Test func verseLimitEntriesPersistAcrossInstances() async throws {
+        let tempDirectory = makeTempDirectory()
+        defer { try? FileManager.default.removeItem(at: tempDirectory) }
+
+        let firstCache = try DiskPassageCache(baseDirectory: tempDirectory)
+        let entries = [2, 1].map { chapter in
+            PassageCacheEntry(key: BiblePassageKey(translationID: 59, bookCode: "GEN", chapter: chapter),
+                              verseCount: 25)
+        }
+
+        for entry in entries {
+            try await firstCache.save(Passage(id: "GEN.\(entry.key.chapter)", reference: "Test", htmlContent: "<div></div>"),
+                                      for: entry.key)
+        }
+        try await firstCache.saveVerseLimitEntries(entries, for: 59)
+
+        let secondCache = try DiskPassageCache(baseDirectory: tempDirectory)
+        #expect(try await secondCache.verseLimitEntries(for: 59) == entries)
+    }
+
+    /// Reading the list deletes that translation's unlisted passage files and drops listed
+    /// entries whose file is gone; other translations (including ID prefixes like 5 vs 59)
+    /// are untouched
+    @Test func verseLimitEntriesRemovesUnlistedPassages() async throws {
+        let tempDirectory = makeTempDirectory()
+        defer { try? FileManager.default.removeItem(at: tempDirectory) }
+
+        let cache = try DiskPassageCache(baseDirectory: tempDirectory)
+        let passage = Passage(id: "GEN.1", reference: "Test", htmlContent: "<div></div>")
+
+        let listedKey = BiblePassageKey(translationID: 59, bookCode: "GEN", chapter: 1)
+        let unlistedKey = BiblePassageKey(translationID: 59, bookCode: "GEN", chapter: 2)
+        let missingKey = BiblePassageKey(translationID: 59, bookCode: "GEN", chapter: 3)
+        let otherTranslationKey = BiblePassageKey(translationID: 5, bookCode: "GEN", chapter: 2)
+
+        try await cache.save(passage, for: listedKey)
+        try await cache.save(passage, for: unlistedKey)
+        try await cache.save(passage, for: otherTranslationKey)
+        try await cache.saveVerseLimitEntries([PassageCacheEntry(key: missingKey, verseCount: 10),
+                                               PassageCacheEntry(key: listedKey, verseCount: 31)],
+                                              for: 59)
+
+        #expect(try await cache.verseLimitEntries(for: 59)
+                == [PassageCacheEntry(key: listedKey, verseCount: 31)])
+        #expect(try await cache.passage(for: listedKey) == passage)
+        #expect(try await cache.passage(for: unlistedKey) == nil)
+        #expect(try await cache.passage(for: otherTranslationKey) == passage)
+    }
+
+    /// With no saved list, every passage file of that translation is deleted
+    @Test func verseLimitEntriesWithoutListRemovesTranslationPassages() async throws {
+        let tempDirectory = makeTempDirectory()
+        defer { try? FileManager.default.removeItem(at: tempDirectory) }
+
+        let cache = try DiskPassageCache(baseDirectory: tempDirectory)
+        let key = BiblePassageKey(translationID: 59, bookCode: "GEN", chapter: 1)
+
+        try await cache.save(Passage(id: "GEN.1", reference: "Test", htmlContent: "<div></div>"),
+                             for: key)
+
+        #expect(try await cache.verseLimitEntries(for: 59).isEmpty)
+        #expect(try await cache.passage(for: key) == nil)
+    }
 }

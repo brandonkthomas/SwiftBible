@@ -104,8 +104,8 @@ struct CrosswayBibleRepositoryTests {
     // MARK: Cache Policy
 
     /// ESV terms: no more than 500 verses cached or stored locally
-    @Test func cachePolicyIsMemoryOnly500Verses() throws {
-        #expect(try makeRepository().passageCachePolicy(for: esvID) == .memoryOnly(maximumVerseCount: 500))
+    @Test func cachePolicyIsDiskLimited500Verses() throws {
+        #expect(try makeRepository().passageCachePolicy(for: esvID) == .diskLimited(maximumVerseCount: 500))
     }
 
     // MARK: Rendered Passage
