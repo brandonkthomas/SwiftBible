@@ -9,15 +9,26 @@ import SwiftUI
 
 struct SettingsAppearanceView: View {
 
-    // MARK: Properties
+    // MARK: Properties (Private)
 
     /// Read appEnvironment.preferencesStore environment value from current view environment
     @Environment(PreferencesStore.self) private var preferencesStore: PreferencesStore
 
+    /// Used for preset grid liquid glass effect
     @Namespace private var themePresetsGridNamespace
 
+    /// Placeholder
     @State private var fontList: [String] = ["SF Pro","SF Pro 2","SF Pro 3"]
+    /// Placeholder
     @State private var lineSpacing: Double = 1.2
+
+    /// Sample text for the theme preview window
+    private static let previewVerses = [
+        "In the beginning, God created the heavens and the earth.",
+        "The earth was without form and void, and darkness was over the face of the deep. And the Spirit of God was hovering over the face of the waters.",
+        "And God said, “Let there be light,” and there was light.",
+        "And God saw that the light was good. And God separated the light from the darkness."
+    ]
 
     // MARK: Views
 
@@ -122,24 +133,17 @@ struct SettingsAppearanceView: View {
         .safeAreaInset(edge: .top, spacing: 16) {
             VStack(spacing: 16) {
                 PassagePreviewView(verses: Self.previewVerses,
-                                   readerTheme: preferencesStore.readerTheme)
-                    .padding(.horizontal)
+                                   readerTheme: preferencesStore.selectedReaderThemeResolved)
+                    .padding(.horizontal, 16)
                 Divider()
             }
             .background(Color(.systemGroupedBackground))
         }
         // default system font
         .font(.system(.body))
+        // navigation title
         .navigationTitle("Appearance")
     }
-
-    /// Sample text for the theme preview window
-    private static let previewVerses = [
-        "In the beginning, God created the heavens and the earth.",
-        "The earth was without form and void, and darkness was over the face of the deep. And the Spirit of God was hovering over the face of the waters.",
-        "And God said, “Let there be light,” and there was light.",
-        "And God saw that the light was good. And God separated the light from the darkness."
-    ]
 
     /// Grid of all theme presets (max 2 rows)
     private var themePresetsGridView: some View {
@@ -151,18 +155,22 @@ struct SettingsAppearanceView: View {
             LazyVGrid(columns: columns, spacing: 10) {
                 ForEach(ReaderTheme.allCases, id: \.self) { theme in
                     Button {
+                        // selection stores the preset; its edits live in readerThemeCustomChanges
                         preferencesStore.readerTheme = theme
                     } label: {
+                        // this tile's preset with its own edits (not the selected theme's)
+                        let themeResolved = preferencesStore.readerThemeResolved(for: theme)
+
                         VStack {
                             Text("Aa")
                                 .dynamicTypeSize(.xxxLarge)
                                 .accessibilityHidden(true)
-                            Text(theme.displayName)
+                            Text(themeResolved.displayName)
                                 .dynamicTypeSize(.large)
                         }
                         // font
-                        .fontDesign(theme.fontDesign)
-                        .fontWeight(theme.fontWeight)
+                        .fontDesign(themeResolved.fontDesign)
+                        .fontWeight(themeResolved.fontWeight)
                         // internal padding
                         .padding(5)
                         // fill the column widths
@@ -176,12 +184,13 @@ struct SettingsAppearanceView: View {
                             }
                         }
                         // colors
-                        .background(theme.backgroundColor)
-                        .foregroundStyle(theme.primaryTextColor)
+//                        .background(themeResolved.backgroundColor)
+                        .foregroundStyle(themeResolved.primaryTextColor)
                         // size
                         .cornerRadius(10)
-                        .glassEffect(.regular.interactive(),
+                        .glassEffect(.regular.interactive().tint(themeResolved.backgroundColor),
                                      in: .rect(cornerRadius: 10))
+                        // glass identity follows the preset, not its edits
                         .glassEffectID(theme.id, in: themePresetsGridNamespace)
                     }
                     // without this, a List row forwards every tap to its first/last button

@@ -40,6 +40,7 @@ struct SwiftBibleApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
+                // MARK: Environment
                 // inject @Observable *Store instances
                 // this has @Observable state, so we need type-based environment
                 // Type-keyed is for @Observable (type itself is the key: stored under ReaderStore)
@@ -51,9 +52,10 @@ struct SwiftBibleApp: App {
                 // this is a service/dependency, so we need key-path environment
                 // Keypath-keyed is for existential (anything: value types, services, protocols)
                 .environment(\.libraryRepository, appEnvironment.libraryRepository)
-                // default theme
-                .environment(\.readerTheme, appEnvironment.preferencesStore.readerTheme)
-                // ColorScheme preference
+                // Configured theme (resolved -- with user customizations)
+                .environment(\.readerTheme, appEnvironment.preferencesStore.selectedReaderThemeResolved)
+                // MARK: Color Scheme
+                // User ColorScheme preference
                 .preferredColorScheme(appEnvironment.preferencesStore.preferredColorScheme.colorScheme)
         }
     }

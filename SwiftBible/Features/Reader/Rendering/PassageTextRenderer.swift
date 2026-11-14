@@ -28,7 +28,7 @@ struct PassageTextRenderer {
     /// Each verse is rendered w/ customAttribute for use in highlight rendering later...
     /// see https://alexanderweiss.dev/blog/2024-06-24-using-textrenderer-to-create-highlighted-text
     static func text(for runs: [RenderedPassageRun],
-                     readerTheme: ReaderTheme,
+                     readerTheme: ReaderThemeResolved,
                      footnoteMarkerMode: MarkerMode,
                      produceLinkAttributes: Bool = true) -> Text {
         var result = Text(verbatim: "")
@@ -196,7 +196,7 @@ struct PassageTextRenderer {
     private static func styledText(_ text: String,
                                    style: RenderedPassageTextStyle,
                                    verseRange: RenderedVerseRange?,
-                                   readerTheme: ReaderTheme,
+                                   readerTheme: ReaderThemeResolved,
                                    useLinkAttribute: Bool = false) -> AttributedString {
         var result = AttributedString("\(text)\(trailingSeparator(after: text))")
 
@@ -257,7 +257,7 @@ struct PassageTextRenderer {
     /// Generate a verse label
     private static func styledVerseLabel(displayText: String,
                                          verseRange: RenderedVerseRange?,
-                                         readerTheme: ReaderTheme,
+                                         readerTheme: ReaderThemeResolved,
                                          useLinkAttribute: Bool = false) -> AttributedString {
         var result = AttributedString("\(displayText) ")
         result.baselineOffset = markerBaselineOffset
@@ -280,7 +280,7 @@ struct PassageTextRenderer {
 
     /// Generate an inline footnote marker for a given verseRange
     private static func styledInlineMarker(index: Int,
-                                           readerTheme: ReaderTheme) -> AttributedString {
+                                           readerTheme: ReaderThemeResolved) -> AttributedString {
         var result = AttributedString("\(footnoteSymbol(for: index)) ")
         result.baselineOffset = markerBaselineOffset
         result.font = .system(.caption2, design: readerTheme.fontDesign, weight: .bold)
@@ -291,7 +291,7 @@ struct PassageTextRenderer {
 
     /// Generate an end footnote marker for a given verseRange
     private static func styledVerseEndMarker(for verseRange: RenderedVerseRange,
-                                             readerTheme: ReaderTheme,
+                                             readerTheme: ReaderThemeResolved,
                                              useLinkAttribute: Bool = true) -> AttributedString {
         var result = AttributedString("† ")
         result.baselineOffset = markerBaselineOffset

@@ -53,7 +53,7 @@ struct ReaderThemeResolved: Equatable {
     }
 
     var fontWeight: Font.Weight {
-        customizedPreset?.bold == true ? .bold : basePreset.fontWeight
+        customizedPreset?.fontWeight?.weight ?? basePreset.fontWeight
     }
 
     /// One color that picks the light or dark value when it is drawn.

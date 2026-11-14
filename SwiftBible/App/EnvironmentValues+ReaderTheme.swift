@@ -9,5 +9,5 @@ import SwiftUI
 
 extension EnvironmentValues {
     /// Active reader theme; defaults to .default for previews / subtrees without an injected value
-    @Entry var readerTheme: ReaderTheme = .default
+    @Entry var readerTheme: ReaderThemeResolved = .init(basePreset: .default)
 }

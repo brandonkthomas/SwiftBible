@@ -19,7 +19,7 @@ struct PassagePreviewView: View {
 
     // MARK: Types
 
-    enum Style: Equatable {
+    nonisolated enum Style: Equatable {
         /// Fixed-height rounded window w/ the theme background
         case window(height: CGFloat)
         /// Fills available space and extends under bars/safe areas; no background
@@ -52,7 +52,7 @@ struct PassagePreviewView: View {
     var renderedPassage: RenderedPassage
 
     /// Theme override; falls back to the environment's reader theme when nil
-    var readerTheme: ReaderTheme?
+    var readerTheme: ReaderThemeResolved?
 
     /// Footnote marker style
     var footnoteMarkerMode: PassageTextRenderer.MarkerMode
@@ -120,7 +120,7 @@ struct PassagePreviewView: View {
     // MARK: Init
 
     init(renderedPassage: RenderedPassage,
-         readerTheme: ReaderTheme? = nil,
+         readerTheme: ReaderThemeResolved? = nil,
          footnoteMarkerMode: PassageTextRenderer.MarkerMode = .collapsed,
          style: Style = .window(height: 160),
          scrolls: Bool = false,
@@ -136,7 +136,7 @@ struct PassagePreviewView: View {
     /// Build a single-paragraph passage from plain verse strings, numbered from `startingVerse`
     init(verses: [String],
          startingVerse: Int = 1,
-         readerTheme: ReaderTheme? = nil,
+         readerTheme: ReaderThemeResolved? = nil,
          style: Style = .window(height: 160),
          scrolls: Bool = false,
          highlights: Bool = false) {
@@ -173,10 +173,10 @@ struct PassagePreviewView: View {
     // MARK: Views
 
     var body: some View {
-        let theme = readerTheme ?? environmentReaderTheme
+        let themeResolved = readerTheme ?? environmentReaderTheme
 
         // Built once per body evaluation; the TimelineView below only moves it each frame
-        let paragraphsView = passageParagraphs(theme: theme)
+        let paragraphsView = passageParagraphs(theme: themeResolved)
 
         ZStack {
             TimelineView(.animation(paused: !scrolls || reduceMotion)) { context in
@@ -187,7 +187,7 @@ struct PassagePreviewView: View {
                             .offset(y: -scrollOffset(at: context.date))
                     }
             }
-            .background(windowHeight == nil ? Color.clear : theme.backgroundColor)
+            .background(windowHeight == nil ? Color.clear : themeResolved.backgroundColor)
             .clipShape(.rect(cornerRadius: windowHeight == nil ? 0 : 10))
             .ignoresSafeArea(edges: style == .fill ? .all : [])
         }
@@ -216,7 +216,7 @@ struct PassagePreviewView: View {
         }
     }
 
-    private func passageParagraphs(theme: ReaderTheme) -> some View {
+    private func passageParagraphs(theme: ReaderThemeResolved) -> some View {
         VStack(spacing: 0) {
             ForEach(paragraphs) { paragraph in
                 PassageTextRenderer.text(for: paragraph.runs,
@@ -235,7 +235,7 @@ struct PassagePreviewView: View {
                         persistedHighlights: [:]))
                     .frame(maxWidth: .infinity, alignment: .leading)
                     // spacing lives in padding (not VStack spacing) so measured heights include it
-                    .padding(EdgeInsets(top: 2, leading: 24, bottom: 10, trailing: 24))
+                    .padding(EdgeInsets(top: 2, leading: 16, bottom: 10, trailing: 16))
                     .onGeometryChange(for: CGFloat.self) { proxy in
                         proxy.size.height
                     } action: { height in
@@ -470,7 +470,10 @@ struct PassagePreviewView: View {
         PassagePreviewView(verses: [
             "In the beginning was the Word, and the Word was with God, and the Word was God.",
             "He was in the beginning with God.",
-        ], readerTheme: .ink, style: .window(height: 100), highlights: true)
+        ],
+                           readerTheme: .init(basePreset: .ink),
+                           style: .window(height: 100),
+                           highlights: true)
     }
     .padding()
 }
@@ -481,5 +484,8 @@ struct PassagePreviewView: View {
         "The earth was without form and void, and darkness was over the face of the deep.",
         "And God said, “Let there be light,” and there was light.",
         "And God saw that the light was good. And God separated the light from the darkness."
-    ], style: .fill, scrolls: true, highlights: true)
+    ],
+                       style: .fill,
+                       scrolls: true,
+                       highlights: true)
 }

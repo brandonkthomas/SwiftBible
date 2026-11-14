@@ -35,11 +35,40 @@ nonisolated struct ReaderThemeCustom: Equatable, Codable {
     /// Custom secondary text color in dark mode
     var secondaryTextColorDark: Color.Resolved?
 
-    /// `true` = bold; `nil` = the preset's weight
-    var bold: Bool?
+    /// Custom font weight (`nil` = the preset's weight)
+    var fontWeight: ReaderThemeCustomFontWeight?
 
     /// Does any field differ from the preset? (Drives the `*` marker.)
     var isCustomized: Bool {
         self != ReaderThemeCustom()
+    }
+}
+
+/// App-owned font weight, because `Font.Weight` is not `Codable`.
+/// Raw values are saved; never rename a case.
+nonisolated enum ReaderThemeCustomFontWeight: String, Codable, CaseIterable {
+    case ultraLight
+    case thin
+    case light
+    case regular
+    case medium
+    case semibold
+    case bold
+    case heavy
+    case black
+
+    /// The SwiftUI weight this case stands for
+    var weight: Font.Weight {
+        switch self {
+        case .ultraLight: .ultraLight
+        case .thin: .thin
+        case .light: .light
+        case .regular: .regular
+        case .medium: .medium
+        case .semibold: .semibold
+        case .bold: .bold
+        case .heavy: .heavy
+        case .black: .black
+        }
     }
 }

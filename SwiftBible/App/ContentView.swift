@@ -32,7 +32,7 @@ struct ContentView: View {
     @Environment(LibraryStore.self) private var libraryStore: LibraryStore
 
     /// What's our currently saved theme preference?
-    @Environment(\.readerTheme) private var readerTheme: ReaderTheme
+    @Environment(\.readerTheme) private var readerTheme: ReaderThemeResolved
 
     /// Observed for changeCount only; see .onChange below
     @Environment(\.libraryRepository) private var libraryRepository
