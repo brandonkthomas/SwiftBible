@@ -50,6 +50,34 @@ nonisolated struct ReaderThemeCustom: Equatable, Codable {
     }
 }
 
+/// Custom init for best-effort decoding of each field
+///
+/// We dont want one bad field to crash the entire object
+nonisolated extension ReaderThemeCustom {
+    init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+
+        self.backgroundColorLight = try? container.decodeIfPresent(Color.Resolved.self,
+                                                                   forKey: .backgroundColorLight)
+        self.backgroundColorDark = try? container.decodeIfPresent(Color.Resolved.self,
+                                                                  forKey: .backgroundColorDark)
+        self.primaryTextColorLight = try? container.decodeIfPresent(Color.Resolved.self,
+                                                                    forKey: .primaryTextColorLight)
+        self.primaryTextColorDark = try? container.decodeIfPresent(Color.Resolved.self,
+                                                                   forKey: .primaryTextColorDark)
+        self.secondaryTextColorLight = try? container.decodeIfPresent(Color.Resolved.self,
+                                                                      forKey: .secondaryTextColorLight)
+        self.secondaryTextColorDark = try? container.decodeIfPresent(Color.Resolved.self,
+                                                                     forKey: .secondaryTextColorDark)
+        self.fontWeight = try? container.decodeIfPresent(ReaderThemeCustomFontWeight.self,
+                                                         forKey: .fontWeight)
+        self.font = try? container.decodeIfPresent(ReaderThemeFont.self,
+                                                   forKey: .font)
+        self.fontDesign = try? container.decodeIfPresent(ReaderThemeCustomFontDesign.self,
+                                                         forKey: .fontDesign)
+    }
+}
+
 /// App-owned font weight because `Font.Weight` is not `Codable`
 /// Raw values are saved-- never rename a case
 nonisolated enum ReaderThemeCustomFontWeight: String, Codable, CaseIterable {

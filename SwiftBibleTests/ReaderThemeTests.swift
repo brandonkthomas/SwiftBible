@@ -242,6 +242,122 @@ struct ReaderThemeTests {
         #expect(old.fontDesign == nil)
     }
 
+    // MARK: Edits Decoding
+
+    /// A value this build does not know (e.g. a font added by a newer build) drops only
+    /// that field; the other edits in the same value still load
+    @Test func unknownFontDropsOnlyThatField() throws {
+        let savedByNewerBuild = Data(#"{"font":"futureFont","fontWeight":"bold","fontDesign":"serif"}"#.utf8)
+        let edits = try JSONDecoder().decode(ReaderThemeCustom.self, from: savedByNewerBuild)
+
+        #expect(edits.font == nil)
+        #expect(edits.fontWeight == .bold)
+        #expect(edits.fontDesign == .serif)
+    }
+
+    /// Every field survives a JSON round trip, so a field forgotten in `init(from:)` fails here
+    /// (components 0, 0.5 and 1 encode exactly, so `==` works)
+    @Test func everyFieldSurvivesRoundTrip() throws {
+        let light = Color.Resolved(red: 1, green: 0.5, blue: 0)
+        let dark = Color.Resolved(red: 0, green: 0.5, blue: 1)
+        let edits = ReaderThemeCustom(backgroundColorLight: light,
+                                      backgroundColorDark: dark,
+                                      primaryTextColorLight: light,
+                                      primaryTextColorDark: dark,
+                                      secondaryTextColorLight: light,
+                                      secondaryTextColorDark: dark,
+                                      fontWeight: .semibold,
+                                      font: .charter,
+                                      fontDesign: .serif)
+
+        let decoded = try JSONDecoder().decode(ReaderThemeCustom.self, from: JSONEncoder().encode(edits))
+
+        #expect(decoded == edits)
+    }
+
+    // MARK: Resolved Fonts
+
+    /// The theme builds its fonts from its own font and design: Folio with no edits is
+    /// New York (system serif), and a Georgia edit draws Georgia, for text styles and fixed sizes
+    @MainActor
+    @Test func themeFontUsesResolvedFontAndDesign() {
+        let folio = ReaderThemeResolved(basePreset: .folio)
+        let folioGeorgia = ReaderThemeResolved(basePreset: .folio,
+                                               customizedPreset: ReaderThemeCustom(font: .georgia))
+
+        #expect(resolve(folio.font(.body)) == resolve(.system(.body, design: .serif, weight: .regular)))
+        #expect(resolve(folio.font(fixedSize: 14)) == resolve(.system(size: 14, weight: .regular, design: .serif)))
+        #expect(familyName(folioGeorgia.font(.body)) == "Georgia")
+        #expect(familyName(folioGeorgia.font(fixedSize: 14)) == "Georgia")
+    }
+
+    /// A requested weight is snapped before drawing: .medium on Georgia draws Regular
+    /// (CoreText alone would pick Bold), and .medium on the system font stays Medium
+    @MainActor
+    @Test func themeFontSnapsRequestedWeight() {
+        let quiet = ReaderThemeResolved(basePreset: .quiet)
+        let quietGeorgia = ReaderThemeResolved(basePreset: .quiet,
+                                               customizedPreset: ReaderThemeCustom(font: .georgia))
+
+        #expect(!resolve(quietGeorgia.font(.body, weight: .medium)).isBold)
+        #expect(!resolve(quietGeorgia.font(fixedSize: 14, weight: .medium)).isBold)
+        #expect(resolve(quiet.font(.body, weight: .medium)) == resolve(.system(.body, weight: .medium)))
+    }
+
+    /// With no weight given, the theme font is Regular; it does not take the theme's
+    /// Scripture weight (Ink's .medium), because these fonts are for app chrome
+    @MainActor
+    @Test func themeFontDefaultsToRegularWeight() {
+        let ink = ReaderThemeResolved(basePreset: .ink)
+
+        #expect(resolve(ink.font(.body)) == resolve(ink.font(.body, weight: .regular)))
+        #expect(resolve(ink.font(fixedSize: 14)) == resolve(ink.font(fixedSize: 14, weight: .regular)))
+    }
+
+    // MARK: Scripture Fonts
+
+    /// With a regular body (Folio), the Scripture fonts match what the renderer draws today:
+    /// body regular, divine name semibold, verse labels caption2 regular, markers caption2 bold
+    @MainActor
+    @Test func scriptureFontsMatchTodayForRegularBody() {
+        let folio = ReaderThemeResolved(basePreset: .folio)
+
+        #expect(resolve(folio.scriptureFont) == resolve(.system(.body, design: .serif, weight: .regular)))
+        #expect(resolve(folio.divineNameFont) == resolve(.system(.body, design: .serif, weight: .semibold)))
+        #expect(resolve(folio.verseLabelFont) == resolve(.system(.caption2, design: .serif, weight: .regular)))
+        #expect(resolve(folio.markerFont) == resolve(.system(.caption2, design: .serif, weight: .bold)))
+    }
+
+    /// Emphasis is the minimum or two steps above the body weight, whichever is heavier,
+    /// capped at the heaviest weight the font has
+    @MainActor
+    @Test func emphasisStaysAboveBodyWeight() {
+        // Ink: system font, body .medium -> two steps up is .bold
+        let ink = ReaderThemeResolved(basePreset: .ink)
+        // Charter body .bold -> two steps up is .black, which Charter has
+        let charterBold = ReaderThemeResolved(basePreset: .linen,
+                                              customizedPreset: ReaderThemeCustom(fontWeight: .bold, font: .charter))
+        // Georgia body .bold -> .black is capped at Georgia's heaviest, .bold
+        let georgiaBold = ReaderThemeResolved(basePreset: .linen,
+                                              customizedPreset: ReaderThemeCustom(fontWeight: .bold, font: .georgia))
+
+        #expect(ink.emphasisWeight(minimum: .semibold) == .bold)
+        #expect(ink.emphasisWeight(minimum: .bold) == .bold)
+        #expect(charterBold.emphasisWeight(minimum: .semibold) == .black)
+        #expect(georgiaBold.emphasisWeight(minimum: .bold) == .bold)
+    }
+
+    /// When the font lacks the emphasis weight, the next heavier weight it has is used, never a
+    /// lighter one: Seravek has no Semibold, so the divine name is Bold, not Medium
+    @MainActor
+    @Test func emphasisRoundsUpToAvailableWeight() {
+        let seravek = ReaderThemeResolved(basePreset: .linen,
+                                          customizedPreset: ReaderThemeCustom(font: .seravek))
+
+        #expect(seravek.emphasisWeight(minimum: .semibold) == .bold)
+        #expect(resolve(seravek.divineNameFont).isBold)
+    }
+
     // MARK: Resolved Font Weight
 
     /// A preset's weight snaps to the chosen font: Ink's .medium draws Regular on Georgia
@@ -304,6 +420,11 @@ struct ReaderThemeTests {
     }
 
     // MARK: Helpers
+
+    /// Family name of the face a font draws at the default Dynamic Type size
+    private func familyName(_ font: Font) -> String {
+        CTFontCopyFamilyName(resolve(font).ctFont) as String
+    }
 
     /// PostScript name of the face a font draws at body size
     private func faceName(_ font: ReaderThemeFont, _ design: Font.Design, _ weight: Font.Weight) -> String {

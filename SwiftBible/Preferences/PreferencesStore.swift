@@ -18,7 +18,6 @@ final class PreferencesStore {
     // Each automatically calls UserDefaults.set/remove on any modification
 
     /// Last-used reader position (if any)
-    ///
     var readerPosition: ReaderPosition? {
         didSet {
             if let readerPosition {
@@ -129,6 +128,24 @@ final class PreferencesStore {
             // equal to preset; don't override
             if stagedCustomFontWeight == preset.fontWeight {
                 stagedChanges.fontWeight = nil
+            }
+            // NOT equal to preset; allow overriding (we already have the value set)
+        }
+
+        // we have a font preference
+        if let stagedCustomFont = stagedChanges.font {
+            // equal to preset; don't override
+            if stagedCustomFont == preset.font {
+                stagedChanges.font = nil
+            }
+            // NOT equal to preset; allow overriding (we already have the value set)
+        }
+
+        // we have a design preference
+        if let stagedCustomFontDesign = stagedChanges.fontDesign {
+            // equal to preset; don't override
+            if stagedCustomFontDesign == preset.fontDesign {
+                stagedChanges.fontDesign = nil
             }
             // NOT equal to preset; allow overriding (we already have the value set)
         }

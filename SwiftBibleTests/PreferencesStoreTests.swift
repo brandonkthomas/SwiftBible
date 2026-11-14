@@ -229,6 +229,50 @@ struct PreferencesStoreTests {
         #expect(linenChanges.backgroundColorDark == darkBackground)
     }
 
+    /// Picking the preset's own font is saved as `nil`; a different font is kept
+    @Test func presetFontIsSavedAsNil() throws {
+        let suiteName = UUID().uuidString
+        defer { UserDefaults().removePersistentDomain(forName: suiteName) }
+        let userDefaults = try #require(UserDefaults(suiteName: suiteName))
+
+        let store = PreferencesStore(userDefaults: userDefaults)
+
+        // Folio's own font (system) alone: nothing left, so no entry
+        #expect(ReaderTheme.folio.font == .system)
+        store.setReaderThemeCustomChanges(ReaderThemeCustom(font: .system), for: .folio)
+        #expect(store.readerThemeCustomChanges[ReaderTheme.folio.rawValue] == nil)
+
+        // Georgia differs from Folio's system font: kept
+        store.setReaderThemeCustomChanges(ReaderThemeCustom(font: .georgia), for: .folio)
+        #expect(store.readerThemeCustomChanges[ReaderTheme.folio.rawValue]?.font == .georgia)
+    }
+
+    /// Picking the preset's own design is saved as `nil`; a different design is kept,
+    /// and other edits in the same value are kept
+    @Test func presetDesignIsSavedAsNil() throws {
+        let suiteName = UUID().uuidString
+        defer { UserDefaults().removePersistentDomain(forName: suiteName) }
+        let userDefaults = try #require(UserDefaults(suiteName: suiteName))
+
+        let store = PreferencesStore(userDefaults: userDefaults)
+
+        // Folio's own design (serif) alone: nothing left, so no entry
+        #expect(ReaderTheme.folio.fontDesign == .serif)
+        store.setReaderThemeCustomChanges(ReaderThemeCustom(fontDesign: .serif), for: .folio)
+        #expect(store.readerThemeCustomChanges[ReaderTheme.folio.rawValue] == nil)
+
+        // default differs from Folio's serif: kept
+        store.setReaderThemeCustomChanges(ReaderThemeCustom(fontDesign: .default), for: .folio)
+        #expect(store.readerThemeCustomChanges[ReaderTheme.folio.rawValue]?.fontDesign == .default)
+
+        // Quiet's own design (default) with a font edit: entry kept, design cleared
+        #expect(ReaderTheme.quiet.fontDesign == .default)
+        store.setReaderThemeCustomChanges(ReaderThemeCustom(font: .georgia, fontDesign: .default), for: .quiet)
+        let quietChanges = try #require(store.readerThemeCustomChanges[ReaderTheme.quiet.rawValue])
+        #expect(quietChanges.fontDesign == nil)
+        #expect(quietChanges.font == .georgia)
+    }
+
     // MARK: Resolved Reader Theme
 
     /// With no changes saved, every preset resolves to its own values

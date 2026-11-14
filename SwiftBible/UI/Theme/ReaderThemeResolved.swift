@@ -12,6 +12,8 @@ import SwiftUI
 /// Built by `PreferencesStore`; never saved.
 struct ReaderThemeResolved: Equatable {
 
+    // MARK: Presets / Customizations
+
     /// What's the preset used as this theme's base?
     var basePreset: ReaderTheme
 
@@ -22,6 +24,8 @@ struct ReaderThemeResolved: Equatable {
     var displayName: LocalizedStringResource {
         "\(basePreset.displayName)\(customizedPreset?.isCustomized == true ? "*" : "")"
     }
+
+    // MARK: Colors
 
     var backgroundColor: Color {
         Self.adaptiveColor(
@@ -47,6 +51,8 @@ struct ReaderThemeResolved: Equatable {
         )
     }
 
+    // MARK: Fonts
+
     /// Custom font (base preset if not customized)
     var font: ReaderThemeFont {
         customizedPreset?.font ?? basePreset.font
@@ -66,6 +72,64 @@ struct ReaderThemeResolved: Equatable {
     /// All available font weights for this resolved font choice
     var availableFontWeights: [ReaderThemeCustomFontWeight] {
         font.availableWeights(design: fontDesign.design)
+    }
+
+    // MARK: Scoped Fonts
+
+    var scriptureFont: Font {
+        self.font(.body, weight: fontWeight)
+    }
+
+    var divineNameFont: Font {
+        self.font(.body, weight: self.emphasisWeight(minimum: .semibold))
+    }
+
+    var verseLabelFont: Font {
+        self.font(.caption2)
+    }
+
+    var markerFont: Font {
+        self.font(.caption2, weight: self.emphasisWeight(minimum: .bold))
+    }
+
+    // MARK: Functions
+
+    /// Centralized font builder (for specific style/weight)
+    func font(_ textStyle: Font.TextStyle,
+              weight: ReaderThemeCustomFontWeight = .regular) -> Font {
+        let nearestWeight = font.nearestWeight(to: weight,
+                                               design: fontDesign.design)
+        return font.font(textStyle,
+                         design: fontDesign.design,
+                         weight: nearestWeight.weight)
+    }
+
+    /// Centralized font builder (for specific size/weight)
+    func font(fixedSize size: CGFloat,
+              weight: ReaderThemeCustomFontWeight = .regular) -> Font {
+        let nearestWeight = font.nearestWeight(to: weight,
+                                               design: fontDesign.design)
+        return font.font(fixedSize: size,
+                         design: fontDesign.design,
+                         weight: nearestWeight.weight)
+    }
+
+    /// Minimum weight calculator for emphasis text
+    func emphasisWeight(minimum: ReaderThemeCustomFontWeight) -> ReaderThemeCustomFontWeight {
+        let allWeights = ReaderThemeCustomFontWeight.allCases
+
+        // sanity check: 0 is not possible since allWeights is every possible case
+        let minIndex = allWeights.firstIndex(of: minimum) ?? 0
+        let currentIndex = allWeights.firstIndex(of: fontWeight) ?? 0
+
+        // two steps heavier than the body weight, capped at max
+        let bumpedIndex = min(currentIndex + 2, allWeights.count - 1)
+        let targetIndex = max(minIndex, bumpedIndex)
+
+        // first available weight at or above the target, else the heaviest
+        let available = availableFontWeights
+        let match = available.first { (allWeights.firstIndex(of: $0) ?? 0) >= targetIndex }
+        return match ?? available.last ?? allWeights[targetIndex]
     }
 
     /// One color that picks the light or dark value when it is drawn.
