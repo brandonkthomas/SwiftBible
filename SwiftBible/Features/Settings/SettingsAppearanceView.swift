@@ -11,6 +11,8 @@ struct SettingsAppearanceView: View {
 
     // MARK: Properties (Private)
 
+    @Environment(\.dynamicTypeSize) private var systemDynamicTypeSize
+
     /// Read appEnvironment.preferencesStore environment value from current view environment
     @Environment(PreferencesStore.self) private var preferencesStore: PreferencesStore
 
@@ -60,6 +62,47 @@ struct SettingsAppearanceView: View {
 
             // Font, Weight, Style
             Section {
+                // Font Size
+                HStack {
+                    let canIncrease = preferencesStore.selectedReaderThemeResolved.canIncreaseTextSize(at: systemDynamicTypeSize)
+                    let canDecrease = preferencesStore.selectedReaderThemeResolved.canDecreaseTextSize(at: systemDynamicTypeSize)
+
+                    Spacer()
+
+                    Button {
+                        preferencesStore.decreaseTextSize()
+                    } label: {
+                        Label("Decrease Font Size", systemImage: "character")
+                            .imageScale(.medium)
+                            .labelStyle(.iconOnly)
+                            .frame(maxWidth: .infinity, minHeight: 44)
+                            .contentShape(.rect)
+                    }
+                    .buttonStyle(.borderless)
+                    .foregroundStyle(canDecrease ? .primary : .secondary)
+                    .disabled(!canDecrease)
+
+                    Spacer()
+                    Divider()
+                    Spacer()
+
+                    Button {
+                        preferencesStore.increaseTextSize()
+                    } label: {
+                        Label("Increase Font Size", systemImage: "character")
+                            .imageScale(.large)
+                            .labelStyle(.iconOnly)
+                            .frame(maxWidth: .infinity, minHeight: 44)
+                            .contentShape(.rect)
+                    }
+                    .buttonStyle(.borderless)
+                    .foregroundStyle(canIncrease ? .primary : .secondary)
+                    .disabled(!canIncrease)
+
+                    Spacer()
+                }
+                .listRowInsets(EdgeInsets())
+
                 // Font
                 Picker(selection: $fontList,
                        label: Label("Font", systemImage: "textformat")

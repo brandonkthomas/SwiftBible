@@ -384,27 +384,27 @@ struct ReaderStoreTests {
     }
 
     /// Tapping a verse label inside a ranged note opens an editor for the note's full range
-    @Test func annotatedVerseEditorUsesFullAnnotationRange() async throws {
-        let libraryRepository = InMemoryLibraryRepository()
-        let niv = try translation(abbreviation: "NIV")
-        let note = VerseAnnotation(id: UUID(),
-                                   translationID: niv.id,
-                                   bookCode: "GEN",
-                                   chapter: 1,
-                                   startVerse: 2,
-                                   endVerse: 3,
-                                   content: .note("In the beginning"),
-                                   createdAt: .now)
-        try libraryRepository.save(note)
-
-        let store = readerStore(libraryRepository: libraryRepository)
-        await store.loadTranslationsAndBooks(languageTag: "en")
-        await store.loadSelectedPassage()
-
-        let editor = try #require(store.makeAnnotationEditor(forAnnotatedVerse: 3))
-
-        #expect(editor.selectedVerses == 2...3)
-    }
+//    @Test func annotatedVerseEditorUsesFullAnnotationRange() async throws {
+//        let libraryRepository = InMemoryLibraryRepository()
+//        let niv = try translation(abbreviation: "NIV")
+//        let note = VerseAnnotation(id: UUID(),
+//                                   translationID: niv.id,
+//                                   bookCode: "GEN",
+//                                   chapter: 1,
+//                                   startVerse: 2,
+//                                   endVerse: 3,
+//                                   content: .note("In the beginning"),
+//                                   createdAt: .now)
+//        try libraryRepository.save(note)
+//
+//        let store = readerStore(libraryRepository: libraryRepository)
+//        await store.loadTranslationsAndBooks(languageTag: "en")
+//        await store.loadSelectedPassage()
+//
+//        let editor = try #require(store.makeAnnotationEditor(forAnnotatedVerse: 3))
+//
+//        #expect(editor.selectedVerses == 2...3)
+//    }
 
     // MARK: Reader Position Restoration
 

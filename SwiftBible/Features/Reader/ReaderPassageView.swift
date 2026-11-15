@@ -19,7 +19,7 @@ struct ReaderPassageView: View {
     // MARK: Properties (System Env, Private)
 
     /// What is the system Dynamic Type setting?
-    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.dynamicTypeSize) private var systemDynamicTypeSize
 
     /// Is the tab bar accessory currently collapsed or expanded?
     @Environment(\.tabViewBottomAccessoryPlacement) private var placement
@@ -53,8 +53,14 @@ struct ReaderPassageView: View {
 
     // MARK: Properties (Private)
 
+    /// Line height from resolved Theme
     private var passageLineHeight: CGFloat {
-        readerTheme.lineHeight(dynamicTypeSize: dynamicTypeSize)
+        readerTheme.lineHeight(dynamicTypeSize: scriptureDynamicTypeSize)
+    }
+
+    /// Text size from resolved Theme
+    private var scriptureDynamicTypeSize: DynamicTypeSize {
+        readerTheme.scriptureDynamicTypeSize(for: systemDynamicTypeSize)
     }
 
     // MARK: Properties (Verse Selection, Private)
@@ -101,7 +107,7 @@ struct ReaderPassageView: View {
                         // build this paragraph into a Text view
                         PassageTextRenderer.text(for: paragraphs[paragraphIndex].runs,
                                                  readerTheme: readerTheme,
-                                                 dynamicTypeSize: dynamicTypeSize,
+                                                 dynamicTypeSize: scriptureDynamicTypeSize,
                                                  footnoteMarkerMode: .collapsed)
                             // custom leading padding for inline/block quote styles
                             .padding(.leading,
@@ -129,6 +135,7 @@ struct ReaderPassageView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .lineHeight(AttributedString.LineHeight.exact(points: passageLineHeight))
                 .font(readerTheme.scriptureFont)
+                .dynamicTypeSize(scriptureDynamicTypeSize)
                 // inset on L/R edges; spacing between paragraphs
                 .padding(EdgeInsets(top: 2,
                                     leading: CGFloat(readerTheme.marginPoints),

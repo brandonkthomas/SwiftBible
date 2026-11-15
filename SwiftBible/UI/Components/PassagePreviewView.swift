@@ -68,7 +68,7 @@ struct PassagePreviewView: View {
     // MARK: Properties (System Env, Private)
 
     /// What is the system Dynamic Type setting?
-    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.dynamicTypeSize) private var systemDynamicTypeSize
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -215,7 +215,8 @@ struct PassagePreviewView: View {
     }
 
     private func passageParagraphs(theme: ReaderThemeResolved) -> some View {
-        VStack(spacing: 0) {
+        let dynamicTypeSize = theme.scriptureDynamicTypeSize(for: systemDynamicTypeSize)
+        return VStack(spacing: 0) {
             ForEach(paragraphs) { paragraph in
                 PassageTextRenderer.text(for: paragraph.runs,
                                          readerTheme: theme,
@@ -250,6 +251,7 @@ struct PassagePreviewView: View {
             AttributedString.LineHeight
                 .exact(points: theme.lineHeight(dynamicTypeSize: dynamicTypeSize))
         )
+        .dynamicTypeSize(dynamicTypeSize)
         .fixedSize(horizontal: false, vertical: true)
     }
 
@@ -484,6 +486,7 @@ struct PassagePreviewView: View {
                            highlights: false)
     }
     .padding()
+//    .environment(\.readerTheme, ReaderThemeResolved(basePreset: .folio, textSizeStep: 3))
 }
 
 #Preview("Fill, scrolling + highlights") {

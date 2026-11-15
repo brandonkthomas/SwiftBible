@@ -15,7 +15,7 @@ struct ReaderPassageFootnoteSheetView: View {
     let passage: RenderedPassage
 
     /// What is the system Dynamic Type setting?
-    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.dynamicTypeSize) private var systemDynamicTypeSize
 
     @Environment(\.dismiss) var dismiss
 
@@ -24,8 +24,14 @@ struct ReaderPassageFootnoteSheetView: View {
 
     // MARK: Properties (Private)
 
+    /// Line height from resolved Theme
     private var passageLineHeight: CGFloat {
-        readerTheme.lineHeight(dynamicTypeSize: dynamicTypeSize)
+        readerTheme.lineHeight(dynamicTypeSize: scriptureDynamicTypeSize)
+    }
+
+    /// Text size from resolved Theme
+    private var scriptureDynamicTypeSize: DynamicTypeSize {
+        readerTheme.scriptureDynamicTypeSize(for: systemDynamicTypeSize)
     }
 
     // MARK: Properties (Private, Computed)
@@ -38,7 +44,8 @@ struct ReaderPassageFootnoteSheetView: View {
                                index: Int) -> AttributedString {
         // Same a/b/c label that Renderer places inline so list/text stay in sync
         var attributedLabel = AttributedString("\(PassageTextRenderer.footnoteSymbol(for: index)) ")
-        attributedLabel.baselineOffset = readerTheme.markerBaselineOffset(dynamicTypeSize: dynamicTypeSize)
+        attributedLabel.baselineOffset = readerTheme
+            .markerBaselineOffset(dynamicTypeSize: scriptureDynamicTypeSize)
         attributedLabel.font = readerTheme.markerFont
         attributedLabel.foregroundColor = .accentColor
 
@@ -66,7 +73,7 @@ struct ReaderPassageFootnoteSheetView: View {
                     // Verse content
                     PassageTextRenderer.text(for: passage.runs(for: verseRange),
                                              readerTheme: readerTheme,
-                                             dynamicTypeSize: dynamicTypeSize,
+                                             dynamicTypeSize: scriptureDynamicTypeSize,
                                              footnoteMarkerMode: .inline)
 
                     Divider()
@@ -84,6 +91,8 @@ struct ReaderPassageFootnoteSheetView: View {
                 .scrollTargetLayout()
                 // inset on top/bottom
                 .padding(EdgeInsets(top: 4, leading: 24, bottom: 0, trailing: 24))
+                // font size
+                .dynamicTypeSize(scriptureDynamicTypeSize)
                 // sheet title
                 .navigationTitle(sheetTitle)
                 .navigationBarTitleDisplayMode(.inline)

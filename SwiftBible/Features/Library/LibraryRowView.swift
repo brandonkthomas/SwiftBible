@@ -35,7 +35,7 @@ struct LibraryRowView: View {
     // MARK: Properties (Private, Environment)
 
     /// What is the system Dynamic Type setting?
-    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.dynamicTypeSize) private var systemDynamicTypeSize
 
     /// What's our current configured theme?
     @Environment(\.readerTheme) private var readerTheme
@@ -47,8 +47,14 @@ struct LibraryRowView: View {
     /// Passage text collapses to this many lines; overflow fades out
     private let passageLineLimit = 3
 
+    /// Line height from resolved Theme
     private var passageLineHeight: CGFloat {
-        readerTheme.lineHeight(dynamicTypeSize: dynamicTypeSize)
+        readerTheme.lineHeight(dynamicTypeSize: scriptureDynamicTypeSize)
+    }
+
+    /// Text size from resolved Theme
+    private var scriptureDynamicTypeSize: DynamicTypeSize {
+        readerTheme.scriptureDynamicTypeSize(for: systemDynamicTypeSize)
     }
 
     // MARK: Properties (Private, Dynamic Type)
@@ -358,13 +364,14 @@ struct LibraryRowView: View {
                     endPoint: .bottom
                 )
             }
+            .dynamicTypeSize(scriptureDynamicTypeSize)
     }
 
     /// Passage text styling
     private func passageText(for runs: [RenderedPassageRun]) -> some View {
         PassageTextRenderer.text(for: runs,
                                  readerTheme: readerTheme,
-                                 dynamicTypeSize: dynamicTypeSize,
+                                 dynamicTypeSize: scriptureDynamicTypeSize,
                                  footnoteMarkerMode: .hidden,
                                  produceLinkAttributes: false) // do NOT want these tap events here
         .font(readerTheme.scriptureFont)
