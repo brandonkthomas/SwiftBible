@@ -358,6 +358,51 @@ struct ReaderThemeTests {
         #expect(resolve(seravek.divineNameFont).isBold)
     }
 
+    // MARK: Marker Baseline Offset
+
+    /// Folio (New York) gets the same raise as the old serif-only calculation, so nothing moves
+    @MainActor
+    @Test(arguments: [DynamicTypeSize.large, .xxxLarge, .accessibility3])
+    func markerOffsetMatchesOldValueForFolio(dynamicTypeSize: DynamicTypeSize) {
+        let folio = ReaderThemeResolved(basePreset: .folio)
+
+        #expect(abs(folio.markerBaselineOffset(dynamicTypeSize: dynamicTypeSize)
+                    - oldSerifMarkerOffset(dynamicTypeSize)) < 0.001)
+    }
+
+    /// For every preset and font, the raised verse label and marker never reach above the
+    /// body text's ascent (a taller ascent would push that line down and make spacing uneven)
+    @MainActor
+    @Test(arguments: [DynamicTypeSize.large, .xxxLarge, .accessibility3])
+    func markerNeverRisesAboveBodyAscent(dynamicTypeSize: DynamicTypeSize) {
+        for preset in ReaderTheme.allCases {
+            for font in ReaderThemeFont.allCases {
+                let themeResolved = ReaderThemeResolved(basePreset: preset,
+                                                        customizedPreset: ReaderThemeCustom(font: font))
+                let offset = themeResolved.markerBaselineOffset(dynamicTypeSize: dynamicTypeSize)
+                let bodyAscent = ascent(themeResolved.scriptureFont, dynamicTypeSize)
+
+                #expect(offset > 0, "\(preset) \(font)")
+                #expect(offset + ascent(themeResolved.verseLabelFont, dynamicTypeSize) <= bodyAscent + 0.001,
+                        "\(preset) \(font) verse label")
+                #expect(offset + ascent(themeResolved.markerFont, dynamicTypeSize) <= bodyAscent + 0.001,
+                        "\(preset) \(font) marker")
+            }
+        }
+    }
+
+    /// A named font is measured itself: Palatino has less room above its caption2 than
+    /// New York, so its raise is smaller than Folio's
+    @MainActor
+    @Test func namedFontGetsItsOwnMarkerOffset() {
+        let folio = ReaderThemeResolved(basePreset: .folio)
+        let folioPalatino = ReaderThemeResolved(basePreset: .folio,
+                                                customizedPreset: ReaderThemeCustom(font: .palatino))
+
+        #expect(folioPalatino.markerBaselineOffset(dynamicTypeSize: .large)
+                < folio.markerBaselineOffset(dynamicTypeSize: .large))
+    }
+
     // MARK: Resolved Font Weight
 
     /// A preset's weight snaps to the chosen font: Ink's .medium draws Regular on Georgia
@@ -420,6 +465,24 @@ struct ReaderThemeTests {
     }
 
     // MARK: Helpers
+
+    /// Ascent (height above the baseline) of a font as drawn at a Dynamic Type size
+    private func ascent(_ font: Font, _ dynamicTypeSize: DynamicTypeSize) -> CGFloat {
+        CTFontGetAscent(resolve(font, dynamicTypeSize).ctFont)
+    }
+
+    /// The pre-5b-12 `PassageTextRenderer.markerBaselineOffset`: always measured the serif design
+    @MainActor
+    private func oldSerifMarkerOffset(_ dynamicTypeSize: DynamicTypeSize) -> CGFloat {
+        let traits = UITraitCollection(preferredContentSizeCategory: UIContentSizeCategory(dynamicTypeSize))
+        func serifFont(_ style: UIFont.TextStyle) -> UIFont {
+            let descriptor = UIFontDescriptor.preferredFontDescriptor(withTextStyle: style, compatibleWith: traits)
+            return UIFont(descriptor: descriptor.withDesign(.serif) ?? descriptor, size: 0)
+        }
+
+        let available = serifFont(.body).ascender - serifFont(.caption2).ascender
+        return min(UIFontMetrics(forTextStyle: .body).scaledValue(for: 6, compatibleWith: traits), available)
+    }
 
     /// Family name of the face a font draws at the default Dynamic Type size
     private func familyName(_ font: Font) -> String {

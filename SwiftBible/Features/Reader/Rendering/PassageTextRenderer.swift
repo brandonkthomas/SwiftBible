@@ -230,19 +230,11 @@ struct PassageTextRenderer {
         return result
     }
 
-    /// Superscript raise for verse labels and footnote markers.
-    ///
-    /// Clamped so the raised caption2 ascent never exceeds the body ascent. With an exact
-    /// line height, a taller ascent pushes that line's baseline down, making line spacing
-    /// uneven around markers.
-    static var markerBaselineOffset: CGFloat {
-        func serifFont(_ style: UIFont.TextStyle) -> UIFont {
-            let descriptor = UIFontDescriptor.preferredFontDescriptor(withTextStyle: style)
-            return UIFont(descriptor: descriptor.withDesign(.serif) ?? descriptor, size: 0)
-        }
-
-        let available = serifFont(.body).ascender - serifFont(.caption2).ascender
-        return min(UIFontMetrics(forTextStyle: .body).scaledValue(for: 6), available)
+    /// Superscript raise for verse labels and footnote markers
+    static func markerBaselineOffset(for readerTheme: ReaderThemeResolved) -> CGFloat {
+        let contentSizeCategory = UIApplication.shared.preferredContentSizeCategory
+        let dynamicTypeSize = DynamicTypeSize(contentSizeCategory) ?? .large
+        return readerTheme.markerBaselineOffset(dynamicTypeSize: dynamicTypeSize)
     }
 
     /// Append space if previous character was a hyphen or curled endquote
@@ -260,7 +252,7 @@ struct PassageTextRenderer {
                                          readerTheme: ReaderThemeResolved,
                                          useLinkAttribute: Bool = false) -> AttributedString {
         var result = AttributedString("\(displayText) ")
-        result.baselineOffset = markerBaselineOffset
+        result.baselineOffset = markerBaselineOffset(for: readerTheme)
         result.font = readerTheme.verseLabelFont
         // Explicit color so link styling doesn't recolor the label
         result.foregroundColor = readerTheme.secondaryTextColor
@@ -282,7 +274,7 @@ struct PassageTextRenderer {
     private static func styledInlineMarker(index: Int,
                                            readerTheme: ReaderThemeResolved) -> AttributedString {
         var result = AttributedString("\(footnoteSymbol(for: index)) ")
-        result.baselineOffset = markerBaselineOffset
+        result.baselineOffset = markerBaselineOffset(for: readerTheme)
         result.font = readerTheme.markerFont
         result.foregroundColor = .accentColor
 
@@ -294,7 +286,7 @@ struct PassageTextRenderer {
                                              readerTheme: ReaderThemeResolved,
                                              useLinkAttribute: Bool = true) -> AttributedString {
         var result = AttributedString("† ")
-        result.baselineOffset = markerBaselineOffset
+        result.baselineOffset = markerBaselineOffset(for: readerTheme)
         result.font = readerTheme.markerFont
         result.foregroundColor = .accentColor
 

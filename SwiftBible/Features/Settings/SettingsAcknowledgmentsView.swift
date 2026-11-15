@@ -70,7 +70,6 @@ struct SettingsAcknowledgmentsView: View {
                 }
             }
         }
-        .fontDesign(.default)
         .listStyle(.insetGrouped)
         .navigationTitle("Acknowledgments")
         .navigationBarTitleDisplayMode(.inline)

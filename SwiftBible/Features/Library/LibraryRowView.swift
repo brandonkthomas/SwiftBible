@@ -141,9 +141,7 @@ struct LibraryRowView: View {
                     }
                 }
                 .frame(width: frameSize16, height: frameSize16)
-                .font(.system(size: fontSize16,
-                              weight: .regular,
-                              design: readerTheme.fontDesign.design))
+                .font(readerTheme.font(fixedSize: fontSize16, weight: .regular))
                 .foregroundStyle(.secondary)
 
                 // Chapter / verse range / translation
@@ -152,9 +150,7 @@ struct LibraryRowView: View {
                     Text(data.translationLabel)
                         .foregroundStyle(.secondary)
                 }
-                .font(.system(size: fontSize16,
-                              weight: .medium,
-                              design: readerTheme.fontDesign.design))
+                .font(readerTheme.font(fixedSize: fontSize16, weight: .medium))
                 .contentShape(Rectangle())
 
                 Spacer()
@@ -216,9 +212,7 @@ struct LibraryRowView: View {
             if case .note(let noteText) = data.annotation.content {
                 Divider()
                 Text(noteText)
-                    .font(.system(size: fontSize16,
-                                  weight: .regular,
-                                  design: readerTheme.fontDesign.design))
+                    .font(readerTheme.font(fixedSize: fontSize16, weight: .regular))
                     .lineHeight(AttributedString.LineHeight.exact(points: annotationTagsLineHeight)) // try to match AnnotationEditorSheetView Note TextInput
             } else if case .tags(let tags) = data.annotation.content {
                 Divider()
@@ -228,9 +222,7 @@ struct LibraryRowView: View {
                             // nothing
                         } label: {
                             Text(tag)
-                                .font(.system(.caption,
-                                              design: readerTheme.fontDesign.design))
-                                .fontWeight(.semibold)
+                                .font(readerTheme.font(.caption, weight: .semibold))
                                 .foregroundStyle(Color.white)
                                 .padding(.horizontal, 12)
                                 .padding(.vertical, 8)

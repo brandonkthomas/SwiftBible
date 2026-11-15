@@ -87,8 +87,7 @@ struct AnnotationEditorSheetView: View {
                 // Tags section
                 Label("Tags", systemImage: "tag")
                     .textCase(.uppercase)
-                    .font(.system(.caption2,
-                                  design: readerTheme.fontDesign.design))
+                    .font(readerTheme.font(.caption2))
                     .foregroundStyle(.secondary)
 
                 tagChipsView
@@ -98,8 +97,7 @@ struct AnnotationEditorSheetView: View {
                 // Note section
                 Label("Note", systemImage: "text.alignleft")
                     .textCase(.uppercase)
-                    .font(.system(.caption2,
-                                  design: readerTheme.fontDesign.design))
+                    .font(readerTheme.font(.caption2))
                     .foregroundStyle(.secondary)
 
                 TextField("Write a note about this passage...",
@@ -111,8 +109,7 @@ struct AnnotationEditorSheetView: View {
                 .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 16))
                 .focused($focusedField, equals: .note)
             }
-            .font(.system(.body,
-                          design: readerTheme.fontDesign.design))
+            .font(readerTheme.font(.body))
             .padding(EdgeInsets(top: 4, leading: 20, bottom: 16, trailing: 20))
             // Measure padded content so sheet can hug it; add fixed allowance for inline navigation bar
             .onGeometryChange(for: CGFloat.self) { proxy in
@@ -210,9 +207,7 @@ struct AnnotationEditorSheetView: View {
                 Image(systemName: "plus")
                 Text("Tag")
             }
-            .font(.system(.caption,
-                          design: readerTheme.fontDesign.design))
-            .fontWeight(.semibold)
+            .font(readerTheme.font(.caption, weight: .semibold))
             .padding(.horizontal, 14)
             .padding(.vertical, 8)
         }
@@ -226,9 +221,7 @@ struct AnnotationEditorSheetView: View {
     private var tagInputField: some View {
         HStack(spacing: 6) {
             TextField("New tag", text: $newTagText)
-                .font(.system(.caption,
-                              design: readerTheme.fontDesign.design))
-                .fontWeight(.semibold)
+                .font(readerTheme.font(.caption, weight: .semibold))
                 .textInputAutocapitalization(.words)
                 .autocorrectionDisabled()
                 .submitLabel(.done)
@@ -246,7 +239,7 @@ struct AnnotationEditorSheetView: View {
             // Add button
             Button(action: submitNewTag) {
                 Image(systemName: "plus")
-                    .font(.system(size: captionSymbolSize13, weight: .bold))
+                    .font(readerTheme.font(fixedSize: captionSymbolSize13, weight: .bold))
                     .foregroundStyle(.white)
                     .frame(width: captionFrameSize18, height: captionFrameSize18)
                     .background(Circle().fill(.blue))
@@ -275,9 +268,7 @@ struct AnnotationEditorSheetView: View {
                         .font(.system(size: captionSymbolSize9, weight: .bold))
                 }
             }
-            .font(.system(.caption,
-                          design: readerTheme.fontDesign.design))
-            .fontWeight(.semibold)
+            .font(readerTheme.font(.caption, weight: .semibold))
             .foregroundStyle(isSelected ? Color.white : Color.primary)
             .padding(.horizontal, 12)
             .padding(.vertical, 8)

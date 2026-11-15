@@ -132,6 +132,29 @@ struct ReaderThemeResolved: Equatable {
         return match ?? available.last ?? allWeights[targetIndex]
     }
 
+    /// Calculated baseline offset for the marker font, given a specific Dynamic Type Size
+    func markerBaselineOffset(dynamicTypeSize: DynamicTypeSize) -> CGFloat {
+        var environmentValues = EnvironmentValues()
+        environmentValues.dynamicTypeSize = dynamicTypeSize
+
+        let uiTraitCollection = UITraitCollection(
+            preferredContentSizeCategory: UIContentSizeCategory(dynamicTypeSize)
+        )
+
+        let context = environmentValues.fontResolutionContext
+        // resolve(in:) already applies Dynamic Type, so the ascents are not scaled again
+        let bodyAscent = CTFontGetAscent(scriptureFont.resolve(in: context).ctFont)
+        let labelAscent = CTFontGetAscent(verseLabelFont.resolve(in: context).ctFont)
+
+        // Room between the label's top and the body text's top
+        let room = bodyAscent - labelAscent
+        let raise = UIFontMetrics(forTextStyle: .body).scaledValue(
+            for: 6,
+            compatibleWith: uiTraitCollection
+        )
+        return min(raise, room)
+    }
+
     /// One color that picks the light or dark value when it is drawn.
     ///
     /// UIKit calls the provider closure with the trait collection of whatever

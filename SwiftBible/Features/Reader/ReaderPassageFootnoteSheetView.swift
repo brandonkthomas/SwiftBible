@@ -32,7 +32,7 @@ struct ReaderPassageFootnoteSheetView: View {
                                index: Int) -> AttributedString {
         // Same a/b/c label that Renderer places inline so list/text stay in sync
         var attributedLabel = AttributedString("\(PassageTextRenderer.footnoteSymbol(for: index)) ")
-        attributedLabel.baselineOffset = PassageTextRenderer.markerBaselineOffset
+        attributedLabel.baselineOffset = PassageTextRenderer.markerBaselineOffset(for: readerTheme)
         attributedLabel.font = readerTheme.markerFont
         attributedLabel.foregroundColor = .accentColor
 
