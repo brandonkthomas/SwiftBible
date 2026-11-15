@@ -50,8 +50,10 @@ enum VerseAnnotationHelpers { // caseless enum as pseudo-namespace
         return result
     }
 
-    /// For a given passage reference, return all verse numbers covered by any of a passage's
+    /// For a given passage reference, return the first verse of each of a passage's
     /// note/tag annotations (highlights excluded)
+    ///
+    /// Only the first verse of a range draws a bookmark
     static func getPassageVersesWithTextAnnotations(
         for annotations: [VerseAnnotation],
         reference: ScriptureReference
@@ -59,14 +61,14 @@ enum VerseAnnotationHelpers { // caseless enum as pseudo-namespace
         var verses: Set<Int> = []
 
         for annotation in annotations where isTextAnnotation(annotation, in: reference) {
-            verses.formUnion(annotation.verseRange)
+            verses.insert(annotation.startVerse)
         }
 
         return verses
     }
 
     /// For a given passage reference + verse number, return the note/tag annotation
-    /// covering that verse (highlights excluded)
+    /// starting at that verse (highlights excluded)
     ///
     /// If several overlap, the newest wins (same rule as getPassageHighlightColors())
     static func getTextAnnotation(
@@ -75,7 +77,7 @@ enum VerseAnnotationHelpers { // caseless enum as pseudo-namespace
         verse: Int
     ) -> VerseAnnotation? {
         annotations
-            .filter { isTextAnnotation($0, in: reference) && $0.verseRange.contains(verse) }
+            .filter { isTextAnnotation($0, in: reference) && $0.startVerse == verse }
             .max { lhs, rhs in
                 (lhs.updatedAt ?? lhs.createdAt) < (rhs.updatedAt ?? rhs.createdAt)
             }

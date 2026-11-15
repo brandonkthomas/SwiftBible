@@ -139,8 +139,8 @@ struct VerseAnnotationHelpersTests {
         #expect(result == [7])
     }
 
-    /// Tags on a verse range mark every verse in that range
-    @Test func tagsOnVerseRangeMarkEveryVerse() throws {
+    /// Tags on a verse range mark only the first verse in that range
+    @Test func tagsOnVerseRangeMarkFirstVerseOnly() throws {
         let annotation = makeTextAnnotation(start: 3, end: 5, content: .tags(["faith"]))
 
         let passageReference = try #require(ScriptureReference(translationID: 123,
@@ -150,7 +150,7 @@ struct VerseAnnotationHelpersTests {
         let result = VerseAnnotationHelpers.getPassageVersesWithTextAnnotations(for: [annotation],
                                                                                 reference: passageReference)
 
-        #expect(result == [3, 4, 5])
+        #expect(result == [3])
     }
 
     /// Highlights are excluded from text annotation markers
@@ -198,8 +198,23 @@ struct VerseAnnotationHelpersTests {
         #expect(result?.verseRange == 7...7)
     }
 
-    /// Tapping any verse inside a ranged tag annotation returns the full range
-    @Test func tappedVerseInsideTagRangeReturnsFullRange() throws {
+    /// Tapping the first verse of a ranged tag annotation returns the full range
+    @Test func tappedFirstVerseOfTagRangeReturnsFullRange() throws {
+        let annotation = makeTextAnnotation(start: 3, end: 5, content: .tags(["faith"]))
+
+        let passageReference = try #require(ScriptureReference(translationID: 123,
+                                                               bookCode: "GEN",
+                                                               chapter: 1))
+
+        let result = VerseAnnotationHelpers.getTextAnnotation(for: [annotation],
+                                                              reference: passageReference,
+                                                              verse: 3)
+
+        #expect(result?.verseRange == 3...5)
+    }
+
+    /// Verses after the first in a range have no bookmark, so they don't resolve
+    @Test func tappedLaterVerseOfTagRangeReturnsNil() throws {
         let annotation = makeTextAnnotation(start: 3, end: 5, content: .tags(["faith"]))
 
         let passageReference = try #require(ScriptureReference(translationID: 123,
@@ -210,7 +225,7 @@ struct VerseAnnotationHelpersTests {
                                                               reference: passageReference,
                                                               verse: 4)
 
-        #expect(result?.verseRange == 3...5)
+        #expect(result == nil)
     }
 
     /// Overlapping note/tag annotations resolve to the most recently updated one
