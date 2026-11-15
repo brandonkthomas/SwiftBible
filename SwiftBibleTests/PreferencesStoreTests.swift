@@ -18,6 +18,7 @@ struct PreferencesStoreTests {
     private static let readerThemeKey = "net.brandonthomas.SwiftBible.readerTheme"
     private static let preferredColorSchemeKey = "net.brandonthomas.SwiftBible.preferredColorScheme"
     private static let readerThemeCustomChangesKey = "net.brandonthomas.SwiftBible.readerThemeCustomChanges"
+    private static let readerTextSizeStepKey = "net.brandonthomas.SwiftBible.readerTextSizeStep"
 
     // MARK: Reader Position
 
@@ -126,6 +127,78 @@ struct PreferencesStoreTests {
     ])
     func preferredColorSchemeMapsToColorScheme(preferred: PreferredColorScheme, expected: ColorScheme?) {
         #expect(preferred.colorScheme == expected)
+    }
+
+    // MARK: Reader Text Size
+
+    /// Nothing saved: no text size step, and the resolved theme has none either
+    @Test func missingTextSizeStepLoadsAsZero() throws {
+        let suiteName = UUID().uuidString
+        defer { UserDefaults().removePersistentDomain(forName: suiteName) }
+        let userDefaults = try #require(UserDefaults(suiteName: suiteName))
+
+        let store = PreferencesStore(userDefaults: userDefaults)
+
+        #expect(store.readerTextSizeStep == 0)
+        #expect(store.selectedReaderThemeResolved.textSizeStep == 0)
+    }
+
+    /// A second PreferencesStore on the same UserDefaults sees the step the first one set
+    @Test func secondStoreReadsTextSizeStep() throws {
+        let suiteName = UUID().uuidString
+        defer { UserDefaults().removePersistentDomain(forName: suiteName) }
+        let userDefaults = try #require(UserDefaults(suiteName: suiteName))
+
+        let firstStore = PreferencesStore(userDefaults: userDefaults)
+        firstStore.readerTextSizeStep = 2
+
+        let secondStore = PreferencesStore(userDefaults: userDefaults)
+        #expect(secondStore.readerTextSizeStep == 2)
+    }
+
+    /// A saved step outside -3...5 (bad data, or a newer build's range) loads clamped
+    @Test func outOfRangeTextSizeStepLoadsClamped() throws {
+        let suiteName = UUID().uuidString
+        defer { UserDefaults().removePersistentDomain(forName: suiteName) }
+        let userDefaults = try #require(UserDefaults(suiteName: suiteName))
+
+        userDefaults.set(40, forKey: Self.readerTextSizeStepKey)
+        #expect(PreferencesStore(userDefaults: userDefaults).readerTextSizeStep == 5)
+
+        userDefaults.set(-40, forKey: Self.readerTextSizeStepKey)
+        #expect(PreferencesStore(userDefaults: userDefaults).readerTextSizeStep == -3)
+    }
+
+    /// One step for all presets: every resolved theme carries it, not only the selected one
+    @Test func resolvedThemesCarryTextSizeStep() throws {
+        let suiteName = UUID().uuidString
+        defer { UserDefaults().removePersistentDomain(forName: suiteName) }
+        let userDefaults = try #require(UserDefaults(suiteName: suiteName))
+
+        let store = PreferencesStore(userDefaults: userDefaults)
+        store.readerTheme = .folio
+        store.readerTextSizeStep = 2
+
+        #expect(store.selectedReaderThemeResolved.textSizeStep == 2)
+        #expect(store.readerThemeResolved(for: .ink).textSizeStep == 2)
+    }
+
+    /// A/A taps move one step at a time and stop at -3 and 5, so extra taps don't pile up
+    @Test func increaseAndDecreaseStopAtStepLimits() throws {
+        let suiteName = UUID().uuidString
+        defer { UserDefaults().removePersistentDomain(forName: suiteName) }
+        let userDefaults = try #require(UserDefaults(suiteName: suiteName))
+
+        let store = PreferencesStore(userDefaults: userDefaults)
+
+        store.increaseTextSize()
+        #expect(store.readerTextSizeStep == 1)
+
+        for _ in 0..<10 { store.decreaseTextSize() }
+        #expect(store.readerTextSizeStep == -3)
+
+        for _ in 0..<20 { store.increaseTextSize() }
+        #expect(store.readerTextSizeStep == 5)
     }
 
     // MARK: Reader Theme Custom Changes

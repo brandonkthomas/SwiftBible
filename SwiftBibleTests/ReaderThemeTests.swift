@@ -511,6 +511,78 @@ struct ReaderThemeTests {
         #expect(ReaderThemeResolved(basePreset: .folio, customizedPreset: tooWide).marginPoints == 48)
     }
 
+    // MARK: Text Size
+
+    /// With no text size step, Scripture uses the system Dynamic Type size unchanged
+    @MainActor
+    @Test func zeroStepKeepsSystemSize() {
+        let folio = ReaderThemeResolved(basePreset: .folio)
+
+        #expect(folio.textSizeStep == 0)
+        for size in DynamicTypeSize.allCases {
+            #expect(folio.scriptureDynamicTypeSize(for: size) == size)
+        }
+    }
+
+    /// Each step moves Scripture one Dynamic Type size up or down from the system size
+    @MainActor
+    @Test func stepMovesScriptureSize() {
+        let twoUp = ReaderThemeResolved(basePreset: .folio, textSizeStep: 2)
+        let oneDown = ReaderThemeResolved(basePreset: .folio, textSizeStep: -1)
+
+        #expect(twoUp.scriptureDynamicTypeSize(for: .large) == .xxLarge)
+        #expect(twoUp.scriptureDynamicTypeSize(for: .xxxLarge) == .accessibility2)
+        #expect(oneDown.scriptureDynamicTypeSize(for: .large) == .medium)
+    }
+
+    /// The step stays within -3...5, and the size never goes past either end of Apple's table
+    @MainActor
+    @Test func textSizeIsClamped() {
+        #expect(ReaderThemeResolved.textSizeStepRange == -3...5)
+        // 9 counts as 5: large + 5 = accessibility2 (not accessibility5)
+        #expect(ReaderThemeResolved(basePreset: .folio, textSizeStep: 9)
+            .scriptureDynamicTypeSize(for: .large) == .accessibility2)
+        // -9 counts as -3: xxxLarge - 3 = large (not xSmall)
+        #expect(ReaderThemeResolved(basePreset: .folio, textSizeStep: -9)
+            .scriptureDynamicTypeSize(for: .xxxLarge) == .large)
+
+        #expect(ReaderThemeResolved(basePreset: .folio, textSizeStep: 1)
+            .scriptureDynamicTypeSize(for: .accessibility5) == .accessibility5)
+        #expect(ReaderThemeResolved(basePreset: .folio, textSizeStep: -1)
+            .scriptureDynamicTypeSize(for: .xSmall) == .xSmall)
+    }
+
+    /// At the default system size, an A/A button turns off only at its step limit
+    @MainActor
+    @Test func textSizeButtonsDisableAtStepLimits() {
+        let noStep = ReaderThemeResolved(basePreset: .folio)
+        let maxStep = ReaderThemeResolved(basePreset: .folio, textSizeStep: 5)
+        let minStep = ReaderThemeResolved(basePreset: .folio, textSizeStep: -3)
+
+        #expect(noStep.canIncreaseTextSize(at: .large))
+        #expect(noStep.canDecreaseTextSize(at: .large))
+        #expect(!maxStep.canIncreaseTextSize(at: .large))
+        #expect(maxStep.canDecreaseTextSize(at: .large))
+        #expect(minStep.canIncreaseTextSize(at: .large))
+        #expect(!minStep.canDecreaseTextSize(at: .large))
+    }
+
+    /// A button also turns off when Scripture is already at the largest or smallest Dynamic Type
+    /// size, even below the step limit, because another tap would change nothing
+    @MainActor
+    @Test func textSizeButtonsDisableAtTableEnds() {
+        // system already at the largest size
+        #expect(!ReaderThemeResolved(basePreset: .folio).canIncreaseTextSize(at: .accessibility5))
+
+        // accessibility3 + 2 = accessibility5 (largest), though 2 is below the limit of 5
+        #expect(!ReaderThemeResolved(basePreset: .folio, textSizeStep: 2).canIncreaseTextSize(at: .accessibility3))
+
+        // small - 1 = xSmall (smallest), though -1 is above the limit of -3
+        let oneDown = ReaderThemeResolved(basePreset: .folio, textSizeStep: -1)
+        #expect(!oneDown.canDecreaseTextSize(at: .small))
+        #expect(oneDown.canDecreaseTextSize(at: .large))
+    }
+
     // MARK: Resolved Font Weight
 
     /// A preset's weight snaps to the chosen font: Ink's .medium draws Regular on Georgia

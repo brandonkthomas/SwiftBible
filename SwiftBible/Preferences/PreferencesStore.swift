@@ -53,6 +53,13 @@ final class PreferencesStore {
         }
     }
 
+    /// Configured reader text size step increment
+    var readerTextSizeStep: Int = 0 {
+        didSet {
+            userDefaults.set(readerTextSizeStep, forKey: Self.readerTextSizeStepKey)
+        }
+    }
+
     /// Configured color scheme preference (light/dark/system)
     var preferredColorScheme: PreferredColorScheme = .default {
         didSet {
@@ -81,6 +88,9 @@ final class PreferencesStore {
     /// Stable UserDefaults key for storing ReaderThemeCustom changes
     private static let readerThemeCustomChangesKey = "net.brandonthomas.SwiftBible.readerThemeCustomChanges"
 
+    /// Stable UserDefaults key for preferred reader text size step storage
+    private static let readerTextSizeStepKey = "net.brandonthomas.SwiftBible.readerTextSizeStep"
+
     /// Stable UserDefaults key for preferred ColorScheme storage
     private static let preferredColorSchemeKey = "net.brandonthomas.SwiftBible.preferredColorScheme"
 
@@ -88,46 +98,53 @@ final class PreferencesStore {
 
     // MARK: Init
 
-    /// Stores UserDefaults in-instance and tries to load saved ReaderPosition
+    /// Stores UserDefaults in-instance and tries to load any saved preferences
     init(userDefaults: UserDefaults) {
         self.userDefaults = userDefaults
 
         // try to retrieve any saved elements
+        // Last Reader position
         if let savedPositionData = userDefaults.data(forKey: Self.readerPositionKey),
            let savedPosition = try? JSONDecoder().decode(ReaderPosition.self, from: savedPositionData) {
             self.readerPosition = savedPosition
         }
 
+        // Theme preset
         if let savedThemeString = userDefaults.string(forKey: Self.readerThemeKey),
            let savedTheme = ReaderTheme.preset(withID: savedThemeString) {
             self.readerTheme = savedTheme
         }
 
+        // Theme preset customizations
         if let savedThemeCustomChangesData = userDefaults.data(forKey: Self.readerThemeCustomChangesKey),
            let savedThemeCustomChanges = try? JSONDecoder().decode([String: ReaderThemeCustom].self,
                                                                    from: savedThemeCustomChangesData) {
             self.readerThemeCustomChanges = savedThemeCustomChanges
         }
 
+        // System Color Scheme
         if let preferredColorSchemeString = userDefaults.string(forKey: Self.preferredColorSchemeKey),
            let preferredColorScheme = PreferredColorScheme.scheme(withID: preferredColorSchemeString) {
             self.preferredColorScheme = preferredColorScheme
         }
+
+        // Text size
+        let readerTextSizeStep = userDefaults.integer(forKey: Self.readerTextSizeStepKey)
+        let readerTextSizeStepClamped = min( // clamp as a sanity check
+            max(readerTextSizeStep, ReaderThemeResolved.textSizeStepRange.lowerBound),
+            ReaderThemeResolved.textSizeStepRange.upperBound
+        )
+        self.readerTextSizeStep = readerTextSizeStepClamped
     }
 
     // MARK: Functions
 
+    /// Apply modified custom changes (skip unmodified options)
     func setReaderThemeCustomChanges(_ changes: ReaderThemeCustom,
                                      for preset: ReaderTheme) {
         // clean up changes before saving
         var stagedChanges = changes
         let key = preset.rawValue
-
-        // if we have a weight preference & it's equal to preset, then do not override
-        if let stagedCustomFontWeight = stagedChanges.fontWeight,
-           stagedCustomFontWeight == preset.fontWeight {
-            stagedChanges.fontWeight = nil
-        }
 
         // if we have a font preference & it's equal to preset, then do not override
         if let stagedCustomFont = stagedChanges.font,
@@ -139,6 +156,12 @@ final class PreferencesStore {
         if let stagedCustomFontDesign = stagedChanges.fontDesign,
            stagedCustomFontDesign == preset.fontDesign {
             stagedChanges.fontDesign = nil
+        }
+
+        // if we have a weight preference & it's equal to preset, then do not override
+        if let stagedCustomFontWeight = stagedChanges.fontWeight,
+           stagedCustomFontWeight == preset.fontWeight {
+            stagedChanges.fontWeight = nil
         }
 
         // if we have a line spacing preference & it's equal to preset, then do not override
@@ -165,6 +188,28 @@ final class PreferencesStore {
     /// Returns a resolved ReaderTheme for a given preset + all its user customizations
     func readerThemeResolved(for preset: ReaderTheme) -> ReaderThemeResolved {
         ReaderThemeResolved(basePreset: preset,
-                            customizedPreset: readerThemeCustomChanges[preset.rawValue])
+                            customizedPreset: readerThemeCustomChanges[preset.rawValue],
+                            textSizeStep: readerTextSizeStep)
+    }
+
+    /// Increase text size by 1 step
+    func increaseTextSize() {
+        modifyTextSize(by: 1)
+    }
+
+    /// Decrease text size by 1 step
+    func decreaseTextSize() {
+        modifyTextSize(by: -1)
+    }
+
+    // MARK: Functions (Private)
+
+    private func modifyTextSize(by amount: Int) {
+        let requestedSize = self.readerTextSizeStep + amount
+        let cappedSize = min(
+            max(requestedSize, ReaderThemeResolved.textSizeStepRange.lowerBound),
+            ReaderThemeResolved.textSizeStepRange.upperBound
+        )
+        self.readerTextSizeStep = cappedSize
     }
 }

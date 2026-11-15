@@ -53,6 +53,9 @@ struct ReaderThemeResolved: Equatable {
 
     // MARK: Fonts
 
+    /// Dynamic Type step count for text size
+    var textSizeStep: Int = 0
+
     /// Custom font (base preset if not customized)
     var font: ReaderThemeFont {
         customizedPreset?.font ?? basePreset.font
@@ -76,18 +79,12 @@ struct ReaderThemeResolved: Equatable {
                    Self.lineSpacingPercentRange.upperBound)
     }
 
-    /// Used for UI slider max/min
-    static let lineSpacingPercentRange: ClosedRange<Int> = 100 ... 200
-
     /// Default 24; custom else base
     var marginPoints: Int {
         let points = customizedPreset?.marginPoints ?? basePreset.marginPoints
         return min(max(points, Self.marginPointsRange.lowerBound),
                    Self.marginPointsRange.upperBound)
     }
-
-    /// Used for UI slider max/min
-    static let marginPointsRange: ClosedRange<Int> = 12 ... 48
 
     /// All available font weights for this resolved font choice
     var availableFontWeights: [ReaderThemeCustomFontWeight] {
@@ -112,7 +109,51 @@ struct ReaderThemeResolved: Equatable {
         self.font(.caption2, weight: self.emphasisWeight(minimum: .bold))
     }
 
+    // MARK: Static (Ranges for UI)
+
+    /// Used for UI slider min/max
+    static let textSizeStepRange: ClosedRange<Int> = -3 ... 5
+
+    /// Used for UI slider min/max
+    static let lineSpacingPercentRange: ClosedRange<Int> = 100 ... 200
+
+    /// Used for UI slider min/max
+    static let marginPointsRange: ClosedRange<Int> = 12 ... 48
+
     // MARK: Functions
+
+    /// Calculated Dynamic Type custom size (accounting for theme customizations) for the
+    /// scripture font, given a specific Dynamic Type Size
+    func scriptureDynamicTypeSize(for size: DynamicTypeSize) -> DynamicTypeSize {
+        let allSizes = DynamicTypeSize.allCases
+
+        let clampedStep = min(max(textSizeStep, Self.textSizeStepRange.lowerBound),
+                              Self.textSizeStepRange.upperBound)
+        let requestedSizeIndex = allSizes.firstIndex(of: size)
+        let computedSizeIndex = (requestedSizeIndex ?? 0) + clampedStep
+
+        let validSizeIndex = min(max(computedSizeIndex, allSizes.startIndex),
+                                 allSizes.endIndex - 1) // endIndex is 1 greater than last item's index
+        return allSizes[validSizeIndex]
+    }
+
+    /// Are we allowed to increase text size right now?
+    ///
+    /// Current step must be (a) below allowed range's upper bound; (b) not the last
+    /// DynamicType case
+    func canIncreaseTextSize(at systemSize: DynamicTypeSize) -> Bool {
+        self.textSizeStep < Self.textSizeStepRange.upperBound
+        && self.scriptureDynamicTypeSize(for: systemSize) != DynamicTypeSize.allCases.last
+    }
+
+    /// Are we allowed to decrease text size right now?
+    ///
+    /// Current step must be (a) above allowed range's lower bound; (b) not the first
+    /// DynamicType case
+    func canDecreaseTextSize(at systemSize: DynamicTypeSize) -> Bool {
+        self.textSizeStep > Self.textSizeStepRange.lowerBound
+        && self.scriptureDynamicTypeSize(for: systemSize) != DynamicTypeSize.allCases.first
+    }
 
     /// Centralized font builder (for specific style/weight)
     func font(_ textStyle: Font.TextStyle,
