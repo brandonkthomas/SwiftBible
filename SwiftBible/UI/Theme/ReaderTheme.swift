@@ -16,7 +16,7 @@ enum ReaderTheme: String, CaseIterable, Codable, Identifiable {
     case ember
 
     /// Built-in default preset
-    static let `default`: ReaderTheme = .folio
+    static let `default`: ReaderTheme = .classic
 
     /// Stable computed ID
     var id: String { rawValue }
