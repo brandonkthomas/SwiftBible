@@ -390,6 +390,30 @@ struct PreferencesStoreTests {
         #expect(quietChanges.lineSpacingPercent == 150)
     }
 
+    /// Picking the preset's own spacing (0) is saved as `nil`; a different value is kept,
+    /// and each field is cleared on its own
+    @Test func presetSpacingIsSavedAsNil() throws {
+        let suiteName = UUID().uuidString
+        defer { UserDefaults().removePersistentDomain(forName: suiteName) }
+        let userDefaults = try #require(UserDefaults(suiteName: suiteName))
+
+        let store = PreferencesStore(userDefaults: userDefaults)
+
+        // Folio's own spacing alone: nothing left, so no entry
+        #expect(ReaderTheme.folio.characterSpacingPercent == 0)
+        #expect(ReaderTheme.folio.wordSpacingPercent == 0)
+        store.setReaderThemeCustomChanges(ReaderThemeCustom(characterSpacingPercent: 0, wordSpacingPercent: 0),
+                                          for: .folio)
+        #expect(store.readerThemeCustomChanges[ReaderTheme.folio.rawValue] == nil)
+
+        // character 5 differs from 0: kept; word 0 equals the preset: cleared
+        store.setReaderThemeCustomChanges(ReaderThemeCustom(characterSpacingPercent: 5, wordSpacingPercent: 0),
+                                          for: .folio)
+        let folioChanges = try #require(store.readerThemeCustomChanges[ReaderTheme.folio.rawValue])
+        #expect(folioChanges.characterSpacingPercent == 5)
+        #expect(folioChanges.wordSpacingPercent == nil)
+    }
+
     // MARK: Resolved Reader Theme
 
     /// With no changes saved, every preset resolves to its own values

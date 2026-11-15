@@ -176,6 +176,18 @@ final class PreferencesStore {
             stagedChanges.marginPoints = nil
         }
 
+        // if we have a character spacing preference & it's equal to preset, then do not override
+        if let stagedCustomCharacterSpacing = stagedChanges.characterSpacingPercent,
+           stagedCustomCharacterSpacing == preset.characterSpacingPercent {
+            stagedChanges.characterSpacingPercent = nil
+        }
+
+        // if we have a word spacing preference & it's equal to preset, then do not override
+        if let stagedCustomWordSpacing = stagedChanges.wordSpacingPercent,
+           stagedCustomWordSpacing == preset.wordSpacingPercent {
+            stagedChanges.wordSpacingPercent = nil
+        }
+
         // if every field is still nil (no changes), clear and exit
         guard stagedChanges.isCustomized else {
             readerThemeCustomChanges[key] = nil

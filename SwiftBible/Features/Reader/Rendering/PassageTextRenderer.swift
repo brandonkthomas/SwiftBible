@@ -88,6 +88,7 @@ struct PassageTextRenderer {
                                       style: [],
                                       verseRange: currentVerseRange,
                                       readerTheme: readerTheme,
+                                      dynamicTypeSize: dynamicTypeSize,
                                       useLinkAttribute: produceLinkAttributes)
 
                 var segment = Text(text)
@@ -111,6 +112,7 @@ struct PassageTextRenderer {
                                       style: style,
                                       verseRange: currentVerseRange,
                                       readerTheme: readerTheme,
+                                      dynamicTypeSize: dynamicTypeSize,
                                       useLinkAttribute: produceLinkAttributes)
 
                 var segment = Text(text)
@@ -201,8 +203,12 @@ struct PassageTextRenderer {
                                    style: RenderedPassageTextStyle,
                                    verseRange: RenderedVerseRange?,
                                    readerTheme: ReaderThemeResolved,
+                                   dynamicTypeSize: DynamicTypeSize,
                                    useLinkAttribute: Bool = false) -> AttributedString {
-        var result = AttributedString("\(text)\(trailingSeparator(after: text))")
+        // spacing first; the attributes below cover the whole string and keep each run's tracking
+        var result = spacedText("\(text)\(trailingSeparator(after: text))",
+                                characterSpacing: readerTheme.characterSpacing(dynamicTypeSize: dynamicTypeSize),
+                                wordSpacing: readerTheme.wordSpacing(dynamicTypeSize: dynamicTypeSize))
 
         // Explicit color so neither link styling nor a containing Button's tint
         // recolors Scripture text
@@ -231,6 +237,38 @@ struct PassageTextRenderer {
             result.font = readerTheme.divineNameFont
         }
 
+        return result
+    }
+
+    /// Scripture text with letter spacing on every character and extra word spacing on spaces
+    ///
+    /// Both are `tracking` attributes on the text itself. A `.tracking(_:)` view modifier would
+    /// replace per-character spacing instead of adding to it, so word spacing would be lost.
+    /// SwiftUI has no word spacing modifier, so spaces get letter + word spacing.
+    /// Verse labels and markers don't use this, so their numbers stay next to their verses.
+    static func spacedText(_ text: String,
+                           characterSpacing: CGFloat,
+                           wordSpacing: CGFloat) -> AttributedString {
+        guard characterSpacing > 0 || wordSpacing > 0 else {
+            return AttributedString(text)
+        }
+
+        var space = AttributedString(" ")
+        space.tracking = characterSpacing + wordSpacing
+
+        // join the words back together with spaced-out spaces (empty parts keep repeated spaces)
+        var result = AttributedString()
+        for (offset, word) in text.split(separator: " ", omittingEmptySubsequences: false).enumerated() {
+            if offset > 0 {
+                result.append(space)
+            }
+
+            var wordText = AttributedString(String(word))
+            if characterSpacing > 0 {
+                wordText.tracking = characterSpacing
+            }
+            result.append(wordText)
+        }
         return result
     }
 

@@ -270,7 +270,9 @@ struct ReaderThemeTests {
                                       font: .charter,
                                       fontDesign: .serif,
                                       lineSpacingPercent: 160,
-                                      marginPoints: 36)
+                                      marginPoints: 36,
+                                      characterSpacingPercent: 5,
+                                      wordSpacingPercent: 10)
 
         let decoded = try JSONDecoder().decode(ReaderThemeCustom.self, from: JSONEncoder().encode(edits))
 
@@ -474,6 +476,8 @@ struct ReaderThemeTests {
 
         #expect(edits.lineSpacingPercent == nil)
         #expect(edits.marginPoints == nil)
+        #expect(edits.characterSpacingPercent == nil)
+        #expect(edits.wordSpacingPercent == nil)
         #expect(edits.font == .charter)
     }
 
@@ -581,6 +585,90 @@ struct ReaderThemeTests {
         let oneDown = ReaderThemeResolved(basePreset: .folio, textSizeStep: -1)
         #expect(!oneDown.canDecreaseTextSize(at: .small))
         #expect(oneDown.canDecreaseTextSize(at: .large))
+    }
+
+    // MARK: Character and Word Spacing
+
+    /// Every preset starts with no extra spacing, so nothing moves yet
+    @MainActor
+    @Test func presetSpacingIsZero() {
+        for preset in ReaderTheme.allCases {
+            let themeResolved = ReaderThemeResolved(basePreset: preset)
+
+            #expect(preset.characterSpacingPercent == 0)
+            #expect(preset.wordSpacingPercent == 0)
+            #expect(themeResolved.characterSpacingPercent == 0)
+            #expect(themeResolved.wordSpacingPercent == 0)
+        }
+    }
+
+    /// Spacing edits replace the preset's values, each on its own
+    @MainActor
+    @Test func spacingEditsReplacePreset() {
+        var edits = ReaderThemeCustom()
+        edits.characterSpacingPercent = 10
+        let characterOnly = ReaderThemeResolved(basePreset: .folio, customizedPreset: edits)
+
+        edits.wordSpacingPercent = 15
+        let both = ReaderThemeResolved(basePreset: .folio, customizedPreset: edits)
+
+        #expect(characterOnly.characterSpacingPercent == 10)
+        #expect(characterOnly.wordSpacingPercent == 0)
+        #expect(both.wordSpacingPercent == 15)
+    }
+
+    /// Saved spacing outside 0...20 is clamped, so letters never crowd and words never spread too far
+    @MainActor
+    @Test func spacingIsClamped() {
+        var low = ReaderThemeCustom()
+        low.characterSpacingPercent = -5
+        low.wordSpacingPercent = -5
+        var high = ReaderThemeCustom()
+        high.characterSpacingPercent = 50
+        high.wordSpacingPercent = 50
+
+        #expect(ReaderThemeResolved.characterSpacingPercentRange == 0...20)
+        #expect(ReaderThemeResolved.wordSpacingPercentRange == 0...20)
+        #expect(ReaderThemeResolved(basePreset: .folio, customizedPreset: low).characterSpacingPercent == 0)
+        #expect(ReaderThemeResolved(basePreset: .folio, customizedPreset: low).wordSpacingPercent == 0)
+        #expect(ReaderThemeResolved(basePreset: .folio, customizedPreset: high).characterSpacingPercent == 20)
+        #expect(ReaderThemeResolved(basePreset: .folio, customizedPreset: high).wordSpacingPercent == 20)
+    }
+
+    /// No spacing edits: zero extra points at every size
+    @MainActor
+    @Test func zeroSpacingAddsNoPoints() {
+        let folio = ReaderThemeResolved(basePreset: .folio)
+
+        for size in [DynamicTypeSize.large, .accessibility3] {
+            #expect(folio.characterSpacing(dynamicTypeSize: size) == 0)
+            #expect(folio.wordSpacing(dynamicTypeSize: size) == 0)
+        }
+    }
+
+    /// Spacing is a percent of the scripture font's point size: 10% of Folio's 17pt body is 1.7pt
+    @MainActor
+    @Test func spacingIsPercentOfPointSize() {
+        var edits = ReaderThemeCustom()
+        edits.characterSpacingPercent = 10
+        edits.wordSpacingPercent = 20
+        let folio = ReaderThemeResolved(basePreset: .folio, customizedPreset: edits)
+        let pointSize = resolve(folio.scriptureFont, .large).pointSize
+
+        #expect(pointSize == 17)
+        #expect(abs(folio.characterSpacing(dynamicTypeSize: .large) - 1.7) < 0.001)
+        #expect(abs(folio.wordSpacing(dynamicTypeSize: .large) - 3.4) < 0.001)
+    }
+
+    /// Spacing grows with text size, so a larger Dynamic Type size (or A/A step) keeps the same look
+    @MainActor
+    @Test func spacingGrowsWithTextSize() {
+        var edits = ReaderThemeCustom()
+        edits.characterSpacingPercent = 10
+        let folio = ReaderThemeResolved(basePreset: .folio, customizedPreset: edits)
+
+        #expect(folio.characterSpacing(dynamicTypeSize: .accessibility3)
+                > folio.characterSpacing(dynamicTypeSize: .large))
     }
 
     // MARK: Resolved Font Weight

@@ -86,6 +86,20 @@ struct ReaderThemeResolved: Equatable {
                    Self.marginPointsRange.upperBound)
     }
 
+    /// Extra letter spacing as a percent of the font size; custom else base
+    var characterSpacingPercent: Int {
+        let percent = customizedPreset?.characterSpacingPercent ?? basePreset.characterSpacingPercent
+        return min(max(percent, Self.characterSpacingPercentRange.lowerBound),
+                   Self.characterSpacingPercentRange.upperBound)
+    }
+
+    /// Extra word spacing as a percent of the font size; custom else base
+    var wordSpacingPercent: Int {
+        let percent = customizedPreset?.wordSpacingPercent ?? basePreset.wordSpacingPercent
+        return min(max(percent, Self.wordSpacingPercentRange.lowerBound),
+                   Self.wordSpacingPercentRange.upperBound)
+    }
+
     /// All available font weights for this resolved font choice
     var availableFontWeights: [ReaderThemeCustomFontWeight] {
         font.availableWeights(design: fontDesign.design)
@@ -119,6 +133,12 @@ struct ReaderThemeResolved: Equatable {
 
     /// Used for UI slider min/max
     static let marginPointsRange: ClosedRange<Int> = 12 ... 48
+
+    /// Used for UI slider min/max (no negative values: letters would crowd together)
+    static let characterSpacingPercentRange: ClosedRange<Int> = 0 ... 20
+
+    /// Used for UI slider min/max
+    static let wordSpacingPercentRange: ClosedRange<Int> = 0 ... 20
 
     // MARK: Functions
 
@@ -226,6 +246,26 @@ struct ReaderThemeResolved: Equatable {
         let naturalLineHeight = CTFontGetAscent(ctFont) + CTFontGetDescent(ctFont) + CTFontGetLeading(ctFont)
 
         return naturalLineHeight * (CGFloat(lineSpacingPercent) / 100)
+    }
+
+    /// Extra space between letters, in points, for the scripture font at a Dynamic Type Size
+    ///
+    /// A percent of the font's point size, so it grows with text size (A/A and Dynamic Type)
+    func characterSpacing(dynamicTypeSize: DynamicTypeSize) -> CGFloat {
+        scripturePointSize(dynamicTypeSize: dynamicTypeSize) * CGFloat(characterSpacingPercent) / 100
+    }
+
+    /// Extra space added to each space character, in points, for the scripture font at a Dynamic Type Size
+    func wordSpacing(dynamicTypeSize: DynamicTypeSize) -> CGFloat {
+        scripturePointSize(dynamicTypeSize: dynamicTypeSize) * CGFloat(wordSpacingPercent) / 100
+    }
+
+    /// Point size of the scripture font as drawn at a Dynamic Type Size
+    private func scripturePointSize(dynamicTypeSize: DynamicTypeSize) -> CGFloat {
+        var environmentValues = EnvironmentValues()
+        environmentValues.dynamicTypeSize = dynamicTypeSize
+
+        return scriptureFont.resolve(in: environmentValues.fontResolutionContext).pointSize
     }
 
     /// One color that picks the light or dark value when it is drawn.

@@ -479,14 +479,15 @@ struct PassagePreviewView: View {
         ],
 //                           readerTheme: .init(basePreset: .ink),
                            readerTheme: .init(basePreset: .ink,
-                                              customizedPreset: .init(font: .iowan,
-                                                                      lineSpacingPercent: 100,
-                                                                      marginPoints: 12)),
+                                              customizedPreset: .init(font: .timesNewRoman,
+                                                                      lineSpacingPercent: 135,
+                                                                      marginPoints: 24,
+                                                                      characterSpacingPercent: 5,
+                                                                      wordSpacingPercent: 10)),
                            style: .window(height: 100),
                            highlights: false)
     }
     .padding()
-//    .environment(\.readerTheme, ReaderThemeResolved(basePreset: .folio, textSizeStep: 3))
 }
 
 #Preview("Fill, scrolling + highlights") {

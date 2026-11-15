@@ -86,6 +86,9 @@ struct ReaderPassageFootnoteSheetView: View {
                                                   index: index)
                         Text("\(label)\(footnote.text)")
                             .font(readerTheme.font(.footnote))
+                            // notes aren't built by PassageTextRenderer, so letter spacing goes here;
+                            // not on the VStack, where it would replace the passage's word spacing
+                            .tracking(readerTheme.characterSpacing(dynamicTypeSize: scriptureDynamicTypeSize))
                     }
                 }
                 .scrollTargetLayout()

@@ -80,6 +80,18 @@ enum ReaderTheme: String, CaseIterable, Codable, Identifiable {
         24
     }
 
+    /// Extra space between letters, as a percent of the font size (0 = none);
+    /// user-customizable via ReaderThemeCustom
+    var characterSpacingPercent: Int {
+        0
+    }
+
+    /// Extra space between words, as a percent of the font size (0 = none);
+    /// user-customizable via ReaderThemeCustom
+    var wordSpacingPercent: Int {
+        0
+    }
+
     var fontDesign: ReaderThemeCustomFontDesign {
         switch self {
         case .classic: .serif

@@ -50,6 +50,12 @@ nonisolated struct ReaderThemeCustom: Equatable, Codable {
     /// nil = base preset val
     var marginPoints: Int?
 
+    /// Percent of the font size (10 = 10%); nil = base preset val
+    var characterSpacingPercent: Int?
+
+    /// Percent of the font size (10 = 10%); nil = base preset val
+    var wordSpacingPercent: Int?
+
     /// Does any field differ from the preset? (Drives the `*` marker.)
     var isCustomized: Bool {
         self != ReaderThemeCustom()
@@ -85,6 +91,10 @@ nonisolated extension ReaderThemeCustom {
                                                                  forKey: .lineSpacingPercent)
         self.marginPoints = try? container.decodeIfPresent(Int.self,
                                                            forKey: .marginPoints)
+        self.characterSpacingPercent = try? container.decodeIfPresent(Int.self,
+                                                                      forKey: .characterSpacingPercent)
+        self.wordSpacingPercent = try? container.decodeIfPresent(Int.self,
+                                                                 forKey: .wordSpacingPercent)
     }
 }
 
