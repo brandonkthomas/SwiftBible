@@ -268,7 +268,9 @@ struct ReaderThemeTests {
                                       secondaryTextColorDark: dark,
                                       fontWeight: .semibold,
                                       font: .charter,
-                                      fontDesign: .serif)
+                                      fontDesign: .serif,
+                                      lineSpacingPercent: 160,
+                                      marginPoints: 36)
 
         let decoded = try JSONDecoder().decode(ReaderThemeCustom.self, from: JSONEncoder().encode(edits))
 
@@ -403,6 +405,112 @@ struct ReaderThemeTests {
                 < folio.markerBaselineOffset(dynamicTypeSize: .large))
     }
 
+    // MARK: Line Height
+
+    /// Every preset starts at 1.35x the font's line height, so nothing moves yet
+    @MainActor
+    @Test func presetLineSpacingIsDefault() {
+        for preset in ReaderTheme.allCases {
+            #expect(preset.lineSpacingPercent == 135)
+            #expect(ReaderThemeResolved(basePreset: preset).lineSpacingPercent == 135)
+        }
+    }
+
+    /// Line height = line spacing x the Scripture font's natural line height at that size;
+    /// for Folio at the default size that is about today's 30pt
+    @MainActor
+    @Test(arguments: [DynamicTypeSize.large, .xxxLarge, .accessibility3])
+    func lineHeightIsSpacingTimesFontLineHeight(dynamicTypeSize: DynamicTypeSize) {
+        let folio = ReaderThemeResolved(basePreset: .folio)
+        let expected = naturalLineHeight(folio.scriptureFont, dynamicTypeSize) * 1.35
+
+        #expect(abs(folio.lineHeight(dynamicTypeSize: dynamicTypeSize) - expected) < 0.01)
+        if dynamicTypeSize == .large {
+            #expect(abs(folio.lineHeight(dynamicTypeSize: .large) - 30) < 0.5)
+        }
+    }
+
+    /// A font with a taller natural line (Iowan) gets taller lines; a shorter one (Palatino) shorter
+    @MainActor
+    @Test func lineHeightFollowsFont() {
+        let folio = ReaderThemeResolved(basePreset: .folio)
+        let iowan = ReaderThemeResolved(basePreset: .folio, customizedPreset: ReaderThemeCustom(font: .iowan))
+        let palatino = ReaderThemeResolved(basePreset: .folio, customizedPreset: ReaderThemeCustom(font: .palatino))
+
+        #expect(iowan.lineHeight(dynamicTypeSize: .large) > folio.lineHeight(dynamicTypeSize: .large))
+        #expect(palatino.lineHeight(dynamicTypeSize: .large) < folio.lineHeight(dynamicTypeSize: .large))
+    }
+
+    /// A line spacing edit replaces the preset's 135, and the line height follows it
+    @MainActor
+    @Test func lineSpacingEditReplacesPreset() {
+        var edits = ReaderThemeCustom()
+        edits.lineSpacingPercent = 150
+        let folio = ReaderThemeResolved(basePreset: .folio, customizedPreset: edits)
+        let expected = naturalLineHeight(folio.scriptureFont, .large) * 1.5
+
+        #expect(folio.lineSpacingPercent == 150)
+        #expect(abs(folio.lineHeight(dynamicTypeSize: .large) - expected) < 0.01)
+    }
+
+    /// A saved value outside 100...200 (bad data, or a newer build's range) is clamped,
+    /// so lines never overlap and never spread past 2x
+    @MainActor
+    @Test func lineSpacingIsClamped() {
+        var tooTight = ReaderThemeCustom()
+        tooTight.lineSpacingPercent = 50
+        var tooLoose = ReaderThemeCustom()
+        tooLoose.lineSpacingPercent = 300
+
+        #expect(ReaderThemeResolved.lineSpacingPercentRange == 100...200)
+        #expect(ReaderThemeResolved(basePreset: .folio, customizedPreset: tooTight).lineSpacingPercent == 100)
+        #expect(ReaderThemeResolved(basePreset: .folio, customizedPreset: tooLoose).lineSpacingPercent == 200)
+    }
+
+    /// Edits saved before line spacing and margins existed load with neither edit
+    @Test func oldEditsLoadWithoutLayoutEdits() throws {
+        let savedBefore5c = Data(#"{"font":"charter","fontWeight":"bold"}"#.utf8)
+        let edits = try JSONDecoder().decode(ReaderThemeCustom.self, from: savedBefore5c)
+
+        #expect(edits.lineSpacingPercent == nil)
+        #expect(edits.marginPoints == nil)
+        #expect(edits.font == .charter)
+    }
+
+    // MARK: Margins
+
+    /// Every preset starts at today's 24pt margin
+    @MainActor
+    @Test func presetMarginIsDefault() {
+        for preset in ReaderTheme.allCases {
+            #expect(preset.marginPoints == 24)
+            #expect(ReaderThemeResolved(basePreset: preset).marginPoints == 24)
+        }
+    }
+
+    /// A margin edit replaces the preset's 24
+    @MainActor
+    @Test func marginEditReplacesPreset() {
+        var edits = ReaderThemeCustom()
+        edits.marginPoints = 40
+
+        #expect(ReaderThemeResolved(basePreset: .folio, customizedPreset: edits).marginPoints == 40)
+    }
+
+    /// A saved margin outside 12...48 is clamped, so text never touches the screen edge
+    /// and never shrinks to a narrow column
+    @MainActor
+    @Test func marginIsClamped() {
+        var tooNarrow = ReaderThemeCustom()
+        tooNarrow.marginPoints = 4
+        var tooWide = ReaderThemeCustom()
+        tooWide.marginPoints = 100
+
+        #expect(ReaderThemeResolved.marginPointsRange == 12...48)
+        #expect(ReaderThemeResolved(basePreset: .folio, customizedPreset: tooNarrow).marginPoints == 12)
+        #expect(ReaderThemeResolved(basePreset: .folio, customizedPreset: tooWide).marginPoints == 48)
+    }
+
     // MARK: Resolved Font Weight
 
     /// A preset's weight snaps to the chosen font: Ink's .medium draws Regular on Georgia
@@ -465,6 +573,12 @@ struct ReaderThemeTests {
     }
 
     // MARK: Helpers
+
+    /// Natural line height (ascent + descent + leading) of a font as drawn at a Dynamic Type size
+    private func naturalLineHeight(_ font: Font, _ dynamicTypeSize: DynamicTypeSize) -> CGFloat {
+        let ctFont = resolve(font, dynamicTypeSize).ctFont
+        return CTFontGetAscent(ctFont) + CTFontGetDescent(ctFont) + CTFontGetLeading(ctFont)
+    }
 
     /// Ascent (height above the baseline) of a font as drawn at a Dynamic Type size
     private func ascent(_ font: Font, _ dynamicTypeSize: DynamicTypeSize) -> CGFloat {

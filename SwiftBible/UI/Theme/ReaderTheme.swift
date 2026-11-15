@@ -70,6 +70,16 @@ enum ReaderTheme: String, CaseIterable, Codable, Identifiable {
         .system
     }
 
+    /// Default 135 = 1.35x; user-customizable via ReaderThemeCustom
+    var lineSpacingPercent: Int {
+        135
+    }
+
+    /// Default 24; user-customizable via ReaderThemeCustom
+    var marginPoints: Int {
+        24
+    }
+
     var fontDesign: ReaderThemeCustomFontDesign {
         switch self {
         case .classic: .serif

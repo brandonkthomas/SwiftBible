@@ -69,6 +69,26 @@ struct ReaderThemeResolved: Equatable {
         return font.nearestWeight(to: requestedWeight, design: fontDesign.design)
     }
 
+    /// 135 = 1.35x; custom else base
+    var lineSpacingPercent: Int {
+        let percent = customizedPreset?.lineSpacingPercent ?? basePreset.lineSpacingPercent
+        return min(max(percent, Self.lineSpacingPercentRange.lowerBound),
+                   Self.lineSpacingPercentRange.upperBound)
+    }
+
+    /// Used for UI slider max/min
+    static let lineSpacingPercentRange: ClosedRange<Int> = 100 ... 200
+
+    /// Default 24; custom else base
+    var marginPoints: Int {
+        let points = customizedPreset?.marginPoints ?? basePreset.marginPoints
+        return min(max(points, Self.marginPointsRange.lowerBound),
+                   Self.marginPointsRange.upperBound)
+    }
+
+    /// Used for UI slider max/min
+    static let marginPointsRange: ClosedRange<Int> = 12 ... 48
+
     /// All available font weights for this resolved font choice
     var availableFontWeights: [ReaderThemeCustomFontWeight] {
         font.availableWeights(design: fontDesign.design)
@@ -153,6 +173,18 @@ struct ReaderThemeResolved: Equatable {
             compatibleWith: uiTraitCollection
         )
         return min(raise, room)
+    }
+
+    /// Calculated line height for the scripture font, given a specific Dynamic Type Size
+    func lineHeight(dynamicTypeSize: DynamicTypeSize) -> CGFloat {
+        var environmentValues = EnvironmentValues()
+        environmentValues.dynamicTypeSize = dynamicTypeSize
+
+        // resolve(in:) already applies Dynamic Type
+        let ctFont = scriptureFont.resolve(in: environmentValues.fontResolutionContext).ctFont
+        let naturalLineHeight = CTFontGetAscent(ctFont) + CTFontGetDescent(ctFont) + CTFontGetLeading(ctFont)
+
+        return naturalLineHeight * (CGFloat(lineSpacingPercent) / 100)
     }
 
     /// One color that picks the light or dark value when it is drawn.

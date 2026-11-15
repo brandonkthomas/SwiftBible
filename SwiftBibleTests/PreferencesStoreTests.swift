@@ -273,6 +273,50 @@ struct PreferencesStoreTests {
         #expect(quietChanges.font == .georgia)
     }
 
+    /// Picking the preset's own line spacing (135) is saved as `nil`; a different value is kept
+    @Test func presetLineSpacingIsSavedAsNil() throws {
+        let suiteName = UUID().uuidString
+        defer { UserDefaults().removePersistentDomain(forName: suiteName) }
+        let userDefaults = try #require(UserDefaults(suiteName: suiteName))
+
+        let store = PreferencesStore(userDefaults: userDefaults)
+
+        // Folio's own line spacing alone: nothing left, so no entry
+        #expect(ReaderTheme.folio.lineSpacingPercent == 135)
+        store.setReaderThemeCustomChanges(ReaderThemeCustom(lineSpacingPercent: 135), for: .folio)
+        #expect(store.readerThemeCustomChanges[ReaderTheme.folio.rawValue] == nil)
+
+        // 150 differs from Folio's 135: kept
+        store.setReaderThemeCustomChanges(ReaderThemeCustom(lineSpacingPercent: 150), for: .folio)
+        #expect(store.readerThemeCustomChanges[ReaderTheme.folio.rawValue]?.lineSpacingPercent == 150)
+    }
+
+    /// Picking the preset's own margin (24) is saved as `nil`; a different margin is kept,
+    /// and other edits in the same value are kept
+    @Test func presetMarginIsSavedAsNil() throws {
+        let suiteName = UUID().uuidString
+        defer { UserDefaults().removePersistentDomain(forName: suiteName) }
+        let userDefaults = try #require(UserDefaults(suiteName: suiteName))
+
+        let store = PreferencesStore(userDefaults: userDefaults)
+
+        // Folio's own margin alone: nothing left, so no entry
+        #expect(ReaderTheme.folio.marginPoints == 24)
+        store.setReaderThemeCustomChanges(ReaderThemeCustom(marginPoints: 24), for: .folio)
+        #expect(store.readerThemeCustomChanges[ReaderTheme.folio.rawValue] == nil)
+
+        // 32 differs from Folio's 24: kept
+        store.setReaderThemeCustomChanges(ReaderThemeCustom(marginPoints: 32), for: .folio)
+        #expect(store.readerThemeCustomChanges[ReaderTheme.folio.rawValue]?.marginPoints == 32)
+
+        // Quiet's own margin with a line spacing edit: entry kept, margin cleared
+        store.setReaderThemeCustomChanges(ReaderThemeCustom(lineSpacingPercent: 150, marginPoints: 24),
+                                          for: .quiet)
+        let quietChanges = try #require(store.readerThemeCustomChanges[ReaderTheme.quiet.rawValue])
+        #expect(quietChanges.marginPoints == nil)
+        #expect(quietChanges.lineSpacingPercent == 150)
+    }
+
     // MARK: Resolved Reader Theme
 
     /// With no changes saved, every preset resolves to its own values

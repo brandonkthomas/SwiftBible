@@ -123,31 +123,34 @@ final class PreferencesStore {
         var stagedChanges = changes
         let key = preset.rawValue
 
-        // we have a weight preference
-        if let stagedCustomFontWeight = stagedChanges.fontWeight {
-            // equal to preset; don't override
-            if stagedCustomFontWeight == preset.fontWeight {
-                stagedChanges.fontWeight = nil
-            }
-            // NOT equal to preset; allow overriding (we already have the value set)
+        // if we have a weight preference & it's equal to preset, then do not override
+        if let stagedCustomFontWeight = stagedChanges.fontWeight,
+           stagedCustomFontWeight == preset.fontWeight {
+            stagedChanges.fontWeight = nil
         }
 
-        // we have a font preference
-        if let stagedCustomFont = stagedChanges.font {
-            // equal to preset; don't override
-            if stagedCustomFont == preset.font {
-                stagedChanges.font = nil
-            }
-            // NOT equal to preset; allow overriding (we already have the value set)
+        // if we have a font preference & it's equal to preset, then do not override
+        if let stagedCustomFont = stagedChanges.font,
+           stagedCustomFont == preset.font {
+            stagedChanges.font = nil
         }
 
-        // we have a design preference
-        if let stagedCustomFontDesign = stagedChanges.fontDesign {
-            // equal to preset; don't override
-            if stagedCustomFontDesign == preset.fontDesign {
-                stagedChanges.fontDesign = nil
-            }
-            // NOT equal to preset; allow overriding (we already have the value set)
+        // if we have a design preference & it's equal to preset, then do not override
+        if let stagedCustomFontDesign = stagedChanges.fontDesign,
+           stagedCustomFontDesign == preset.fontDesign {
+            stagedChanges.fontDesign = nil
+        }
+
+        // if we have a line spacing preference & it's equal to preset, then do not override
+        if let stagedCustomLineSpacing = stagedChanges.lineSpacingPercent,
+           stagedCustomLineSpacing == preset.lineSpacingPercent {
+            stagedChanges.lineSpacingPercent = nil
+        }
+
+        // if we have a margin preference & it's equal to preset, then do not override
+        if let stagedCustomMargin = stagedChanges.marginPoints,
+           stagedCustomMargin == preset.marginPoints {
+            stagedChanges.marginPoints = nil
         }
 
         // if every field is still nil (no changes), clear and exit
