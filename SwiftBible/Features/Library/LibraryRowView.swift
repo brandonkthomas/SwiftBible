@@ -319,7 +319,9 @@ struct LibraryRowView: View {
         }
         // Haptic Touch (context) menu
         .contextMenu {
-            annotationItems
+            if isRowSelected == nil { // NOT in edit mode
+                annotationItems
+            }
         }
     }
 
