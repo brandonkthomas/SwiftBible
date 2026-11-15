@@ -42,14 +42,14 @@ struct LibraryRowView: View {
 
     // MARK: Properties (Private, Passage Truncation)
 
-    /// Same value used in ReaderPassageView
-    /// TODO: Consolidate in central location
-    @ScaledMetric(relativeTo: .body) private var passageLineHeight: CGFloat = 30
-
     @ScaledMetric(relativeTo: .body) private var annotationTagsLineHeight: CGFloat = 20
 
     /// Passage text collapses to this many lines; overflow fades out
     private let passageLineLimit = 3
+
+    private var passageLineHeight: CGFloat {
+        readerTheme.lineHeight(dynamicTypeSize: dynamicTypeSize)
+    }
 
     // MARK: Properties (Private, Dynamic Type)
 

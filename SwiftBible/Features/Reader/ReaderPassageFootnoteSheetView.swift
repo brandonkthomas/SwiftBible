@@ -24,7 +24,9 @@ struct ReaderPassageFootnoteSheetView: View {
 
     // MARK: Properties (Private)
 
-    @ScaledMetric(relativeTo: .body) private var passageLineHeight: CGFloat = 30
+    private var passageLineHeight: CGFloat {
+        readerTheme.lineHeight(dynamicTypeSize: dynamicTypeSize)
+    }
 
     // MARK: Properties (Private, Computed)
 

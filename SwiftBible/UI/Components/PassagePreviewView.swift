@@ -75,11 +75,6 @@ struct PassagePreviewView: View {
     /// Current configured theme (used when no readerTheme override is passed in)
     @Environment(\.readerTheme) private var environmentReaderTheme
 
-    // MARK: Properties (Private, Dynamic Type)
-
-    /// Same value used in ReaderPassageView + LibraryRowView
-    @ScaledMetric(relativeTo: .body) private var passageLineHeight: CGFloat = 30
-
     // MARK: Properties (Highlight Animation, Private)
 
     /// Mirrors ReaderPassageView's VerseHighlightRenderer state
@@ -239,7 +234,10 @@ struct PassagePreviewView: View {
                         persistedHighlights: [:]))
                     .frame(maxWidth: .infinity, alignment: .leading)
                     // spacing lives in padding (not VStack spacing) so measured heights include it
-                    .padding(EdgeInsets(top: 2, leading: 16, bottom: 10, trailing: 16))
+                    .padding(EdgeInsets(top: 2,
+                                        leading: windowHeight == nil ? 16 : CGFloat(theme.marginPoints),
+                                        bottom: 10,
+                                        trailing: windowHeight == nil ? 16 : CGFloat(theme.marginPoints)))
                     .onGeometryChange(for: CGFloat.self) { proxy in
                         proxy.size.height
                     } action: { height in
@@ -248,7 +246,10 @@ struct PassagePreviewView: View {
             }
         }
         .font(theme.scriptureFont)
-        .lineHeight(AttributedString.LineHeight.exact(points: passageLineHeight))
+        .lineHeight(
+            AttributedString.LineHeight
+                .exact(points: theme.lineHeight(dynamicTypeSize: dynamicTypeSize))
+        )
         .fixedSize(horizontal: false, vertical: true)
     }
 
@@ -474,9 +475,13 @@ struct PassagePreviewView: View {
             "In the beginning was the Word, and the Word was with God, and the Word was God.",
             "He was in the beginning with God.",
         ],
-                           readerTheme: .init(basePreset: .ink),
+//                           readerTheme: .init(basePreset: .ink),
+                           readerTheme: .init(basePreset: .ink,
+                                              customizedPreset: .init(font: .iowan,
+                                                                      lineSpacingPercent: 100,
+                                                                      marginPoints: 12)),
                            style: .window(height: 100),
-                           highlights: true)
+                           highlights: false)
     }
     .padding()
 }

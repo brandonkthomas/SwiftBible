@@ -51,9 +51,13 @@ struct ReaderPassageView: View {
     /// When set, ReaderPassageFootnoteSheetView will open
     @State private var selectedVerseRangeForFootnote: RenderedVerseRange?
 
-    // MARK: Properties (Verse Selection, Private)
+    // MARK: Properties (Private)
 
-    @ScaledMetric(relativeTo: .body) private var passageLineHeight: CGFloat = 30
+    private var passageLineHeight: CGFloat {
+        readerTheme.lineHeight(dynamicTypeSize: dynamicTypeSize)
+    }
+
+    // MARK: Properties (Verse Selection, Private)
 
     /// Used for reveal effects on verse highlight renders
     @State private var revealProgress: CGFloat = 0
@@ -123,15 +127,20 @@ struct ReaderPassageView: View {
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
-                // TODO: this is same value used in LibraryRowView; consolidate
                 .lineHeight(AttributedString.LineHeight.exact(points: passageLineHeight))
                 .font(readerTheme.scriptureFont)
                 // inset on L/R edges; spacing between paragraphs
-                .padding(EdgeInsets(top: 2, leading: 24, bottom: 2, trailing: 24))
+                .padding(EdgeInsets(top: 2,
+                                    leading: CGFloat(readerTheme.marginPoints),
+                                    bottom: 2,
+                                    trailing: CGFloat(readerTheme.marginPoints)))
             }
             .scrollTargetLayout()
             // prevent tab bar from covering up bottom few lines (HACK?)
-            .padding(EdgeInsets(top: 24, leading: 0, bottom: 75, trailing: 0))
+            .padding(EdgeInsets(top: 24,
+                                leading: 0,
+                                bottom: 75,
+                                trailing: 0))
         }
         // Bind footnote tap to set selectedVerse
         // Bind verse tap to selection/store/animations
