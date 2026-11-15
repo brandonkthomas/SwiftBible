@@ -67,6 +67,9 @@ struct PassagePreviewView: View {
 
     // MARK: Properties (System Env, Private)
 
+    /// What is the system Dynamic Type setting?
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     /// Current configured theme (used when no readerTheme override is passed in)
@@ -221,6 +224,7 @@ struct PassagePreviewView: View {
             ForEach(paragraphs) { paragraph in
                 PassageTextRenderer.text(for: paragraph.runs,
                                          readerTheme: theme,
+                                         dynamicTypeSize: dynamicTypeSize,
                                          footnoteMarkerMode: footnoteMarkerMode,
                                          produceLinkAttributes: false) // decorative; no taps
                     .padding(.leading, PassageTextRenderer.leadingPadding(for: paragraph.style))

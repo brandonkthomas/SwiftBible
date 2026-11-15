@@ -29,6 +29,7 @@ struct PassageTextRenderer {
     /// see https://alexanderweiss.dev/blog/2024-06-24-using-textrenderer-to-create-highlighted-text
     static func text(for runs: [RenderedPassageRun],
                      readerTheme: ReaderThemeResolved,
+                     dynamicTypeSize: DynamicTypeSize,
                      footnoteMarkerMode: MarkerMode,
                      produceLinkAttributes: Bool = true) -> Text {
         var result = Text(verbatim: "")
@@ -51,6 +52,7 @@ struct PassageTextRenderer {
 
             let marker = styledVerseEndMarker(for: verseRange,
                                               readerTheme: readerTheme,
+                                              dynamicTypeSize: dynamicTypeSize,
                                               useLinkAttribute: produceLinkAttributes)
 
             // '+' was deprecated in iOS 26.0:
@@ -130,6 +132,7 @@ struct PassageTextRenderer {
                 let label = styledVerseLabel(displayText: displayText,
                                              verseRange: currentVerseRange,
                                              readerTheme: readerTheme,
+                                             dynamicTypeSize: dynamicTypeSize,
                                              useLinkAttribute: produceLinkAttributes)
 
                 var segment = Text(label)
@@ -154,7 +157,8 @@ struct PassageTextRenderer {
 
                     // append a lettered footnote marker (a, b, c...) at this exact spot
                     let marker = styledInlineMarker(index: inlineFootnoteIndex,
-                                                    readerTheme: readerTheme)
+                                                    readerTheme: readerTheme,
+                                                    dynamicTypeSize: dynamicTypeSize)
                     inlineFootnoteIndex += 1
 
                     result = Text("\(result)\(marker)")
@@ -230,13 +234,6 @@ struct PassageTextRenderer {
         return result
     }
 
-    /// Superscript raise for verse labels and footnote markers
-    static func markerBaselineOffset(for readerTheme: ReaderThemeResolved) -> CGFloat {
-        let contentSizeCategory = UIApplication.shared.preferredContentSizeCategory
-        let dynamicTypeSize = DynamicTypeSize(contentSizeCategory) ?? .large
-        return readerTheme.markerBaselineOffset(dynamicTypeSize: dynamicTypeSize)
-    }
-
     /// Append space if previous character was a hyphen or curled endquote
     private static func trailingSeparator(after text: String) -> String {
         guard let lastCharacter = text.last else {
@@ -250,9 +247,10 @@ struct PassageTextRenderer {
     private static func styledVerseLabel(displayText: String,
                                          verseRange: RenderedVerseRange?,
                                          readerTheme: ReaderThemeResolved,
+                                         dynamicTypeSize: DynamicTypeSize,
                                          useLinkAttribute: Bool = false) -> AttributedString {
         var result = AttributedString("\(displayText) ")
-        result.baselineOffset = markerBaselineOffset(for: readerTheme)
+        result.baselineOffset = readerTheme.markerBaselineOffset(dynamicTypeSize: dynamicTypeSize)
         result.font = readerTheme.verseLabelFont
         // Explicit color so link styling doesn't recolor the label
         result.foregroundColor = readerTheme.secondaryTextColor
@@ -272,9 +270,10 @@ struct PassageTextRenderer {
 
     /// Generate an inline footnote marker for a given verseRange
     private static func styledInlineMarker(index: Int,
-                                           readerTheme: ReaderThemeResolved) -> AttributedString {
+                                           readerTheme: ReaderThemeResolved,
+                                           dynamicTypeSize: DynamicTypeSize) -> AttributedString {
         var result = AttributedString("\(footnoteSymbol(for: index)) ")
-        result.baselineOffset = markerBaselineOffset(for: readerTheme)
+        result.baselineOffset = readerTheme.markerBaselineOffset(dynamicTypeSize: dynamicTypeSize)
         result.font = readerTheme.markerFont
         result.foregroundColor = .accentColor
 
@@ -284,9 +283,10 @@ struct PassageTextRenderer {
     /// Generate an end footnote marker for a given verseRange
     private static func styledVerseEndMarker(for verseRange: RenderedVerseRange,
                                              readerTheme: ReaderThemeResolved,
+                                             dynamicTypeSize: DynamicTypeSize,
                                              useLinkAttribute: Bool = true) -> AttributedString {
         var result = AttributedString("† ")
-        result.baselineOffset = markerBaselineOffset(for: readerTheme)
+        result.baselineOffset = readerTheme.markerBaselineOffset(dynamicTypeSize: dynamicTypeSize)
         result.font = readerTheme.markerFont
         result.foregroundColor = .accentColor
 

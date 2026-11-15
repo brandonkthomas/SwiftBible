@@ -14,8 +14,12 @@ struct ReaderPassageFootnoteSheetView: View {
     let verseRange: RenderedVerseRange
     let passage: RenderedPassage
 
+    /// What is the system Dynamic Type setting?
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
     @Environment(\.dismiss) var dismiss
 
+    /// What's our current configured theme?
     @Environment(\.readerTheme) private var readerTheme
 
     // MARK: Properties (Private)
@@ -32,7 +36,7 @@ struct ReaderPassageFootnoteSheetView: View {
                                index: Int) -> AttributedString {
         // Same a/b/c label that Renderer places inline so list/text stay in sync
         var attributedLabel = AttributedString("\(PassageTextRenderer.footnoteSymbol(for: index)) ")
-        attributedLabel.baselineOffset = PassageTextRenderer.markerBaselineOffset(for: readerTheme)
+        attributedLabel.baselineOffset = readerTheme.markerBaselineOffset(dynamicTypeSize: dynamicTypeSize)
         attributedLabel.font = readerTheme.markerFont
         attributedLabel.foregroundColor = .accentColor
 
@@ -60,6 +64,7 @@ struct ReaderPassageFootnoteSheetView: View {
                     // Verse content
                     PassageTextRenderer.text(for: passage.runs(for: verseRange),
                                              readerTheme: readerTheme,
+                                             dynamicTypeSize: dynamicTypeSize,
                                              footnoteMarkerMode: .inline)
 
                     Divider()

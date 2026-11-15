@@ -18,6 +18,9 @@ struct ReaderPassageView: View {
 
     // MARK: Properties (System Env, Private)
 
+    /// What is the system Dynamic Type setting?
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
     /// Is the tab bar accessory currently collapsed or expanded?
     @Environment(\.tabViewBottomAccessoryPlacement) private var placement
 
@@ -85,17 +88,16 @@ struct ReaderPassageView: View {
                     let paragraphs = renderedPassage.paragraphs
 
                     // all integer indexes (0-based); stop before paragraphs.count
-                    //
-                    // TODO: .verseLabel and .footnoteMarker runs increase line height
-                    // (should stay consistent across all lines regardless of content)
                     ForEach(0..<paragraphs.count, id: \.self) { paragraphIndex in
                         // where did we last tap?
-                        // only the tapped paragraph gets index; others get fallback origin rect calculation
+                        // only the tapped paragraph gets index;
+                        // others get fallback origin rect calculation
                         let origin = tappedParagraphIndex == paragraphIndex ? tapLocation : nil
 
                         // build this paragraph into a Text view
                         PassageTextRenderer.text(for: paragraphs[paragraphIndex].runs,
                                                  readerTheme: readerTheme,
+                                                 dynamicTypeSize: dynamicTypeSize,
                                                  footnoteMarkerMode: .collapsed)
                             // custom leading padding for inline/block quote styles
                             .padding(.leading,
@@ -121,14 +123,14 @@ struct ReaderPassageView: View {
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .lineHeight(AttributedString.LineHeight.exact(points: passageLineHeight)) // same value used in LibraryRowView
+                // TODO: this is same value used in LibraryRowView; consolidate
+                .lineHeight(AttributedString.LineHeight.exact(points: passageLineHeight))
                 .font(readerTheme.scriptureFont)
                 // inset on L/R edges; spacing between paragraphs
                 .padding(EdgeInsets(top: 2, leading: 24, bottom: 2, trailing: 24))
             }
             .scrollTargetLayout()
-            // prevent tab bar from covering up bottom few lines (HACK)
-            // TODO: resolve properly? currently buggy when scrolling down hard to force-reveal tabbar
+            // prevent tab bar from covering up bottom few lines (HACK?)
             .padding(EdgeInsets(top: 24, leading: 0, bottom: 75, trailing: 0))
         }
         // Bind footnote tap to set selectedVerse

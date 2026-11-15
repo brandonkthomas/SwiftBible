@@ -34,6 +34,9 @@ struct LibraryRowView: View {
 
     // MARK: Properties (Private, Environment)
 
+    /// What is the system Dynamic Type setting?
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
     /// What's our current configured theme?
     @Environment(\.readerTheme) private var readerTheme
 
@@ -361,6 +364,7 @@ struct LibraryRowView: View {
     private func passageText(for runs: [RenderedPassageRun]) -> some View {
         PassageTextRenderer.text(for: runs,
                                  readerTheme: readerTheme,
+                                 dynamicTypeSize: dynamicTypeSize,
                                  footnoteMarkerMode: .hidden,
                                  produceLinkAttributes: false) // do NOT want these tap events here
         .font(readerTheme.scriptureFont)
