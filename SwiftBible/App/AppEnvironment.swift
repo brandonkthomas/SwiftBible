@@ -68,6 +68,7 @@ final class AppEnvironment {
             let modelConfiguration = ModelConfiguration(schema: schema,
                                                         cloudKitDatabase: Self.isRunningTests ? .none : .automatic)
             self.modelContainer = try ModelContainer(for: schema,
+                                                     migrationPlan: SwiftBibleMigrationPlan.self,
                                                      configurations: [modelConfiguration])
         } catch {
             preconditionFailure("Failed to initialize ModelContainer: \(error.localizedDescription)")
