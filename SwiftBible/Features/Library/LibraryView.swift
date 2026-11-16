@@ -288,7 +288,7 @@ struct LibraryView: View {
                     libraryStore.changeHighlightColor(annotation.id,
                                                       color: color)
                 }
-                didHighlightColorChangeFail = didChange
+                didHighlightColorChangeFail = !didChange
             },
             onDeleteRequested: {
                 let didDelete = withAnimation(.snappy(duration: 0.35)) {
