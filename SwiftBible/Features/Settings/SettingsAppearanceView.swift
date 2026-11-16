@@ -530,18 +530,23 @@ struct SettingsAppearanceView: View {
                         let themeResolved = preferencesStore.readerThemeResolved(for: theme)
 
                         VStack {
+                            Spacer()
                             Text("Aa")
                                 .dynamicTypeSize(.xxxLarge)
                                 .accessibilityHidden(true)
+                            Spacer()
                             Text(themeResolved.displayName)
                                 .dynamicTypeSize(.large)
+                            Spacer()
                         }
                         // font
                         .font(themeResolved.scriptureFont)
+                        .lineHeight(.exact(points: 22))
                         // internal padding
                         .padding(5)
                         // fill the column widths
                         .frame(maxWidth: .infinity)
+                        .frame(height: 64)
                         // checkmark overlay (must be BEFORE glassEffect & colors)
                         .overlay(alignment: .topTrailing) {
                             if preferencesStore.readerTheme == theme {
@@ -562,6 +567,7 @@ struct SettingsAppearanceView: View {
                     }
                     // without this, a List row forwards every tap to its first/last button
                     .buttonStyle(.borderless)
+                    // max height
                     .accessibilityAddTraits(preferencesStore.readerTheme == theme ? .isSelected : [])
                 }
             }

@@ -66,10 +66,6 @@ enum ReaderTheme: String, CaseIterable, Codable, Identifiable {
         }
     }
 
-    var font: ReaderThemeFont {
-        .system
-    }
-
     /// Default 135 = 1.35x; user-customizable via ReaderThemeCustom
     var lineSpacingPercent: Int {
         135
@@ -92,6 +88,18 @@ enum ReaderTheme: String, CaseIterable, Codable, Identifiable {
         0
     }
 
+    /// Preset's default font family; user-customizable via ReaderThemeCustom
+    var font: ReaderThemeFont {
+        switch self {
+        case .classic: .system
+        case .quiet: .system
+        case .folio: .seravek
+        case .ink: .athelas
+        case .linen: .palatino
+        case .ember: .iowan
+        }
+    }
+
     var fontDesign: ReaderThemeCustomFontDesign {
         switch self {
         case .classic: .serif
@@ -108,7 +116,7 @@ enum ReaderTheme: String, CaseIterable, Codable, Identifiable {
         case .classic: .regular
         case .quiet: .regular
         case .folio: .regular
-        case .ink: .medium
+        case .ink: .bold
         case .linen: .regular
         case .ember: .regular
         }
