@@ -19,8 +19,10 @@ struct SettingsAppearanceView: View {
     /// Used for preset grid liquid glass effect
     @Namespace private var themePresetsGridNamespace
 
-    /// Placeholder
-    @State private var lineSpacing: Double = 1.2
+    /// Is the "Reset Theme" popover visible?
+    @State private var resetThemeConfirmationIsPresented: Bool = false
+
+    @ScaledMetric(relativeTo: .body) private var textRowHeight: CGFloat = 23
 
     /// Sample text for the theme preview window
     private static let previewVerses = [
@@ -66,17 +68,69 @@ struct SettingsAppearanceView: View {
         }
     }
 
+    /// What is the currently-selected Font Design customization?
+    private var lineSpacingSelection: Binding<Double> {
+        Binding {
+            Double(preferencesStore.selectedReaderThemeResolved.lineSpacingPercent)
+        } set: { newValue in
+            let currentTheme = preferencesStore.readerTheme
+            preferencesStore.updateReaderThemeCustomChanges(for: currentTheme) {
+                $0.lineSpacingPercent = Int(newValue.rounded())
+            }
+        }
+    }
+
+    /// Used for UI slider min/max
+    private static let lineSpacingPercentRangeDouble: ClosedRange<Double> =
+    Double(ReaderThemeResolved.lineSpacingPercentRange.lowerBound)
+    ... Double(ReaderThemeResolved.lineSpacingPercentRange.upperBound)
+
+    /// What is the currently-selected Font Design customization?
+    private var wordSpacingSelection: Binding<Double> {
+        Binding {
+            Double(preferencesStore.selectedReaderThemeResolved.wordSpacingPercent)
+        } set: { newValue in
+            let currentTheme = preferencesStore.readerTheme
+            preferencesStore.updateReaderThemeCustomChanges(for: currentTheme) {
+                $0.wordSpacingPercent = Int(newValue.rounded())
+            }
+        }
+    }
+
+    /// Used for UI slider min/max
+    private static let wordSpacingPercentRangeDouble: ClosedRange<Double> =
+    Double(ReaderThemeResolved.wordSpacingPercentRange.lowerBound)
+    ... Double(ReaderThemeResolved.wordSpacingPercentRange.upperBound)
+
+    /// What is the currently-selected Font Design customization?
+    private var charSpacingSelection: Binding<Double> {
+        Binding {
+            Double(preferencesStore.selectedReaderThemeResolved.characterSpacingPercent)
+        } set: { newValue in
+            let currentTheme = preferencesStore.readerTheme
+            preferencesStore.updateReaderThemeCustomChanges(for: currentTheme) {
+                $0.characterSpacingPercent = Int(newValue.rounded())
+            }
+        }
+    }
+
+    /// Used for UI slider min/max
+    private static let charSpacingPercentRangeDouble: ClosedRange<Double> =
+    Double(ReaderThemeResolved.characterSpacingPercentRange.lowerBound)
+    ... Double(ReaderThemeResolved.characterSpacingPercentRange.upperBound)
+
     // MARK: Views
 
     /// Main view
     var body: some View {
-        @Bindable var preferencesStore = preferencesStore
+        @Bindable var prefStore = preferencesStore
 
         // Settings list
         List {
+            // Color Scheme
             Section {
                 // Color Scheme
-                Picker(selection: $preferencesStore.preferredColorScheme,
+                Picker(selection: $prefStore.preferredColorScheme,
                        label: Label("Appearance", systemImage: "circle.righthalf.filled")
                               .imageScale(.medium)
                               .foregroundStyle(.primary)) {
@@ -85,26 +139,25 @@ struct SettingsAppearanceView: View {
                             .tag(scheme)
                     }
                 }
-            } header: {
-                // Presets (in the header so the section's rounded clip doesn't cut the corners)
+            } header: { // place in header so section's rounded corners dont clip our corners
                 themePresetsGridView
-                    // undo the header's default text styling
+                    // undo header's default text styling
                     .font(.body)
                     .textCase(nil)
                     .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 16, trailing: 0))
             }
 
-            // Font, Weight, Style
+            // Font: Size, Family, Weight, Style
             Section {
                 // Font Size
                 HStack {
-                    let canIncrease = preferencesStore.selectedReaderThemeResolved.canIncreaseTextSize(at: systemDynamicTypeSize)
-                    let canDecrease = preferencesStore.selectedReaderThemeResolved.canDecreaseTextSize(at: systemDynamicTypeSize)
+                    let canIncrease = prefStore.selectedReaderThemeResolved.canIncreaseTextSize(at: systemDynamicTypeSize)
+                    let canDecrease = prefStore.selectedReaderThemeResolved.canDecreaseTextSize(at: systemDynamicTypeSize)
 
                     Spacer()
 
                     Button {
-                        preferencesStore.decreaseTextSize()
+                        prefStore.decreaseTextSize()
                     } label: {
                         Label("Decrease Font Size", systemImage: "character")
                             .imageScale(.medium)
@@ -121,7 +174,7 @@ struct SettingsAppearanceView: View {
                     Spacer()
 
                     Button {
-                        preferencesStore.increaseTextSize()
+                        prefStore.increaseTextSize()
                     } label: {
                         Label("Increase Font Size", systemImage: "character")
                             .imageScale(.large)
@@ -138,42 +191,56 @@ struct SettingsAppearanceView: View {
                 .listRowInsets(EdgeInsets())
 
                 // Font
-                Picker(selection: fontSelection,
-                       label: Label("Font", systemImage: "textformat")
-                    .imageScale(.medium)
-                    .foregroundStyle(.primary)) {
+                LabeledContent(content: {
+                    Picker("Font",
+                           selection: fontSelection) {
                         ForEach(ReaderThemeFont.allCases, id: \.self) { font in
                             Text(font.displayName)
                                 .tag(font)
                         }
                     }
+                    .labelsHidden()
+                    .frame(height: textRowHeight)
+                }, label: {
+                    fontRowLabel
+                })
+
                 // Weight
-                Picker(selection: fontWeightSelection,
-                       label: Label("Weight", systemImage: "bold")
-                    .imageScale(.medium)
-                    .foregroundStyle(.primary)) {
-                        let themeResolved = preferencesStore.selectedReaderThemeResolved
+                LabeledContent(content: {
+                    Picker("Weight",
+                           selection: fontWeightSelection) {
+                        let themeResolved = prefStore.selectedReaderThemeResolved
                         ForEach(themeResolved.availableFontWeights, id: \.self) { weight in
                             Text(weight.displayName)
                                 .tag(weight)
                         }
                     }
-                // Style
-                Picker(selection: fontDesignSelection,
-                       label: Label("Style", systemImage: "italic")
-                    .imageScale(.medium)
-                    .foregroundStyle(.primary)) {
+                    .labelsHidden()
+                    .frame(height: textRowHeight)
+                }, label: {
+                    fontWeightRowLabel
+                })
+
+                // Style (disables the undo arrow too)
+                LabeledContent(content: {
+                    Picker("Style",
+                           selection: fontDesignSelection) {
                         ForEach(ReaderThemeCustomFontDesign.allCases, id: \.self) { design in
                             Text(design.displayName)
                                 .tag(design)
                         }
                     }
-                    .disabled(!preferencesStore.selectedReaderThemeResolved.canChangeFontDesign)
+                    .labelsHidden()
+                    .frame(height: textRowHeight)
+                }, label: {
+                    fontDesignRowLabel
+                })
+                .disabled(!prefStore.selectedReaderThemeResolved.canChangeFontDesign)
             } header: {
                 Text("Text")
             }
 
-            // Font, Weight, Style
+            // Layout: Line/Word/Char Spacing
             Section {
                 // Line Spacing
                 VStack(alignment: .leading, spacing: 12) {
@@ -182,14 +249,107 @@ struct SettingsAppearanceView: View {
                             .imageScale(.small)
                             .accessibilityHidden(true)
                             .padding([.leading], 4)
+                            .frame(width: 16)
                         Text("Line Spacing")
                             .font(.body)
+
+                        let resolvedTheme = prefStore.selectedReaderThemeResolved
+                        let isEdited = resolvedTheme.customizedPreset?.lineSpacingPercent != nil
+
+                        if isEdited {
+                            Spacer()
+                            SettingsAppearanceEditUndoButton(isEdited: isEdited,
+                                                             action: {
+                                prefStore.updateReaderThemeCustomChanges(
+                                    for: prefStore.readerTheme
+                                ) { $0.lineSpacingPercent = nil }
+                            })
+                        }
                     }
                     HStack(spacing: 16) {
-                        Slider(value: $lineSpacing, in: 1...2, step: 0.05) {
+                        let result = String(format: "%.2f", Double(prefStore.selectedReaderThemeResolved.lineSpacingPercent) / 100)
+
+                        Slider(value: lineSpacingSelection,
+                               in: Self.lineSpacingPercentRangeDouble,
+                               step: 5) {
                             Text("Line Spacing")
                         }
-                        Text(lineSpacing, format: .number.precision(.fractionLength(2)))
+                       .accessibilityValue(result) // otherwise it will read "135%"
+                        Text(result)
+                            .monospacedDigit()
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .padding(.vertical, 2)
+
+                // Word Spacing
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack(spacing: 16) {
+                        Image(systemName: "textformat.characters.arrow.left.and.right")
+                            .imageScale(.small)
+                            .accessibilityHidden(true)
+                            .padding([.leading], 4)
+                            .frame(width: 16)
+                        Text("Word Spacing")
+                            .font(.body)
+
+                        let resolvedTheme = prefStore.selectedReaderThemeResolved
+                        let isEdited = resolvedTheme.customizedPreset?.wordSpacingPercent != nil
+
+                        if isEdited {
+                            Spacer()
+                            SettingsAppearanceEditUndoButton(isEdited: isEdited,
+                                                             action: {
+                                prefStore.updateReaderThemeCustomChanges(
+                                    for: prefStore.readerTheme
+                                ) { $0.wordSpacingPercent = nil }
+                            })
+                        }
+                    }
+                    HStack(spacing: 16) {
+                        Slider(value: wordSpacingSelection,
+                               in: Self.wordSpacingPercentRangeDouble,
+                               step: 5) {
+                            Text("Line Spacing")
+                        }
+                        Text(prefStore.selectedReaderThemeResolved.wordSpacingPercent, format: .percent)
+                            .monospacedDigit()
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .padding(.vertical, 2)
+
+                // Character Spacing
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack(spacing: 16) {
+                        Image(systemName: "text.word.spacing")
+                            .imageScale(.small)
+                            .accessibilityHidden(true)
+                            .padding([.leading], 4)
+                            .frame(width: 16)
+                        Text("Character Spacing")
+                            .font(.body)
+
+                        let resolvedTheme = prefStore.selectedReaderThemeResolved
+                        let isEdited = resolvedTheme.customizedPreset?.characterSpacingPercent != nil
+
+                        if isEdited {
+                            Spacer()
+                            SettingsAppearanceEditUndoButton(isEdited: isEdited,
+                                                             action: {
+                                prefStore.updateReaderThemeCustomChanges(
+                                    for: prefStore.readerTheme
+                                ) { $0.characterSpacingPercent = nil }
+                            })
+                        }
+                    }
+                    HStack(spacing: 16) {
+                        Slider(value: charSpacingSelection,
+                               in: Self.charSpacingPercentRangeDouble,
+                               step: 1) {
+                            Text("Line Spacing")
+                        }
+                        Text(prefStore.selectedReaderThemeResolved.characterSpacingPercent, format: .percent)
                             .monospacedDigit()
                             .foregroundStyle(.secondary)
                     }
@@ -197,6 +357,32 @@ struct SettingsAppearanceView: View {
                 .padding(.vertical, 2)
             } header: {
                 Text("Layout")
+            }
+
+            // Reset Current Theme
+            if prefStore.selectedReaderThemeResolved.customizedPreset?.isCustomized == true {
+                Section {
+                    Button(role: .destructive) {
+                        resetThemeConfirmationIsPresented = true
+                    } label: {
+                        HStack {
+                            Label("Reset", systemImage: "trash.fill")
+                                .imageScale(.small)
+                                .foregroundStyle(.red)
+                            Spacer()
+                        }
+                    }
+                    // reset confirmation
+                    .confirmationDialog("Reset Appearance",
+                                        isPresented: $resetThemeConfirmationIsPresented) {
+                        Button("Reset", role: .destructive) {
+                            let currentTheme = prefStore.readerTheme
+                            prefStore.resetReaderThemeCustomChanges(for: currentTheme)
+                        }
+                    } message: {
+                        Text("Your customizations to the current preset will be lost.")
+                    }
+                }
             }
         }
         .listStyle(.insetGrouped)
@@ -206,7 +392,7 @@ struct SettingsAppearanceView: View {
         .safeAreaInset(edge: .top, spacing: 16) {
             VStack(spacing: 16) {
                 PassagePreviewView(verses: Self.previewVerses,
-                                   readerTheme: preferencesStore.selectedReaderThemeResolved)
+                                   readerTheme: prefStore.selectedReaderThemeResolved)
                     .padding(.horizontal, 16)
                 Divider()
             }
@@ -216,6 +402,68 @@ struct SettingsAppearanceView: View {
         .font(.system(.body))
         // navigation title
         .navigationTitle("Appearance")
+    }
+
+    /// Label for Font picker
+    private var fontRowLabel: some View {
+        let prefStore = preferencesStore
+        let isEdited = prefStore.selectedReaderThemeResolved.customizedPreset?.font != nil
+
+        return HStack(spacing: 16) {
+            Image(systemName: "textformat")
+                .frame(width: 24)
+                .imageScale(.medium)
+                .foregroundStyle(.primary)
+            Text("Font")
+            SettingsAppearanceEditUndoButton(isEdited: isEdited,
+                                             action: {
+                prefStore.updateReaderThemeCustomChanges(
+                    for: prefStore.readerTheme
+                ) { $0.font = nil }
+            })
+        }
+    }
+
+    /// Label for Font Weight picker
+    private var fontWeightRowLabel: some View {
+        let prefStore = preferencesStore
+        let isEdited = prefStore.selectedReaderThemeResolved.customizedPreset?.fontWeight != nil
+
+        return HStack(spacing: 16) {
+            Image(systemName: "bold")
+                .frame(width: 24)
+                .imageScale(.medium)
+                .foregroundStyle(.primary)
+            Text("Weight")
+            SettingsAppearanceEditUndoButton(isEdited: isEdited,
+                                             action: {
+                prefStore.updateReaderThemeCustomChanges(
+                    for: prefStore.readerTheme
+                ) { $0.fontWeight = nil }
+            })
+        }
+    }
+
+    /// Label for Font Design picker
+    private var fontDesignRowLabel: some View {
+        let prefStore = preferencesStore
+        // a Style edit is ignored (and its row disabled) while a named font is chosen
+        let isEdited = prefStore.selectedReaderThemeResolved.customizedPreset?.fontDesign != nil
+            && prefStore.selectedReaderThemeResolved.canChangeFontDesign
+
+        return HStack(spacing: 16) {
+            Image(systemName: "italic")
+                .frame(width: 24)
+                .imageScale(.medium)
+                .foregroundStyle(.primary)
+            Text("Style")
+            SettingsAppearanceEditUndoButton(isEdited: isEdited,
+                                             action: {
+                prefStore.updateReaderThemeCustomChanges(
+                    for: prefStore.readerTheme
+                ) { $0.fontDesign = nil }
+            })
+        }
     }
 
     /// Grid of all theme presets (max 2 rows)
