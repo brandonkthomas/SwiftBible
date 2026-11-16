@@ -201,6 +201,26 @@ struct PreferencesStoreTests {
         #expect(store.readerTextSizeStep == 5)
     }
 
+    /// Tapping the percent label returns text size to the default step 0, and a second store agrees;
+    /// the selected preset's edits are not touched (text size is not part of a preset)
+    @Test func resetTextSizeReturnsToDefault() throws {
+        let suiteName = UUID().uuidString
+        defer { UserDefaults().removePersistentDomain(forName: suiteName) }
+        let userDefaults = try #require(UserDefaults(suiteName: suiteName))
+
+        let store = PreferencesStore(userDefaults: userDefaults)
+        store.updateReaderThemeCustomChanges(for: store.readerTheme) { $0.marginPoints = 40 }
+        store.increaseTextSize()
+        store.increaseTextSize()
+
+        store.resetTextSize()
+
+        let secondStore = PreferencesStore(userDefaults: userDefaults)
+        #expect(store.readerTextSizeStep == 0)
+        #expect(secondStore.readerTextSizeStep == 0)
+        #expect(store.selectedReaderThemeResolved.marginPoints == 40)
+    }
+
     // MARK: Reader Theme Custom Changes
 
     /// A fresh UserDefaults suite with nothing saved has no edits for any preset
@@ -281,12 +301,12 @@ struct PreferencesStoreTests {
 
         let store = PreferencesStore(userDefaults: userDefaults)
 
-        // Ink's own weight (medium) alone: nothing left, so no entry
-        #expect(ReaderTheme.ink.fontWeight == .medium)
-        store.replaceReaderThemeCustomChanges(ReaderThemeCustom(fontWeight: .medium), for: .ink)
+        // Ink's own weight (bold) alone: nothing left, so no entry
+        #expect(ReaderTheme.ink.fontWeight == .bold)
+        store.replaceReaderThemeCustomChanges(ReaderThemeCustom(fontWeight: .bold), for: .ink)
         #expect(store.readerThemeCustomChanges[ReaderTheme.ink.rawValue] == nil)
 
-        // regular differs from Ink's medium: kept
+        // regular differs from Ink's bold: kept
         store.replaceReaderThemeCustomChanges(ReaderThemeCustom(fontWeight: .regular), for: .ink)
         #expect(store.readerThemeCustomChanges[ReaderTheme.ink.rawValue]?.fontWeight == .regular)
 
@@ -310,12 +330,12 @@ struct PreferencesStoreTests {
 
         let store = PreferencesStore(userDefaults: userDefaults)
 
-        // Folio's own font (system) alone: nothing left, so no entry
-        #expect(ReaderTheme.folio.font == .system)
-        store.replaceReaderThemeCustomChanges(ReaderThemeCustom(font: .system), for: .folio)
+        // Folio's own font (Seravek) alone: nothing left, so no entry
+        #expect(ReaderTheme.folio.font == .seravek)
+        store.replaceReaderThemeCustomChanges(ReaderThemeCustom(font: .seravek), for: .folio)
         #expect(store.readerThemeCustomChanges[ReaderTheme.folio.rawValue] == nil)
 
-        // Georgia differs from Folio's system font: kept
+        // Georgia differs from Folio's Seravek: kept
         store.replaceReaderThemeCustomChanges(ReaderThemeCustom(font: .georgia), for: .folio)
         #expect(store.readerThemeCustomChanges[ReaderTheme.folio.rawValue]?.font == .georgia)
     }
@@ -523,7 +543,7 @@ struct PreferencesStoreTests {
 
         preferencesStore.readerTheme = .ink
         #expect(preferencesStore.selectedReaderThemeResolved.basePreset == .ink)
-        #expect(preferencesStore.selectedReaderThemeResolved.fontWeight == .medium)
+        #expect(preferencesStore.selectedReaderThemeResolved.fontWeight == .bold)
 
         preferencesStore.readerTheme = .linen
         #expect(preferencesStore.selectedReaderThemeResolved.basePreset == .linen)

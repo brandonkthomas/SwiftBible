@@ -234,6 +234,27 @@ struct SettingsAppearanceView: View {
             Divider()
             Spacer()
 
+            // Reset to default; disabled by step (not percent), since a step can read 100% at the table end
+            let isDefaultTextSize = preferencesStore.readerTextSizeStep == 0
+            Button {
+                preferencesStore.resetTextSize()
+            } label: {
+                let theme = preferencesStore.selectedReaderThemeResolved
+                let percent = theme.textSizePercent(at: systemDynamicTypeSize)
+                Text(percent, format: .percent)
+                    .monospacedDigit()
+            }
+            // without it, a tap on a disabled A button falls through to the row, which taps this button
+            .buttonStyle(.borderless)
+            .frame(minWidth: 64)
+            .foregroundStyle(isDefaultTextSize ? .secondary : .primary)
+            .disabled(isDefaultTextSize)
+            .accessibilityLabel("Reset Text Size")
+
+            Spacer()
+            Divider()
+            Spacer()
+
             Button {
                 preferencesStore.increaseTextSize()
             } label: {
@@ -249,6 +270,8 @@ struct SettingsAppearanceView: View {
 
             Spacer()
         }
+        // the List starts the separator at the row's first Text (the percent); start it at the row's edge
+        .alignmentGuide(.listRowSeparatorLeading) { $0[.leading] }
         .listRowInsets(EdgeInsets())
     }
 

@@ -184,7 +184,7 @@ struct ReaderThemeTests {
 
     /// A weight snaps to the nearest listed weight by position; a tie goes to the lighter one
     @Test func nearestWeightSnapsToListedWeight() {
-        // Ink's .medium on a Regular/Bold family: Regular (1 step) beats Bold (2 steps)
+        // .medium on a Regular/Bold family: Regular (1 step) beats Bold (2 steps)
         #expect(ReaderThemeFont.georgia.nearestWeight(to: .medium, design: .default) == .regular)
         #expect(ReaderThemeFont.georgia.nearestWeight(to: .semibold, design: .default) == .bold)
         // New York has no light weights
@@ -197,13 +197,12 @@ struct ReaderThemeTests {
 
     // MARK: Font and Style Edits
 
-    /// With no edits, every preset resolves to the system font and its own Style, so nothing changes yet
+    /// With no edits, every preset resolves to its own font and Style
     @MainActor
     @Test func uncustomizedFontIsPresetFont() {
         for preset in ReaderTheme.allCases {
             let themeResolved = ReaderThemeResolved(basePreset: preset)
 
-            #expect(preset.font == .system)
             #expect(themeResolved.font == preset.font)
             #expect(themeResolved.fontDesign == preset.fontDesign)
         }
@@ -307,18 +306,21 @@ struct ReaderThemeTests {
 
     // MARK: Resolved Fonts
 
-    /// The theme builds its fonts from its own font and design: Folio with no edits is
-    /// New York (system serif), and a Georgia edit draws Georgia, for text styles and fixed sizes
+    /// The theme builds its fonts from its own font and design: Classic with no edits is
+    /// New York (system serif), Folio is Seravek, and a Georgia edit draws Georgia, for text
+    /// styles and fixed sizes
     @MainActor
     @Test func themeFontUsesResolvedFontAndDesign() {
+        let classic = ReaderThemeResolved(basePreset: .classic)
         let folio = ReaderThemeResolved(basePreset: .folio)
-        let folioGeorgia = ReaderThemeResolved(basePreset: .folio,
-                                               customizedPreset: ReaderThemeCustom(font: .georgia))
+        let classicGeorgia = ReaderThemeResolved(basePreset: .classic,
+                                                 customizedPreset: ReaderThemeCustom(font: .georgia))
 
-        #expect(resolve(folio.font(.body)) == resolve(.system(.body, design: .serif, weight: .regular)))
-        #expect(resolve(folio.font(fixedSize: 14)) == resolve(.system(size: 14, weight: .regular, design: .serif)))
-        #expect(familyName(folioGeorgia.font(.body)) == "Georgia")
-        #expect(familyName(folioGeorgia.font(fixedSize: 14)) == "Georgia")
+        #expect(resolve(classic.font(.body)) == resolve(.system(.body, design: .serif, weight: .regular)))
+        #expect(resolve(classic.font(fixedSize: 14)) == resolve(.system(size: 14, weight: .regular, design: .serif)))
+        #expect(familyName(folio.font(.body)) == "Seravek")
+        #expect(familyName(classicGeorgia.font(.body)) == "Georgia")
+        #expect(familyName(classicGeorgia.font(fixedSize: 14)) == "Georgia")
     }
 
     /// A requested weight is snapped before drawing: .medium on Georgia draws Regular
@@ -335,7 +337,7 @@ struct ReaderThemeTests {
     }
 
     /// With no weight given, the theme font is Regular; it does not take the theme's
-    /// Scripture weight (Ink's .medium), because these fonts are for app chrome
+    /// Scripture weight (Ink's .bold), because these fonts are for app chrome
     @MainActor
     @Test func themeFontDefaultsToRegularWeight() {
         let ink = ReaderThemeResolved(basePreset: .ink)
@@ -346,24 +348,25 @@ struct ReaderThemeTests {
 
     // MARK: Scripture Fonts
 
-    /// With a regular body (Folio), the Scripture fonts match what the renderer draws today:
-    /// body regular, divine name semibold, verse labels caption2 regular, markers caption2 bold
+    /// With a regular body (Classic, New York), the Scripture fonts are body regular, divine name
+    /// semibold, verse labels caption2 regular, markers caption2 bold
     @MainActor
     @Test func scriptureFontsMatchTodayForRegularBody() {
-        let folio = ReaderThemeResolved(basePreset: .folio)
+        let classic = ReaderThemeResolved(basePreset: .classic)
 
-        #expect(resolve(folio.scriptureFont) == resolve(.system(.body, design: .serif, weight: .regular)))
-        #expect(resolve(folio.divineNameFont) == resolve(.system(.body, design: .serif, weight: .semibold)))
-        #expect(resolve(folio.verseLabelFont) == resolve(.system(.caption2, design: .serif, weight: .regular)))
-        #expect(resolve(folio.markerFont) == resolve(.system(.caption2, design: .serif, weight: .bold)))
+        #expect(resolve(classic.scriptureFont) == resolve(.system(.body, design: .serif, weight: .regular)))
+        #expect(resolve(classic.divineNameFont) == resolve(.system(.body, design: .serif, weight: .semibold)))
+        #expect(resolve(classic.verseLabelFont) == resolve(.system(.caption2, design: .serif, weight: .regular)))
+        #expect(resolve(classic.markerFont) == resolve(.system(.caption2, design: .serif, weight: .bold)))
     }
 
     /// Emphasis is the minimum or two steps above the body weight, whichever is heavier,
     /// capped at the heaviest weight the font has
     @MainActor
     @Test func emphasisStaysAboveBodyWeight() {
-        // Ink: system font, body .medium -> two steps up is .bold
-        let ink = ReaderThemeResolved(basePreset: .ink)
+        // Quiet (San Francisco) with body .medium -> two steps up is .bold
+        let quietMedium = ReaderThemeResolved(basePreset: .quiet,
+                                              customizedPreset: ReaderThemeCustom(fontWeight: .medium))
         // Charter body .bold -> two steps up is .black, which Charter has
         let charterBold = ReaderThemeResolved(basePreset: .linen,
                                               customizedPreset: ReaderThemeCustom(fontWeight: .bold, font: .charter))
@@ -371,8 +374,8 @@ struct ReaderThemeTests {
         let georgiaBold = ReaderThemeResolved(basePreset: .linen,
                                               customizedPreset: ReaderThemeCustom(fontWeight: .bold, font: .georgia))
 
-        #expect(ink.emphasisWeight(minimum: .semibold) == .bold)
-        #expect(ink.emphasisWeight(minimum: .bold) == .bold)
+        #expect(quietMedium.emphasisWeight(minimum: .semibold) == .bold)
+        #expect(quietMedium.emphasisWeight(minimum: .bold) == .bold)
         #expect(charterBold.emphasisWeight(minimum: .semibold) == .black)
         #expect(georgiaBold.emphasisWeight(minimum: .bold) == .bold)
     }
@@ -390,13 +393,13 @@ struct ReaderThemeTests {
 
     // MARK: Marker Baseline Offset
 
-    /// Folio (New York) gets the same raise as the old serif-only calculation, so nothing moves
+    /// Classic (New York) gets the same raise as the old serif-only calculation
     @MainActor
     @Test(arguments: [DynamicTypeSize.large, .xxxLarge, .accessibility3])
-    func markerOffsetMatchesOldValueForFolio(dynamicTypeSize: DynamicTypeSize) {
-        let folio = ReaderThemeResolved(basePreset: .folio)
+    func markerOffsetMatchesOldValueForNewYork(dynamicTypeSize: DynamicTypeSize) {
+        let classic = ReaderThemeResolved(basePreset: .classic)
 
-        #expect(abs(folio.markerBaselineOffset(dynamicTypeSize: dynamicTypeSize)
+        #expect(abs(classic.markerBaselineOffset(dynamicTypeSize: dynamicTypeSize)
                     - oldSerifMarkerOffset(dynamicTypeSize)) < 0.001)
     }
 
@@ -422,15 +425,15 @@ struct ReaderThemeTests {
     }
 
     /// A named font is measured itself: Palatino has less room above its caption2 than
-    /// New York, so its raise is smaller than Folio's
+    /// New York, so its raise is smaller than Classic's
     @MainActor
     @Test func namedFontGetsItsOwnMarkerOffset() {
-        let folio = ReaderThemeResolved(basePreset: .folio)
-        let folioPalatino = ReaderThemeResolved(basePreset: .folio,
-                                                customizedPreset: ReaderThemeCustom(font: .palatino))
+        let classic = ReaderThemeResolved(basePreset: .classic)
+        let classicPalatino = ReaderThemeResolved(basePreset: .classic,
+                                                  customizedPreset: ReaderThemeCustom(font: .palatino))
 
-        #expect(folioPalatino.markerBaselineOffset(dynamicTypeSize: .large)
-                < folio.markerBaselineOffset(dynamicTypeSize: .large))
+        #expect(classicPalatino.markerBaselineOffset(dynamicTypeSize: .large)
+                < classic.markerBaselineOffset(dynamicTypeSize: .large))
     }
 
     // MARK: Line Height
@@ -445,28 +448,28 @@ struct ReaderThemeTests {
     }
 
     /// Line height = line spacing x the Scripture font's natural line height at that size;
-    /// for Folio at the default size that is about today's 30pt
+    /// for Classic (New York) at the default size that is about 30pt
     @MainActor
     @Test(arguments: [DynamicTypeSize.large, .xxxLarge, .accessibility3])
     func lineHeightIsSpacingTimesFontLineHeight(dynamicTypeSize: DynamicTypeSize) {
-        let folio = ReaderThemeResolved(basePreset: .folio)
-        let expected = naturalLineHeight(folio.scriptureFont, dynamicTypeSize) * 1.35
+        let classic = ReaderThemeResolved(basePreset: .classic)
+        let expected = naturalLineHeight(classic.scriptureFont, dynamicTypeSize) * 1.35
 
-        #expect(abs(folio.lineHeight(dynamicTypeSize: dynamicTypeSize) - expected) < 0.01)
+        #expect(abs(classic.lineHeight(dynamicTypeSize: dynamicTypeSize) - expected) < 0.01)
         if dynamicTypeSize == .large {
-            #expect(abs(folio.lineHeight(dynamicTypeSize: .large) - 30) < 0.5)
+            #expect(abs(classic.lineHeight(dynamicTypeSize: .large) - 30) < 0.5)
         }
     }
 
     /// A font with a taller natural line (Iowan) gets taller lines; a shorter one (Palatino) shorter
     @MainActor
     @Test func lineHeightFollowsFont() {
-        let folio = ReaderThemeResolved(basePreset: .folio)
-        let iowan = ReaderThemeResolved(basePreset: .folio, customizedPreset: ReaderThemeCustom(font: .iowan))
-        let palatino = ReaderThemeResolved(basePreset: .folio, customizedPreset: ReaderThemeCustom(font: .palatino))
+        let classic = ReaderThemeResolved(basePreset: .classic)
+        let iowan = ReaderThemeResolved(basePreset: .classic, customizedPreset: ReaderThemeCustom(font: .iowan))
+        let palatino = ReaderThemeResolved(basePreset: .classic, customizedPreset: ReaderThemeCustom(font: .palatino))
 
-        #expect(iowan.lineHeight(dynamicTypeSize: .large) > folio.lineHeight(dynamicTypeSize: .large))
-        #expect(palatino.lineHeight(dynamicTypeSize: .large) < folio.lineHeight(dynamicTypeSize: .large))
+        #expect(iowan.lineHeight(dynamicTypeSize: .large) > classic.lineHeight(dynamicTypeSize: .large))
+        #expect(palatino.lineHeight(dynamicTypeSize: .large) < classic.lineHeight(dynamicTypeSize: .large))
     }
 
     /// A line spacing edit replaces the preset's 135, and the line height follows it
@@ -613,6 +616,46 @@ struct ReaderThemeTests {
         #expect(oneDown.canDecreaseTextSize(at: .large))
     }
 
+    /// With no step, the percent label reads 100 at every system size
+    @MainActor
+    @Test(arguments: DynamicTypeSize.allCases)
+    func textSizePercentIsHundredWithoutStep(dynamicTypeSize: DynamicTypeSize) {
+        #expect(ReaderThemeResolved(basePreset: .classic).textSizePercent(at: dynamicTypeSize) == 100)
+    }
+
+    /// The percent is Scripture's point size over the system size's point size, rounded:
+    /// at Large (17pt), +1 is 19pt (112), +2 is 21pt (124), -1 is 16pt (94)
+    @MainActor
+    @Test func textSizePercentFollowsStep() {
+        func percent(_ step: Int) -> Int {
+            ReaderThemeResolved(basePreset: .classic, textSizeStep: step).textSizePercent(at: .large)
+        }
+
+        #expect(percent(1) == 112)
+        #expect(percent(2) == 124)
+        #expect(percent(-1) == 94)
+    }
+
+    /// The percent is measured on the Scripture font itself: named fonts scale less than the
+    /// system font above Large (Seravek is 20pt at xxLarge, the system font 21pt), so the same
+    /// step reads 118 on Folio and 124 on Classic
+    @MainActor
+    @Test func textSizePercentUsesScriptureFont() {
+        let classic = ReaderThemeResolved(basePreset: .classic, textSizeStep: 2)
+        let folio = ReaderThemeResolved(basePreset: .folio, textSizeStep: 2)
+
+        #expect(classic.textSizePercent(at: .large) == 124)
+        #expect(folio.textSizePercent(at: .large) == 118)
+    }
+
+    /// When the system is already at the largest size, a step changes nothing, so the label reads 100
+    @MainActor
+    @Test func textSizePercentIsHundredAtTableEnd() {
+        let oneUp = ReaderThemeResolved(basePreset: .classic, textSizeStep: 1)
+
+        #expect(oneUp.textSizePercent(at: .accessibility5) == 100)
+    }
+
     // MARK: Character and Word Spacing
 
     /// Every preset starts with no extra spacing, so nothing moves yet
@@ -699,19 +742,20 @@ struct ReaderThemeTests {
 
     // MARK: Resolved Font Weight
 
-    /// A preset's weight snaps to the chosen font: Ink's .medium draws Regular on Georgia
-    /// instead of CoreText's Bold, and stays .medium where the font has it
+    /// With no weight edit, the preset's weight is used with any font: Ink's .bold stays .bold on
+    /// its own Athelas, on the system font and on Georgia (each has a bold face)
     @MainActor
-    @Test func presetWeightSnapsToChosenFont() {
-        let inkSystem = ReaderThemeResolved(basePreset: .ink)
-        let inkNewYork = ReaderThemeResolved(basePreset: .ink,
-                                             customizedPreset: ReaderThemeCustom(fontDesign: .serif))
+    @Test func presetWeightFollowsChosenFont() {
+        let ink = ReaderThemeResolved(basePreset: .ink)
+        let inkSystem = ReaderThemeResolved(basePreset: .ink,
+                                            customizedPreset: ReaderThemeCustom(font: .system))
         let inkGeorgia = ReaderThemeResolved(basePreset: .ink,
                                              customizedPreset: ReaderThemeCustom(font: .georgia))
 
-        #expect(inkSystem.fontWeight == .medium)
-        #expect(inkNewYork.fontWeight == .medium)
-        #expect(inkGeorgia.fontWeight == .regular)
+        #expect(ink.font == .athelas)
+        #expect(ink.fontWeight == .bold)
+        #expect(inkSystem.fontWeight == .bold)
+        #expect(inkGeorgia.fontWeight == .bold)
     }
 
     /// A weight edit is snapped for drawing but saved as chosen, so it returns with a font that has it
@@ -735,8 +779,10 @@ struct ReaderThemeTests {
     @Test func fontWeightIsAlwaysAnAvailableWeight() {
         let folioCharter = ReaderThemeResolved(basePreset: .folio,
                                                customizedPreset: ReaderThemeCustom(font: .charter))
-        #expect(ReaderThemeResolved(basePreset: .folio).availableFontWeights
+        #expect(ReaderThemeResolved(basePreset: .classic).availableFontWeights
                 == [.regular, .medium, .semibold, .bold, .heavy, .black])
+        #expect(ReaderThemeResolved(basePreset: .folio).availableFontWeights
+                == [.ultraLight, .light, .regular, .medium, .bold])
         #expect(folioCharter.availableFontWeights == [.regular, .bold, .black])
 
         for preset in ReaderTheme.allCases {

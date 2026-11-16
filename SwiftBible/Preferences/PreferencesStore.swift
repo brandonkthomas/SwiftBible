@@ -234,6 +234,10 @@ final class PreferencesStore {
         modifyTextSize(by: -1)
     }
 
+    func resetTextSize() {
+        self.readerTextSizeStep = 0
+    }
+
     // MARK: Functions (Private)
 
     private func modifyTextSize(by amount: Int) {

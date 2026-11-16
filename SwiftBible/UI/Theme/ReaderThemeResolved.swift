@@ -180,6 +180,15 @@ struct ReaderThemeResolved: Equatable {
         && self.scriptureDynamicTypeSize(for: systemSize) != DynamicTypeSize.allCases.first
     }
 
+    func textSizePercent(at systemDynamicTypeSize: DynamicTypeSize) -> Int {
+        let resolvedDynamicTypeSize = scriptureDynamicTypeSize(for: systemDynamicTypeSize)
+        let resolvedPointSize = scripturePointSize(dynamicTypeSize: resolvedDynamicTypeSize)
+        let systemPointSize = scripturePointSize(dynamicTypeSize: systemDynamicTypeSize)
+
+        let result = resolvedPointSize / systemPointSize * 100
+        return Int(result.rounded())
+    }
+
     /// Centralized font builder (for specific style/weight)
     func font(_ textStyle: Font.TextStyle,
               weight: ReaderThemeCustomFontWeight = .regular) -> Font {
