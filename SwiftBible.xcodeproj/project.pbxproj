@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		852A8D9F309451BB00B25CB3 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 852A8D9E309451BB00B25CB3 /* Localizable.xcstrings */; };
 		85BBD28C2FF0EC9B00C2FE15 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 85BBD28B2FF0EC9B00C2FE15 /* Assets.xcassets */; };
+		85E9A3FF30AB5BE8003A6153 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 85E9A3FE30AB5BE8003A6153 /* PrivacyInfo.xcprivacy */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -34,6 +35,7 @@
 		8539B67F2FEEE6C0007FC718 /* SwiftBibleTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SwiftBibleTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		8539B6892FEEE6C0007FC718 /* SwiftBibleUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SwiftBibleUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		85BBD28B2FF0EC9B00C2FE15 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		85E9A3FE30AB5BE8003A6153 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -82,6 +84,7 @@
 		8539B6692FEEE6C0007FC718 = {
 			isa = PBXGroup;
 			children = (
+				85E9A3FE30AB5BE8003A6153 /* PrivacyInfo.xcprivacy */,
 				852A8D9E309451BB00B25CB3 /* Localizable.xcstrings */,
 				85BBD28B2FF0EC9B00C2FE15 /* Assets.xcassets */,
 				8539B6742FEEE6C0007FC718 /* SwiftBible */,
@@ -222,6 +225,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				85E9A3FF30AB5BE8003A6153 /* PrivacyInfo.xcprivacy in Resources */,
 				852A8D9F309451BB00B25CB3 /* Localizable.xcstrings in Resources */,
 				85BBD28C2FF0EC9B00C2FE15 /* Assets.xcassets in Resources */,
 			);
@@ -441,6 +445,7 @@
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = Bible;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.books";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
@@ -492,6 +497,7 @@
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = Bible;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.books";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
