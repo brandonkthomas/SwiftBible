@@ -66,6 +66,11 @@ struct ReaderThemeResolved: Equatable {
         customizedPreset?.fontDesign ?? basePreset.fontDesign
     }
 
+    /// Is this a system font (i.e. it has configurable designs)?
+    var canChangeFontDesign: Bool {
+        font == .system
+    }
+
     /// edit's weight (else the preset's) snapped to nearest supported weight
     var fontWeight: ReaderThemeCustomFontWeight {
         let requestedWeight = customizedPreset?.fontWeight ?? basePreset.fontWeight

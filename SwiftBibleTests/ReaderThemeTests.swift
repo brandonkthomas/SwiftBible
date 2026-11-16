@@ -242,6 +242,32 @@ struct ReaderThemeTests {
         #expect(old.fontDesign == nil)
     }
 
+    // MARK: Picker Labels and Style Row
+
+    /// Weight menu labels, lightest first (the menu lists weights in `allCases` order)
+    @Test func fontWeightDisplayNames() {
+        let names = ReaderThemeCustomFontWeight.allCases.map { String(localized: $0.displayName) }
+
+        #expect(names == ["Ultralight", "Thin", "Light", "Regular", "Medium",
+                          "Semibold", "Bold", "Heavy", "Black"])
+    }
+
+    /// Style labels say what the reader sees; "Default" would not say sans serif
+    @Test func fontDesignDisplayNames() {
+        #expect(String(localized: ReaderThemeCustomFontDesign.default.displayName) == "Sans Serif")
+        #expect(String(localized: ReaderThemeCustomFontDesign.serif.displayName) == "Serif")
+    }
+
+    /// The Style row is enabled only for the system font, because named fonts ignore Style
+    @MainActor
+    @Test(arguments: ReaderThemeFont.allCases)
+    func styleIsEditableOnlyForSystemFont(font: ReaderThemeFont) {
+        let themeResolved = ReaderThemeResolved(basePreset: .folio,
+                                                customizedPreset: ReaderThemeCustom(font: font))
+
+        #expect(themeResolved.canChangeFontDesign == (font == .system))
+    }
+
     // MARK: Edits Decoding
 
     /// A value this build does not know (e.g. a font added by a newer build) drops only

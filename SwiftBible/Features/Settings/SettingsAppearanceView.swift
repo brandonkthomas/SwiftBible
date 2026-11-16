@@ -20,8 +20,6 @@ struct SettingsAppearanceView: View {
     @Namespace private var themePresetsGridNamespace
 
     /// Placeholder
-    @State private var fontList: [String] = ["SF Pro","SF Pro 2","SF Pro 3"]
-    /// Placeholder
     @State private var lineSpacing: Double = 1.2
 
     /// Sample text for the theme preview window
@@ -31,6 +29,42 @@ struct SettingsAppearanceView: View {
         "And God said, “Let there be light,” and there was light.",
         "And God saw that the light was good. And God separated the light from the darkness."
     ]
+
+    /// What is the currently-selected Font customization?
+    private var fontSelection: Binding<ReaderThemeFont> {
+        Binding {
+            preferencesStore.selectedReaderThemeResolved.font
+        } set: { newValue in
+            let currentTheme = preferencesStore.readerTheme
+            preferencesStore.updateReaderThemeCustomChanges(for: currentTheme) {
+                $0.font = newValue
+            }
+        }
+    }
+
+    /// What is the currently-selected Font Weight customization?
+    private var fontWeightSelection: Binding<ReaderThemeCustomFontWeight> {
+        Binding {
+            preferencesStore.selectedReaderThemeResolved.fontWeight
+        } set: { newValue in
+            let currentTheme = preferencesStore.readerTheme
+            preferencesStore.updateReaderThemeCustomChanges(for: currentTheme) {
+                $0.fontWeight = newValue
+            }
+        }
+    }
+
+    /// What is the currently-selected Font Design customization?
+    private var fontDesignSelection: Binding<ReaderThemeCustomFontDesign> {
+        Binding {
+            preferencesStore.selectedReaderThemeResolved.fontDesign
+        } set: { newValue in
+            let currentTheme = preferencesStore.readerTheme
+            preferencesStore.updateReaderThemeCustomChanges(for: currentTheme) {
+                $0.fontDesign = newValue
+            }
+        }
+    }
 
     // MARK: Views
 
@@ -104,41 +138,37 @@ struct SettingsAppearanceView: View {
                 .listRowInsets(EdgeInsets())
 
                 // Font
-                Picker(selection: $fontList,
+                Picker(selection: fontSelection,
                        label: Label("Font", systemImage: "textformat")
                     .imageScale(.medium)
                     .foregroundStyle(.primary)) {
-                        Text("SF Pro")
-                            .tag("SF Pro")
-                        Text("SF Pro 2")
-                            .tag("SF Pro 2")
-                        Text("SF Pro 3")
-                            .tag("SF Pro 3")
+                        ForEach(ReaderThemeFont.allCases, id: \.self) { font in
+                            Text(font.displayName)
+                                .tag(font)
+                        }
                     }
                 // Weight
-                Picker(selection: $fontList,
+                Picker(selection: fontWeightSelection,
                        label: Label("Weight", systemImage: "bold")
                     .imageScale(.medium)
                     .foregroundStyle(.primary)) {
-                        Text("SF Pro")
-                            .tag("SF Pro")
-                        Text("SF Pro 2")
-                            .tag("SF Pro 2")
-                        Text("SF Pro 3")
-                            .tag("SF Pro 3")
+                        let themeResolved = preferencesStore.selectedReaderThemeResolved
+                        ForEach(themeResolved.availableFontWeights, id: \.self) { weight in
+                            Text(weight.displayName)
+                                .tag(weight)
+                        }
                     }
                 // Style
-                Picker(selection: $fontList,
+                Picker(selection: fontDesignSelection,
                        label: Label("Style", systemImage: "italic")
                     .imageScale(.medium)
                     .foregroundStyle(.primary)) {
-                        Text("SF Pro")
-                            .tag("SF Pro")
-                        Text("SF Pro 2")
-                            .tag("SF Pro 2")
-                        Text("SF Pro 3")
-                            .tag("SF Pro 3")
+                        ForEach(ReaderThemeCustomFontDesign.allCases, id: \.self) { design in
+                            Text(design.displayName)
+                                .tag(design)
+                        }
                     }
+                    .disabled(!preferencesStore.selectedReaderThemeResolved.canChangeFontDesign)
             } header: {
                 Text("Text")
             }
@@ -226,11 +256,11 @@ struct SettingsAppearanceView: View {
                             }
                         }
                         // colors
-//                        .background(themeResolved.backgroundColor)
+                        .background(themeResolved.backgroundColor)
                         .foregroundStyle(themeResolved.primaryTextColor)
                         // size
                         .cornerRadius(10)
-                        .glassEffect(.regular.interactive().tint(themeResolved.backgroundColor),
+                        .glassEffect(.clear.interactive(),
                                      in: .rect(cornerRadius: 10))
                         // glass identity follows the preset, not its edits
                         .glassEffectID(theme.id, in: themePresetsGridNamespace)

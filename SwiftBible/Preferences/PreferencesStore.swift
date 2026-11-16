@@ -139,9 +139,18 @@ final class PreferencesStore {
 
     // MARK: Functions
 
+    /// Returns a resolved ReaderTheme for a given preset + all its user customizations
+    func readerThemeResolved(for preset: ReaderTheme) -> ReaderThemeResolved {
+        ReaderThemeResolved(basePreset: preset,
+                            customizedPreset: readerThemeCustomChanges[preset.rawValue],
+                            textSizeStep: readerTextSizeStep)
+    }
+
     /// Apply modified custom changes (skip unmodified options)
-    func setReaderThemeCustomChanges(_ changes: ReaderThemeCustom,
-                                     for preset: ReaderTheme) {
+    ///
+    /// Starts from nothing + overrides ALL customizations for a given base preset
+    func replaceReaderThemeCustomChanges(_ changes: ReaderThemeCustom,
+                                         for preset: ReaderTheme) {
         // clean up changes before saving
         var stagedChanges = changes
         let key = preset.rawValue
@@ -197,11 +206,22 @@ final class PreferencesStore {
         readerThemeCustomChanges[key] = stagedChanges
     }
 
-    /// Returns a resolved ReaderTheme for a given preset + all its user customizations
-    func readerThemeResolved(for preset: ReaderTheme) -> ReaderThemeResolved {
-        ReaderThemeResolved(basePreset: preset,
-                            customizedPreset: readerThemeCustomChanges[preset.rawValue],
-                            textSizeStep: readerTextSizeStep)
+    /// Updates one or more existing custom changes for a base preset
+    ///
+    /// Does NOT replace the entire preset's customizations like `replaceReaderThemeCustomChanges` does
+    func updateReaderThemeCustomChanges(for preset: ReaderTheme,
+                                        _ change: (inout ReaderThemeCustom) -> Void) {
+        // cannot guard here because we need nil to still execute; just use default init fallback
+        var custom = self.readerThemeCustomChanges[preset.rawValue] ?? .init()
+
+        // execute change closure (inout will ensure that `custom` is modified in-place)
+        change(&custom)
+        replaceReaderThemeCustomChanges(custom, for: preset)
+    }
+
+    /// Clear all user modifications from a given theme preset
+    func resetReaderThemeCustomChanges(for preset: ReaderTheme) {
+        self.readerThemeCustomChanges[preset.rawValue] = nil
     }
 
     /// Increase text size by 1 step

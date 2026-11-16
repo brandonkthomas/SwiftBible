@@ -125,6 +125,21 @@ nonisolated enum ReaderThemeCustomFontWeight: String, Codable, CaseIterable {
         case .black: .black
         }
     }
+
+    /// Font weight display name
+    var displayName: LocalizedStringResource {
+        switch self {
+        case .ultraLight: return "Ultralight"
+        case .thin: return "Thin"
+        case .light: return "Light"
+        case .regular: return "Regular"
+        case .medium: return "Medium"
+        case .semibold: return "Semibold"
+        case .bold: return "Bold"
+        case .heavy: return "Heavy"
+        case .black: return "Black"
+        }
+    }
 }
 
 /// App-owned font design because `Font.Design` is not `Codable`
@@ -136,6 +151,14 @@ nonisolated enum ReaderThemeCustomFontDesign: String, Codable, CaseIterable {
         switch self {
         case .default: .default
         case .serif: .serif
+        }
+    }
+
+    /// Font design display name
+    var displayName: LocalizedStringResource {
+        switch self {
+        case .default: return "Sans Serif"
+        case .serif: return "Serif"
         }
     }
 }
