@@ -191,7 +191,7 @@ struct PassagePreviewView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .frame(height: windowHeight)
-        .glassEffect(windowHeight == nil ? .identity : .clear, in: .rect(cornerRadius: 10))
+        .glassEffect(windowHeight == nil ? .identity : .clear.interactive(), in: .rect(cornerRadius: 10))
         // .fill: safe area insets = bars; the passage ignores them, so its coordinates
         // start at the top of the screen
         .onGeometryChange(for: Viewport.self) { proxy in
