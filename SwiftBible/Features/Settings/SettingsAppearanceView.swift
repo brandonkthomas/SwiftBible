@@ -22,6 +22,9 @@ struct SettingsAppearanceView: View {
     /// Is the "Reset Theme" popover visible?
     @State private var resetThemeConfirmationIsPresented: Bool = false
 
+    ///
+    @State private var appearanceSettingsSavedToCloudKit: Bool = false
+
     @ScaledMetric(relativeTo: .body) private var textRowHeight: CGFloat = 23
 
     /// Sample text for the theme preview window
@@ -132,16 +135,16 @@ struct SettingsAppearanceView: View {
                 // Color Scheme
                 Picker(selection: $prefStore.preferredColorScheme,
                        label: Label("Appearance", systemImage: "circle.righthalf.filled")
-                              .imageScale(.medium)
-                              .foregroundStyle(.primary)) {
-                    ForEach(PreferredColorScheme.allCases) { scheme in
-                        Text(scheme.displayName)
-                            .tag(scheme)
+                    .imageScale(.medium)
+                    .foregroundStyle(.primary)) {
+                        ForEach(PreferredColorScheme.allCases) { scheme in
+                            Text(scheme.displayName)
+                                .tag(scheme)
+                        }
                     }
-                }
             } header: { // place in header so section's rounded corners dont clip our corners
                 themePresetsGridView
-                    // undo header's default text styling
+                // undo header's default text styling
                     .font(.body)
                     .textCase(nil)
                     .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 16, trailing: 0))
@@ -183,6 +186,23 @@ struct SettingsAppearanceView: View {
                 Section {
                     resetThemeButton
                 }
+            }
+
+            // Sync to iCloud
+            Section {
+                Toggle(isOn: $appearanceSettingsSavedToCloudKit,
+                       label: {
+                    Text("Sync to iCloud")
+                    // , systemImage: "arrow.trianglehead.2.clockwise.rotate.90.icloud.fill"
+//                        .imageScale(.medium)
+//                        .foregroundStyle(.primary)
+                })
+                .disabled(true)
+            } header: {
+                Text("Backup")
+            } footer: {
+                Text(appearanceSettingsSavedToCloudKit ? "Appearance settings are available across your devices." : "Appearance settings apply to only this device.")
+                    .font(.footnote)
             }
         }
         .listStyle(.insetGrouped)
@@ -530,7 +550,7 @@ struct SettingsAppearanceView: View {
                 preferencesStore.resetReaderThemeCustomChanges(for: currentTheme)
             }
         } message: {
-            Text("Your customizations to the current preset will be lost.")
+            Text("Your customizations for the current preset will be lost.")
         }
     }
 

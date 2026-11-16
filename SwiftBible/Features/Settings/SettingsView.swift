@@ -22,6 +22,38 @@ struct SettingsView: View {
         NavigationStack {
             Group {
                 List {
+                    // Modules
+                    Section {
+                        // Reader
+                        NavigationLink {
+                            SettingsReaderView()
+                        } label: {
+                            settingsRow(title: "Read",
+                                        symbol: "book.fill",
+                                        color: .accent)
+                        }
+                        // Library
+                        NavigationLink {
+                            SettingsLibraryView()
+                        } label: {
+                            settingsRow(title: "Annotations",
+                                        symbol: "bookmark.fill",
+                                        color: Color(red: 0.95, green: 0.7, blue: 0.5))
+                        }
+                        // Search
+                        NavigationLink {
+                            ContentUnavailableView(
+                                "Search",
+                                systemImage: "magnifyingglass",
+                                description: Text("Coming soon.")
+                            )
+                        } label: {
+                            settingsRow(title: "Search",
+                                        symbol: "magnifyingglass",
+                                        color: Color(.systemGray2))
+                        }
+                    }
+
                     // Themes
                     Section {
                         // Appearance
@@ -40,46 +72,6 @@ struct SettingsView: View {
                         //                                    symbol: "globe",
                         //                                    color: .green)
                         //                    }
-                    }
-
-                    // Modules
-                    Section {
-                        // Reader
-                        NavigationLink {
-                            ContentUnavailableView(
-                                "Read",
-                                systemImage: "book",
-                                description: Text("Coming soon.")
-                            )
-                        } label: {
-                            settingsRow(title: "Read",
-                                        symbol: "book.fill",
-                                        color: .accent)
-                        }
-                        // Library
-                        NavigationLink {
-                            ContentUnavailableView(
-                                "Annotations",
-                                systemImage: "bookmark",
-                                description: Text("Coming soon.")
-                            )
-                        } label: {
-                            settingsRow(title: "Annotations",
-                                        symbol: "bookmark.fill",
-                                        color: Color(red: 0.95, green: 0.7, blue: 0.5))
-                        }
-                        // Search
-                        NavigationLink {
-                            ContentUnavailableView(
-                                "Search",
-                                systemImage: "magnifyingglass",
-                                description: Text("Coming soon.")
-                            )
-                        } label: {
-                            settingsRow(title: "Search",
-                                        symbol: "magnifyingglass",
-                                        color: Color(.systemGray2))
-                        }
                     }
 
                     // About / Help
@@ -110,7 +102,7 @@ struct SettingsView: View {
                         } label: {
                             settingsRow(title: "Help & Support",
                                         symbol: "questionmark.circle.fill",
-                                        color: .blue)
+                                        color: .orange)
                         }
                         // Rate link (app store)
                         NavigationLink {
