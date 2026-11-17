@@ -29,6 +29,9 @@ struct SwiftBibleApp: App {
     /// does not mean we expect to replace appEnvironment.
     @State private var appEnvironment = AppEnvironment()
 
+    /// Installs the scene delegate that receives Home Screen quick actions
+    @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
+
     // MARK: Properties (Public)
 
     /// Initial body.

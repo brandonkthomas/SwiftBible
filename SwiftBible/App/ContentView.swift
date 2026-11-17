@@ -16,6 +16,9 @@ struct ContentView: View {
     /// Mirrors tab bar minimization, derived from the bottom accessory's placement
     @State private var isTabBarExpanded = true
 
+    /// Home Screen quick action handoff from the scene delegate
+    private let quickActionRouter = QuickActionRouter.shared
+
     // MARK: Properties (Private, Environment)
 
     /// Read appEnvironment.readerStore environment value from current view environment
@@ -78,6 +81,17 @@ struct ContentView: View {
 
             // Load book names for each annotation
             await libraryStore.loadMissingBookMetadata()
+        }
+        // Home Screen quick action: switch tabs, then clear so the same action can fire again
+        // initial: true covers cold launch, where the action is set before this view appears
+        .onChange(of: quickActionRouter.pending, initial: true) { _, action in
+            guard let action else { return }
+            switch action {
+            case .read: selectedTab = .read
+            case .saved: selectedTab = .saved
+            case .search: selectedTab = .search
+            }
+            quickActionRouter.pending = nil
         }
         // Any annotation save/delete from anywhere (Reader, Library, editor sheet) bumps
         // changeCount; reload the Reader's per-passage annotation state here, once, so writers

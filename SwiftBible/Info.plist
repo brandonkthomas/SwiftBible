@@ -6,5 +6,32 @@
 	<array>
 		<string>remote-notification</string>
 	</array>
+	<key>UIApplicationShortcutItems</key>
+	<array>
+		<dict>
+			<key>UIApplicationShortcutItemType</key>
+			<string>read</string>
+			<key>UIApplicationShortcutItemTitle</key>
+			<string>Read</string>
+			<key>UIApplicationShortcutItemIconSymbolName</key>
+			<string>book</string>
+		</dict>
+		<dict>
+			<key>UIApplicationShortcutItemType</key>
+			<string>saved</string>
+			<key>UIApplicationShortcutItemTitle</key>
+			<string>Saved</string>
+			<key>UIApplicationShortcutItemIconSymbolName</key>
+			<string>bookmark</string>
+		</dict>
+		<dict>
+			<key>UIApplicationShortcutItemType</key>
+			<string>search</string>
+			<key>UIApplicationShortcutItemTitle</key>
+			<string>Search</string>
+			<key>UIApplicationShortcutItemIconSymbolName</key>
+			<string>magnifyingglass</string>
+		</dict>
+	</array>
 </dict>
 </plist>
