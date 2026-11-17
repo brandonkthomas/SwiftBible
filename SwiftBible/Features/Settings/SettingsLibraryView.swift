@@ -29,6 +29,7 @@ struct SettingsLibraryView: View {
                     .font(.footnote)
             }
         }
+        .navigationTitle("Annotations")
     }
 }
 

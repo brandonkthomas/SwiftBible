@@ -28,6 +28,7 @@ struct SettingsReaderView: View {
                     .font(.footnote)
             }
         }
+        .navigationTitle("Read")
     }
 }
 
