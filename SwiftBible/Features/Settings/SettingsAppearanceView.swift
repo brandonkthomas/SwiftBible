@@ -68,56 +68,25 @@ struct SettingsAppearanceView: View {
         }
     }
 
-    /// What is the currently-selected Font Design customization?
-    private var lineSpacingSelection: Binding<Double> {
-        Binding {
-            Double(preferencesStore.selectedReaderThemeResolved.lineSpacingPercent)
-        } set: { newValue in
-            let currentTheme = preferencesStore.readerTheme
-            preferencesStore.updateReaderThemeCustomChanges(for: currentTheme) {
-                $0.lineSpacingPercent = Int(newValue.rounded())
-            }
-        }
-    }
-
     /// Used for UI slider min/max
     private static let lineSpacingPercentRangeDouble: ClosedRange<Double> =
     Double(ReaderThemeResolved.lineSpacingPercentRange.lowerBound)
     ... Double(ReaderThemeResolved.lineSpacingPercentRange.upperBound)
-
-    /// What is the currently-selected Font Design customization?
-    private var wordSpacingSelection: Binding<Double> {
-        Binding {
-            Double(preferencesStore.selectedReaderThemeResolved.wordSpacingPercent)
-        } set: { newValue in
-            let currentTheme = preferencesStore.readerTheme
-            preferencesStore.updateReaderThemeCustomChanges(for: currentTheme) {
-                $0.wordSpacingPercent = Int(newValue.rounded())
-            }
-        }
-    }
 
     /// Used for UI slider min/max
     private static let wordSpacingPercentRangeDouble: ClosedRange<Double> =
     Double(ReaderThemeResolved.wordSpacingPercentRange.lowerBound)
     ... Double(ReaderThemeResolved.wordSpacingPercentRange.upperBound)
 
-    /// What is the currently-selected Font Design customization?
-    private var charSpacingSelection: Binding<Double> {
-        Binding {
-            Double(preferencesStore.selectedReaderThemeResolved.characterSpacingPercent)
-        } set: { newValue in
-            let currentTheme = preferencesStore.readerTheme
-            preferencesStore.updateReaderThemeCustomChanges(for: currentTheme) {
-                $0.characterSpacingPercent = Int(newValue.rounded())
-            }
-        }
-    }
-
     /// Used for UI slider min/max
     private static let charSpacingPercentRangeDouble: ClosedRange<Double> =
     Double(ReaderThemeResolved.characterSpacingPercentRange.lowerBound)
     ... Double(ReaderThemeResolved.characterSpacingPercentRange.upperBound)
+
+    /// Used for UI slider min/max
+    private static let marginPointsRangeDouble: ClosedRange<Double> =
+    Double(ReaderThemeResolved.marginPointsRange.lowerBound)
+    ... Double(ReaderThemeResolved.marginPointsRange.upperBound)
 
     // MARK: View (MAIN)
 
@@ -174,6 +143,9 @@ struct SettingsAppearanceView: View {
 
                 // Character Spacing
                 charSpacingRow
+
+                // Margin
+                marginRow
             } header: {
                 Text("Layout")
             }
@@ -428,7 +400,8 @@ struct SettingsAppearanceView: View {
             HStack(spacing: 16) {
                 let result = String(format: "%.2f", Double(preferencesStore.selectedReaderThemeResolved.lineSpacingPercent) / 100)
 
-                Slider(value: lineSpacingSelection,
+                Slider(value: sliderSelection(resolved: \.lineSpacingPercent,
+                                              custom: \.lineSpacingPercent),
                        in: Self.lineSpacingPercentRangeDouble,
                        step: 5) {
                     Text("Line Spacing")
@@ -467,15 +440,16 @@ struct SettingsAppearanceView: View {
             }
             HStack(spacing: 16) {
                 let result = String(format: "%.2f", Double(preferencesStore.selectedReaderThemeResolved.wordSpacingPercent) / 100)
+                let percent = preferencesStore.selectedReaderThemeResolved.wordSpacingPercent
 
-                Slider(value: wordSpacingSelection,
+                Slider(value: sliderSelection(resolved: \.wordSpacingPercent,
+                                              custom: \.wordSpacingPercent),
                        in: Self.wordSpacingPercentRangeDouble,
                        step: 5) {
                     Text("Word Spacing")
                 }
-                       .accessibilityValue(result) // otherwise it will read "135%"
-
-                Text(preferencesStore.selectedReaderThemeResolved.wordSpacingPercent, format: .percent)
+                       .accessibilityValue(Text(percent, format: .percent))
+                Text(percent, format: .percent)
                     .monospacedDigit()
                     .foregroundStyle(.secondary)
             }
@@ -508,15 +482,57 @@ struct SettingsAppearanceView: View {
             }
             HStack(spacing: 16) {
                 let result = String(format: "%.2f", Double(preferencesStore.selectedReaderThemeResolved.characterSpacingPercent) / 100)
+                let percent = preferencesStore.selectedReaderThemeResolved.characterSpacingPercent
 
-                Slider(value: charSpacingSelection,
+                Slider(value: sliderSelection(resolved: \.characterSpacingPercent,
+                                              custom: \.characterSpacingPercent),
                        in: Self.charSpacingPercentRangeDouble,
                        step: 1) {
                     Text("Character Spacing")
                 }
-                       .accessibilityValue(result) // otherwise it will read "135%"
+                       .accessibilityValue(Text(percent, format: .percent))
+                Text(percent, format: .percent)
+                    .monospacedDigit()
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .padding(.vertical, 2)
+    }
 
-                Text(preferencesStore.selectedReaderThemeResolved.characterSpacingPercent, format: .percent)
+    private var marginRow: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 16) {
+                Image(systemName: "text.aligncenter")
+                    .imageScale(.small)
+                    .accessibilityHidden(true)
+                    .padding([.leading], 4)
+                    .frame(width: 16)
+                Text("Margin")
+                    .font(.body)
+
+                let resolvedTheme = preferencesStore.selectedReaderThemeResolved
+                let isEdited = resolvedTheme.customizedPreset?.marginPoints != nil
+
+                if isEdited {
+                    SettingsAppearanceEditUndoButton(isEdited: isEdited,
+                                                     action: {
+                        preferencesStore.updateReaderThemeCustomChanges(
+                            for: preferencesStore.readerTheme
+                        ) { $0.marginPoints = nil }
+                    })
+                }
+            }
+            HStack(spacing: 16) {
+                let result = String(format: "%.2f", Double(preferencesStore.selectedReaderThemeResolved.marginPoints) / 100)
+
+                Slider(value: sliderSelection(resolved: \.marginPoints,
+                                              custom: \.marginPoints),
+                       in: Self.marginPointsRangeDouble,
+                       step: 1) {
+                    Text("Margin")
+                }
+                       .accessibilityValue(result)
+                Text(result)
                     .monospacedDigit()
                     .foregroundStyle(.secondary)
             }
@@ -611,6 +627,20 @@ struct SettingsAppearanceView: View {
             }
         }
         .padding([.leading, .trailing], 1) // fix glass border clipping on edges
+    }
+
+    // MARK: Functions (Private)
+
+    private func sliderSelection(resolved: KeyPath<ReaderThemeResolved, Int>,
+                                 custom: WritableKeyPath<ReaderThemeCustom, Int?>) -> Binding<Double> {
+        Binding {
+            Double(preferencesStore.selectedReaderThemeResolved[keyPath: resolved])
+        } set: { newValue in
+            let currentTheme = preferencesStore.readerTheme
+            preferencesStore.updateReaderThemeCustomChanges(for: currentTheme) {
+                $0[keyPath: custom] = Int(newValue.rounded())
+            }
+        }
     }
 }
 
