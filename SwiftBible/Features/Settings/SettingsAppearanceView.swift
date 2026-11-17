@@ -11,10 +11,16 @@ struct SettingsAppearanceView: View {
 
     // MARK: Properties (Private)
 
+    @Environment(\.self) private var environment
+
+    @Environment(\.colorScheme) private var colorScheme
+
     @Environment(\.dynamicTypeSize) private var systemDynamicTypeSize
 
     /// Read appEnvironment.preferencesStore environment value from current view environment
     @Environment(PreferencesStore.self) private var preferencesStore: PreferencesStore
+
+    // MARK: Properties (Private, UI)
 
     /// Used for preset grid liquid glass effect
     @Namespace private var themePresetsGridNamespace
@@ -22,15 +28,11 @@ struct SettingsAppearanceView: View {
     /// Is the "Reset Theme" popover visible?
     @State private var resetThemeConfirmationIsPresented: Bool = false
 
+    // MARK: Properties (Private, Scaling/Fonts)
+
     @ScaledMetric(relativeTo: .body) private var textRowHeight: CGFloat = 23
 
-    /// Sample text for the theme preview window
-    private static let previewVerses = [
-        "In the beginning, God created the heavens and the earth.",
-        "The earth was without form and void, and darkness was over the face of the deep. And the Spirit of God was hovering over the face of the waters.",
-        "And God said, “Let there be light,” and there was light.",
-        "And God saw that the light was good. And God separated the light from the darkness."
-    ]
+    // MARK: Properties (Private, Computed)
 
     /// What is the currently-selected Font customization?
     private var fontSelection: Binding<ReaderThemeFont> {
@@ -67,6 +69,16 @@ struct SettingsAppearanceView: View {
             }
         }
     }
+
+    // MARK: Properties (Private, Static)
+
+    /// Sample text for the theme preview window
+    private static let previewVerses = [
+        "In the beginning, God created the heavens and the earth.",
+        "The earth was without form and void, and darkness was over the face of the deep. And the Spirit of God was hovering over the face of the waters.",
+        "And God said, “Let there be light,” and there was light.",
+        "And God saw that the light was good. And God separated the light from the darkness."
+    ]
 
     /// Used for UI slider min/max
     private static let lineSpacingPercentRangeDouble: ClosedRange<Double> =
@@ -108,12 +120,24 @@ struct SettingsAppearanceView: View {
                                 .tag(scheme)
                         }
                     }
+
+                // Background Color
+                backgroundColorPickerRow
+
+                // Primary Text
+                primaryTextColorPickerRow
+
+                // Secondary Text
+                secondaryTextColorPickerRow
             } header: { // place in header so section's rounded corners dont clip our corners
                 themePresetsGridView
                 // undo header's default text styling
                     .font(.body)
                     .textCase(nil)
                     .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 16, trailing: 0))
+            } footer: {
+                Text("Color changes apply only to the current Appearance.")
+                    .font(.footnote)
             }
 
             // Font: Size, Family, Weight, Style
@@ -507,7 +531,7 @@ struct SettingsAppearanceView: View {
                     .accessibilityHidden(true)
                     .padding([.leading], 4)
                     .frame(width: 16)
-                Text("Margin")
+                Text("Margins")
                     .font(.body)
 
                 let resolvedTheme = preferencesStore.selectedReaderThemeResolved
@@ -523,21 +547,138 @@ struct SettingsAppearanceView: View {
                 }
             }
             HStack(spacing: 16) {
-                let result = String(format: "%.2f", Double(preferencesStore.selectedReaderThemeResolved.marginPoints) / 100)
+                let result = String(format: "%.0f", Double(preferencesStore.selectedReaderThemeResolved.marginPoints))
 
                 Slider(value: sliderSelection(resolved: \.marginPoints,
                                               custom: \.marginPoints),
                        in: Self.marginPointsRangeDouble,
                        step: 1) {
-                    Text("Margin")
+                    Text("Margins")
                 }
-                       .accessibilityValue(result)
+                       .accessibilityValue("\(result) points")
                 Text(result)
                     .monospacedDigit()
                     .foregroundStyle(.secondary)
             }
         }
         .padding(.vertical, 2)
+    }
+
+    private var backgroundColorPickerRow: some View {
+        let color = colorSelection(resolved: \.backgroundColor,
+                                   light: \.backgroundColorLight,
+                                   dark: \.backgroundColorDark)
+        return ColorPicker(selection: color,
+                           supportsOpacity: false) {
+            HStack(spacing: 21) {
+                Image(systemName: "app.background.dotted")
+                    .imageScale(.small)
+                    .accessibilityHidden(true)
+                    .padding([.leading], 4)
+                    .frame(width: 16)
+                Text("Background")
+                    .font(.body)
+
+                let resolvedTheme = preferencesStore.selectedReaderThemeResolved
+                let isDarkEdited = resolvedTheme.customizedPreset?.backgroundColorDark != nil
+                let isLightEdited = resolvedTheme.customizedPreset?.backgroundColorLight != nil
+
+                if colorScheme == .dark, isDarkEdited {
+                    SettingsAppearanceEditUndoButton(isEdited: isDarkEdited,
+                                                     action: {
+                        preferencesStore.updateReaderThemeCustomChanges(
+                            for: preferencesStore.readerTheme
+                        ) { $0.backgroundColorDark = nil }
+                    })
+                } else if colorScheme == .light, isLightEdited {
+                    SettingsAppearanceEditUndoButton(isEdited: isLightEdited,
+                                                     action: {
+                        preferencesStore.updateReaderThemeCustomChanges(
+                            for: preferencesStore.readerTheme
+                        ) { $0.backgroundColorLight = nil }
+                    })
+                }
+            }
+        }
+        .padding([.leading, .trailing], 2)
+    }
+
+    private var primaryTextColorPickerRow: some View {
+        let color = colorSelection(resolved: \.primaryTextColor,
+                                   light: \.primaryTextColorLight,
+                                   dark: \.primaryTextColorDark)
+        return ColorPicker(selection: color,
+                           supportsOpacity: false) {
+            HStack(spacing: 21) {
+                Image(systemName: "swatchpalette.fill")
+                    .imageScale(.small)
+                    .accessibilityHidden(true)
+                    .padding([.leading], 4)
+                    .frame(width: 16)
+                Text("Primary Text")
+                    .font(.body)
+
+                let resolvedTheme = preferencesStore.selectedReaderThemeResolved
+                let isDarkEdited = resolvedTheme.customizedPreset?.primaryTextColorDark != nil
+                let isLightEdited = resolvedTheme.customizedPreset?.primaryTextColorLight != nil
+
+                if colorScheme == .dark, isDarkEdited {
+                    SettingsAppearanceEditUndoButton(isEdited: isDarkEdited,
+                                                     action: {
+                        preferencesStore.updateReaderThemeCustomChanges(
+                            for: preferencesStore.readerTheme
+                        ) { $0.primaryTextColorDark = nil }
+                    })
+                } else if colorScheme == .light, isLightEdited {
+                    SettingsAppearanceEditUndoButton(isEdited: isLightEdited,
+                                                     action: {
+                        preferencesStore.updateReaderThemeCustomChanges(
+                            for: preferencesStore.readerTheme
+                        ) { $0.primaryTextColorLight = nil }
+                    })
+                }
+            }
+        }
+        .padding([.leading, .trailing], 2)
+    }
+
+    private var secondaryTextColorPickerRow: some View {
+        let color = colorSelection(resolved: \.secondaryTextColor,
+                                   light: \.secondaryTextColorLight,
+                                   dark: \.secondaryTextColorDark)
+        return ColorPicker(selection: color,
+                           supportsOpacity: false) {
+            HStack(spacing: 21) {
+                Image(systemName: "swatchpalette")
+                    .imageScale(.small)
+                    .accessibilityHidden(true)
+                    .padding([.leading], 4)
+                    .frame(width: 16)
+                Text("Secondary Text")
+                    .font(.body)
+
+                let resolvedTheme = preferencesStore.selectedReaderThemeResolved
+                let isDarkEdited = resolvedTheme.customizedPreset?.secondaryTextColorDark != nil
+                let isLightEdited = resolvedTheme.customizedPreset?.secondaryTextColorLight != nil
+
+                if colorScheme == .dark, isDarkEdited {
+                    SettingsAppearanceEditUndoButton(isEdited: isDarkEdited,
+                                                     action: {
+                        preferencesStore.updateReaderThemeCustomChanges(
+                            for: preferencesStore.readerTheme
+                        ) { $0.secondaryTextColorDark = nil }
+                    })
+                } else if colorScheme == .light, isLightEdited {
+                    SettingsAppearanceEditUndoButton(isEdited: isLightEdited,
+                                                     action: {
+                        preferencesStore.updateReaderThemeCustomChanges(
+                            for: preferencesStore.readerTheme
+                        ) { $0.secondaryTextColorLight = nil }
+                    })
+                }
+            }
+        }
+        .padding([.leading, .trailing], 2)
     }
 
     // MARK: Views (Buttons)
@@ -631,6 +772,7 @@ struct SettingsAppearanceView: View {
 
     // MARK: Functions (Private)
 
+    /// Used for Layout slider rows
     private func sliderSelection(resolved: KeyPath<ReaderThemeResolved, Int>,
                                  custom: WritableKeyPath<ReaderThemeCustom, Int?>) -> Binding<Double> {
         Binding {
@@ -639,6 +781,21 @@ struct SettingsAppearanceView: View {
             let currentTheme = preferencesStore.readerTheme
             preferencesStore.updateReaderThemeCustomChanges(for: currentTheme) {
                 $0[keyPath: custom] = Int(newValue.rounded())
+            }
+        }
+    }
+
+    /// Used for Color picker rows
+    private func colorSelection(resolved: KeyPath<ReaderThemeResolved, Color>,
+                                light: WritableKeyPath<ReaderThemeCustom, Color.Resolved?>,
+                                dark: WritableKeyPath<ReaderThemeCustom, Color.Resolved?>) -> Binding<Color> {
+        Binding {
+            Color(preferencesStore.selectedReaderThemeResolved[keyPath: resolved])
+        } set: { newValue in
+            let currentTheme = preferencesStore.readerTheme
+            let value = newValue.resolve(in: environment)
+            preferencesStore.updateReaderThemeCustomChanges(for: currentTheme) {
+                $0[keyPath: colorScheme == .dark ? dark : light] = value
             }
         }
     }
