@@ -88,6 +88,25 @@ struct VerseActionsView: View {
         return "\(selectedChapter.number):\(selectedVerses.lowerBound)\(endText)"
     }
 
+    /// Used for Share action
+    private var shareSelectedRangeAndTranslationLabel: String {
+        guard let selectedBook = readerStore.selectedBook else {
+            return chapterAndVersesLabel
+        }
+        let translation = readerStore.selectedTranslation?.abbreviation
+        let translationResolved = translation == nil ? "" : " (\(translation!))"
+        return "\(selectedBook.displayName) \(chapterAndVersesLabel)\(translationResolved)"
+    }
+
+    /// Used for Share action
+    private var shareText: String {
+        guard let selectedRangeText = readerStore.selectedVersesText else {
+            return ""
+        }
+        let header = shareSelectedRangeAndTranslationLabel
+        return "\(header)\n\(selectedRangeText)"
+    }
+
     // MARK: Views
 
     /// Tab bar accessory for Reader view
@@ -138,18 +157,13 @@ struct VerseActionsView: View {
             }
 
             // Share
-            Button(action: {
-                // TODO: open share sheet
-            }) {
-                Image(systemName: "square.and.arrow.up.fill")
+            ShareLink(item: "",
+                      subject: Text(shareSelectedRangeAndTranslationLabel),
+                      message: Text(shareText)) { // will never be nil
+                Label("Share", systemImage: "square.and.arrow.up.fill")
                     .font(.system(size: actionSymbolSize))
+                    .labelStyle(.iconOnly)
             }
-            // SHARELINK has weird trailing space
-//            ShareLink(item: "",
-//                      preview: SharePreview("", image: "AppIcon")) { // TODO: get raw text from readerStore.selectedVerses
-//                Label("", systemImage: "square.and.arrow.up.fill")
-//                    .font(.system(size: actionSymbolSize))
-//            }
         }
         // font, color
         .font(readerTheme.font(fixedSize: labelFontSize, weight: .medium))

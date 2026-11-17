@@ -103,6 +103,39 @@ final class ReaderStore {
         return selectedVerses.compactMap { passageHighlightColors[$0] }
     }
 
+    /// Plain scripture text for the current selection (no verse labels or footnote markers)
+    ///
+    /// Paragraphs are joined with a single space
+    var selectedVersesText: String? {
+        guard let selectedVerses,
+              let selectedRenderedPassage else {
+            return nil
+        }
+        let selectedRange = RenderedVerseRange(range: selectedVerses)
+
+        let paragraphTexts = selectedRenderedPassage.paragraphs.compactMap { paragraph -> String? in
+            var text = ""
+            for run in paragraph.runs where run.verseRange?.overlaps(verseRange: selectedRange) == true {
+                switch run {
+                case .text(let runText, _), .styledText(let runText, _, _):
+                    // Parsed runs are trimmed; match the renderer's spacing between runs
+                    text += runText + PassageTextRenderer.trailingSeparator(after: runText)
+                case .verseLabel:
+                    // Label supplies a space when the prior run didn't (i.e. ends in “)
+                    if let last = text.last, !last.isWhitespace {
+                        text += " "
+                    }
+                case .footnoteMarker:
+                    break
+                }
+            }
+            let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+            return trimmed.isEmpty ? nil : trimmed
+        }
+
+        return paragraphTexts.isEmpty ? nil : paragraphTexts.joined(separator: " ")
+    }
+
     /// Can we navigate backward by 1 chapter right now given the current selection + loaded collections?
     var previousAdjacentChapterExists: Bool {
         guard let selectedChapterNumber = self.selectedChapter?.number else {

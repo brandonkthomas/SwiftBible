@@ -273,7 +273,7 @@ struct PassageTextRenderer {
     }
 
     /// Append space if previous character was a hyphen or curled endquote
-    private static func trailingSeparator(after text: String) -> String {
+    static func trailingSeparator(after text: String) -> String {
         guard let lastCharacter = text.last else {
             return ""
         }
