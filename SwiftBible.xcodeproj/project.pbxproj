@@ -31,7 +31,7 @@
 
 /* Begin PBXFileReference section */
 		852A8D9E309451BB00B25CB3 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; name = Localizable.xcstrings; path = SwiftBible/Localizable.xcstrings; sourceTree = "<group>"; };
-		8539B6722FEEE6C0007FC718 /* SwiftBible.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SwiftBible.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		8539B6722FEEE6C0007FC718 /* Bible: Read & Annotate.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Bible: Read & Annotate.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		8539B67F2FEEE6C0007FC718 /* SwiftBibleTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SwiftBibleTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		8539B6892FEEE6C0007FC718 /* SwiftBibleUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SwiftBibleUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		85BBD28B2FF0EC9B00C2FE15 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -110,7 +110,7 @@
 		8539B6732FEEE6C0007FC718 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				8539B6722FEEE6C0007FC718 /* SwiftBible.app */,
+				8539B6722FEEE6C0007FC718 /* Bible: Read & Annotate.app */,
 				8539B67F2FEEE6C0007FC718 /* SwiftBibleTests.xctest */,
 				8539B6892FEEE6C0007FC718 /* SwiftBibleUITests.xctest */,
 			);
@@ -140,7 +140,7 @@
 			packageProductDependencies = (
 			);
 			productName = SwiftBible;
-			productReference = 8539B6722FEEE6C0007FC718 /* SwiftBible.app */;
+			productReference = 8539B6722FEEE6C0007FC718 /* Bible: Read & Annotate.app */;
 			productType = "com.apple.product-type.application";
 		};
 		8539B67E2FEEE6C0007FC718 /* SwiftBibleTests */ = {
@@ -480,7 +480,7 @@
 				MACOSX_DEPLOYMENT_TARGET = 26.1;
 				MARKETING_VERSION = 0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = net.brandonthomas.SwiftBible;
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_NAME = "Bible: Read & Annotate";
 				REGISTER_APP_GROUPS = YES;
 				SDKROOT = auto;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -534,7 +534,7 @@
 				MACOSX_DEPLOYMENT_TARGET = 26.1;
 				MARKETING_VERSION = 0.1;
 				PRODUCT_BUNDLE_IDENTIFIER = net.brandonthomas.SwiftBible;
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_NAME = "Bible: Read & Annotate";
 				REGISTER_APP_GROUPS = YES;
 				SDKROOT = auto;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
