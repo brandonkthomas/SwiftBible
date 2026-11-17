@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import TipKit
 
 struct PassagePickerView: View {
 
@@ -19,6 +20,10 @@ struct PassagePickerView: View {
 
     /// What's our current configured theme?
     @Environment(\.readerTheme) private var readerTheme
+
+    // MARK: Properties (Private, TipKit)
+
+    private let passagePickerTip = PassagePickerTip()
 
     // MARK: Properties (Private, Computed)
 
@@ -83,6 +88,7 @@ struct PassagePickerView: View {
             // -- transition between this and VerseActionsView on tabBarAccessory
             passagePickerButtonView
             .transition(.blurReplace)
+            .popoverTip(passagePickerTip, arrowEdge: .bottom)
 
             Spacer()
 
@@ -114,6 +120,7 @@ struct PassagePickerView: View {
     /// Opens PassagePickerSheetView for choosing book/chapter or translation
     private var passagePickerButtonView: some View {
         Button {
+            passagePickerTip.invalidate(reason: .actionPerformed)
             isPickerSheetPresented = true
         } label: {
             // Label: selected Book/Chapter names & Translation abbreviation

@@ -8,6 +8,7 @@
 import Foundation
 import Observation
 import OSLog
+import TipKit
 import SwiftData // for PersistentModel/ModelContainer/ModelConfiguration/Schema
 
 /// App-wide owner of various repositories (AppConfiguration, ReaderStore, LibraryRepository)
@@ -101,7 +102,7 @@ final class AppEnvironment {
             // Try to merge dupes first (iCloud race/edge case)
             try libraryRepository.mergeDuplicateTags()
         } catch {
-            Self.logger.error("AppEnvironment: libraryRepository.mergeDuplicateTags() failed: \(error.localizedDescription)")
+            Self.logger.error("libraryRepository.mergeDuplicateTags() failed: \(error.localizedDescription)")
         }
 
         self.libraryRepository = libraryRepository
@@ -180,5 +181,16 @@ final class AppEnvironment {
         self.libraryStore = LibraryStore(libraryRepository: libraryRepository,
                                          catalogStore: catalogStore,
                                          passageStore: passageStore)
+
+        // Done with deps...
+        // TipKit
+        if !Self.isRunningTests {
+            do {
+//                try Tips.resetDatastore()
+                try Tips.configure()
+            } catch {
+                Self.logger.error("Failed to initialize TipKit: \(error.localizedDescription)")
+            }
+        }
     }
 }
