@@ -19,6 +19,14 @@ struct SwiftBibleMigrationPlanTests {
         #expect(versions == [Schema.Version(1, 0, 0)])
     }
 
+    /// the newest schema in the plan is the one the app opens; fails if a version bump
+    /// updates only one of `SwiftBibleSchemaCurrent` and the plan
+    @Test func lastSchemaIsCurrent() throws {
+        let lastSchema = try #require(SwiftBibleMigrationPlan.schemas.last)
+
+        #expect(ObjectIdentifier(lastSchema) == ObjectIdentifier(SwiftBibleSchemaCurrent.self))
+    }
+
     /// one version means nothing to migrate between
     @Test func hasNoStagesWhileOnlyV1() {
         #expect(SwiftBibleMigrationPlan.stages.isEmpty)

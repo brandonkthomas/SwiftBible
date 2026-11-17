@@ -23,6 +23,4 @@ enum SwiftBibleSchemaV1: VersionedSchema {
     }
 }
 
-// Required so other files can find these classes
-typealias StoredVerseAnnotation = SwiftBibleSchemaV1.StoredVerseAnnotation
-typealias StoredTag = SwiftBibleSchemaV1.StoredTag
+// The app-wide names (StoredVerseAnnotation, StoredTag) live in SwiftBibleSchemaCurrent.swift

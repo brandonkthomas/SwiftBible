@@ -42,7 +42,7 @@ final class AppEnvironment {
     /// Xcode sets XCTestConfigurationFilePath for hosted runs; the class check covers runners that don't.
     private static var isRunningTests: Bool {
         ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
-            || NSClassFromString("XCTestCase") != nil
+        || NSClassFromString("XCTestCase") != nil
     }
 
     // MARK: Init
@@ -56,20 +56,31 @@ final class AppEnvironment {
         self.appConfiguration = appConfiguration
 
         // ModelContainer - app-wide @Model storage
-        // Use explicit ModelConfiguration here for easier caller variations in tests/CloudKit
-        let typesToRegister: [any PersistentModel.Type] = [
-            StoredVerseAnnotation.self,
-            StoredTag.self
-        ]
-
         do {
-            let schema: Schema = .init(typesToRegister)
             // Hosted test runs launch the app too; keep them off iCloud so they never sync the real store
-            let modelConfiguration = ModelConfiguration(schema: schema,
-                                                        cloudKitDatabase: Self.isRunningTests ? .none : .automatic)
-            self.modelContainer = try ModelContainer(for: schema,
-                                                     migrationPlan: SwiftBibleMigrationPlan.self,
-                                                     configurations: [modelConfiguration])
+            let modelConfiguration = ModelConfiguration(cloudKitDatabase: Self.isRunningTests ? .none : .automatic)
+
+            // Perform best-effort backup (if needed) BEFORE we assign modelContainer
+            do {
+                if let currentBuildNumber = Bundle.main.infoDictionary?["CFBundleVersion"] as? String,
+                   !Self.isRunningTests {
+                    let backupURL = URL.applicationSupportDirectory
+                        .appending(path: "SwiftBible")
+                        .appending(path: "LibraryStoreBackups")
+
+                    let backup = LibraryStoreBackup(storeURL: modelConfiguration.url,
+                                                    backupsDirectory: backupURL,
+                                                    userDefaults: UserDefaults.standard)
+
+                    _ = try backup.backUpIfBuildChanged(currentBuildNumber: currentBuildNumber)
+                }
+            } catch {
+                // the store still opens; only this build's pre-migration copy is missing
+                Self.logger.error("LibraryStoreBackup failed; continuing without a backup: \(error.localizedDescription)")
+            }
+
+            // We're done here...
+            self.modelContainer = try ModelContainer.library(configuration: modelConfiguration)
         } catch {
             preconditionFailure("Failed to initialize ModelContainer: \(error.localizedDescription)")
         }
