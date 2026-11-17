@@ -9,29 +9,38 @@ import SwiftUI
 
 struct SettingsLibraryView: View {
 
-    ///
-    @State private var librarySettingsSavedToCloudKit: Bool = false
+    /// Read appEnvironment.preferencesStore environment value from current view environment
+    @Environment(PreferencesStore.self) private var preferencesStore: PreferencesStore
 
-    ///
     var body: some View {
+        @Bindable var prefStore = preferencesStore
         List {
-            // Sync to iCloud
+            // iCloud Backup
             Section {
-                Toggle(isOn: $librarySettingsSavedToCloudKit,
-                       label: {
-                    Text("Sync to iCloud")
-                })
-                .disabled(true)
+                Toggle("Sync to iCloud", isOn: $prefStore.syncAnnotationsToICloud)
             } header: {
                 Text("Backup")
             } footer: {
-                Text(librarySettingsSavedToCloudKit ? "Annotations are backed up and available across your devices." : "Annotations are not backed up and are available only on this device.")
-                    .font(.footnote)
+                let applicableText = prefStore.syncAnnotationsToICloud
+                ? "Annotations are backed up and available across your devices."
+                : "Annotations are not backed up and are available only on this device."
+                let noticeText = "Applies after restarting the app."
+
+                Text("\(applicableText) \(noticeText)")
+                .font(.footnote)
             }
         }
         .navigationTitle("Annotations")
     }
 }
+
+#Preview {
+    NavigationStack {
+        SettingsLibraryView()
+            .environment(PreferencesStore(userDefaults: .standard))
+    }
+}
+
 
 #Preview {
     SettingsReaderView()

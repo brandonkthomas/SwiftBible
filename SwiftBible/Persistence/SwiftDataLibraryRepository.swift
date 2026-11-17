@@ -5,7 +5,9 @@
 //  Created by Brandon Thomas on 2026-07-12.
 //
 
+import CoreData
 import Foundation
+import OSLog
 import SwiftData
 
 @Observable
@@ -16,14 +18,52 @@ final class SwiftDataLibraryRepository: LibraryRepository {
     let container: ModelContainer
     let context: ModelContext
 
+    // MARK: Properties (Private)
+
     /// See LibraryRepository.changeCount
     private(set) var changeCount: Int = 0
-    
+
+    /// Used for CoreData change observer
+    @ObservationIgnored
+    private var observerToken: (any NSObjectProtocol)?
+
+    /// Logger
+    private static let logger = Logger(subsystem: "SwiftBible", category: "SwiftDataLibraryRepository")
+
+    // MARK: Init
+
+    /// Store ModelContainer and register CoreData remote change observer
     init(modelContainer: ModelContainer) {
         self.container = modelContainer
         self.context = modelContainer.mainContext
+
+        // register observer
+        let storeURL = modelContainer.configurations.first?.url
+        let center = NotificationCenter.default
+
+        observerToken = center.addObserver(
+            forName: NSNotification.Name.NSPersistentStoreRemoteChange,
+            object: nil,
+            queue: OperationQueue.main
+        ) { [weak self] note in // NotifCenter keeps closure until removeObserver(); make weak so deinit works
+            guard note.userInfo?["storeURL"] as? URL == storeURL else { return }
+            MainActor.assumeIsolated {
+                do {
+                    try self?.handleStoreChange()
+                } catch {
+                    Self.logger.error("Self.init() > Self.handleStoreChange() failed: \(error.localizedDescription)")
+                }
+            }
+        }
     }
-    
+
+    /// Cleanup
+    isolated deinit {
+        if let observerToken {
+            NotificationCenter.default.removeObserver(observerToken)
+        }
+    }
+
     // MARK: Functions (Implementations)
     
     /// Map VerseAnnotation => StoredVerseAnnotation, insert into self.context, & save self.context
@@ -107,7 +147,49 @@ final class SwiftDataLibraryRepository: LibraryRepository {
         try context.save()
         changeCount += 1
     }
-    
+
+    /// Consolidate duplicate tags + repoint their annotations
+    func mergeDuplicateTags() throws {
+        let allTags = try context.fetch(FetchDescriptor<StoredTag>())
+        let groupedTags = Dictionary(grouping: allTags,
+                                     by: \.normalizedName)
+        var didMerge = false
+
+        for (_, tags) in groupedTags where tags.count > 1 {
+            // Deterministic survivor so every device converges on the same tag
+            let sortedTags = tags.sorted { $0.id.uuidString < $1.id.uuidString }
+            guard let keeper = sortedTags.first else { continue }
+
+            for duplicateTag in sortedTags.dropFirst() {
+                // Repoint annotations before delete; .nullify would otherwise drop the tag
+                for annotation in duplicateTag.annotations ?? [] {
+                    var annotationTags = annotation.tags ?? []
+                    annotationTags.removeAll { $0.id == duplicateTag.id }
+                    if !annotationTags.contains(where: { $0.id == keeper.id }) {
+                        annotationTags.append(keeper)
+                    }
+                    annotation.tags = annotationTags
+                }
+                context.delete(duplicateTag)
+                didMerge = true
+            }
+        }
+
+        guard didMerge else { return }
+        try context.save()
+        changeCount += 1
+    }
+
+    /// Call mergeDuplicateTags() and bump changeCount by 1 if it was not modified
+    func handleStoreChange() throws {
+        let preRunChangeCount = changeCount
+        try mergeDuplicateTags()
+        let postRunChangeCount = changeCount
+        if preRunChangeCount == postRunChangeCount {
+            changeCount += 1
+        }
+    }
+
     // MARK: Functions (Private)
     
     private func storageContent(for content: AnnotationContent)
@@ -182,8 +264,15 @@ final class SwiftDataLibraryRepository: LibraryRepository {
         // Now use the Predicate as the FetchDescriptor definition & try to search
         let fetchDescriptor = FetchDescriptor(predicate: predicate)
         
-        let existingTags: [StoredTag] = try context.fetch(fetchDescriptor)
-        
+        let fetchedTags: [StoredTag] = try context.fetch(fetchDescriptor)
+
+        // duplicates can exist before mergeDuplicateTags() runs (e.g. iCloud sync);
+        // link only the lowest-id tag per name, the same survivor a merge keeps
+        let existingTags = Dictionary(grouping: fetchedTags, by: \.normalizedName)
+            .compactMap { _, tags in
+                tags.min { $0.id.uuidString < $1.id.uuidString }
+            }
+
         // track any normalized names already in the store
         let existingKeys = Set(existingTags.map(\.normalizedName))
         

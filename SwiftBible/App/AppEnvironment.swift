@@ -55,10 +55,18 @@ final class AppEnvironment {
         let appConfiguration = AppConfiguration()
         self.appConfiguration = appConfiguration
 
+        // deps (set to self @ bottom of init)
+        let prefStore = PreferencesStore(userDefaults: .standard)
+
         // ModelContainer - app-wide @Model storage
         do {
+            // Only enable iCloud when NOT running tests & our Preference is enabled
             // Hosted test runs launch the app too; keep them off iCloud so they never sync the real store
-            let modelConfiguration = ModelConfiguration(cloudKitDatabase: Self.isRunningTests ? .none : .automatic)
+            let cloudKitDB: ModelConfiguration.CloudKitDatabase =
+                !Self.isRunningTests && prefStore.syncAnnotationsToICloud
+                ? .automatic
+                : .none
+            let modelConfiguration = ModelConfiguration(cloudKitDatabase: cloudKitDB)
 
             // Perform best-effort backup (if needed) BEFORE we assign modelContainer
             do {
@@ -87,6 +95,14 @@ final class AppEnvironment {
 
         // LibraryRepository - storage for annotations
         let libraryRepository = SwiftDataLibraryRepository(modelContainer: modelContainer)
+
+        do {
+            // Try to merge dupes first (iCloud race/edge case)
+            try libraryRepository.mergeDuplicateTags()
+        } catch {
+            Self.logger.error("AppEnvironment: libraryRepository.mergeDuplicateTags() failed: \(error.localizedDescription)")
+        }
+
         self.libraryRepository = libraryRepository
 
         // ReaderStore [pre-req] - API requests, Reader state, etc
@@ -151,7 +167,7 @@ final class AppEnvironment {
                                               catalogCache: catalogCache)
 
         // PreferencesStore
-        self.preferencesStore = PreferencesStore(userDefaults: .standard)
+        self.preferencesStore = prefStore
 
         // ReaderStore 2 - API requests, Reader state, etc
         self.readerStore = ReaderStore(passageStore: passageStore,

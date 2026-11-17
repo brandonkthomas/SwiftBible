@@ -67,6 +67,13 @@ final class PreferencesStore {
         }
     }
 
+    /// Whether LibraryStore is synced to iCloud or stored locally only
+    var syncAnnotationsToICloud: Bool = true {
+        didSet {
+            userDefaults.set(syncAnnotationsToICloud, forKey: Self.syncAnnotationsToICloudKey)
+        }
+    }
+
     // MARK: Properties (NOT Persisted)
 
     /// Resolved ReaderTheme for the currently selected preset + all its user customizations
@@ -93,6 +100,9 @@ final class PreferencesStore {
 
     /// Stable UserDefaults key for preferred ColorScheme storage
     private static let preferredColorSchemeKey = "net.brandonthomas.SwiftBible.preferredColorScheme"
+
+    /// Stable UserDefaults key for Library iCloud syncing storage
+    private static let syncAnnotationsToICloudKey = "net.brandonthomas.SwiftBible.syncAnnotationsToICloud"
 
     private static let logger = Logger(subsystem: "SwiftBible", category: "PreferencesStore")
 
@@ -135,6 +145,11 @@ final class PreferencesStore {
             ReaderThemeResolved.textSizeStepRange.upperBound
         )
         self.readerTextSizeStep = readerTextSizeStepClamped
+
+        // LibraryStore iCloud Sync
+        // Do not use userDefaults.bool(); this defaults to false when missing
+        let syncAnnotations = userDefaults.object(forKey: Self.syncAnnotationsToICloudKey) as? Bool
+        self.syncAnnotationsToICloud = syncAnnotations ?? true
     }
 
     // MARK: Functions

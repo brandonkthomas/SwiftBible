@@ -19,6 +19,7 @@ struct PreferencesStoreTests {
     private static let preferredColorSchemeKey = "net.brandonthomas.SwiftBible.preferredColorScheme"
     private static let readerThemeCustomChangesKey = "net.brandonthomas.SwiftBible.readerThemeCustomChanges"
     private static let readerTextSizeStepKey = "net.brandonthomas.SwiftBible.readerTextSizeStep"
+    private static let syncAnnotationsToICloudKey = "net.brandonthomas.SwiftBible.syncAnnotationsToICloud"
 
     // MARK: Reader Position
 
@@ -574,6 +575,33 @@ struct PreferencesStoreTests {
         store.replaceReaderThemeCustomChanges(ReaderThemeCustom(), for: .ink)
 
         #expect(String(localized: store.readerThemeResolved(for: .ink).displayName) == "Ink")
+    }
+
+    // MARK: Sync Annotations to iCloud
+
+    /// Nothing saved means sync is on: existing installs and fresh installs both start syncing
+    @Test func missingSyncAnnotationsSettingReadsAsOn() throws {
+        let suiteName = UUID().uuidString
+        defer { UserDefaults().removePersistentDomain(forName: suiteName) }
+        let userDefaults = try #require(UserDefaults(suiteName: suiteName))
+
+        let store = PreferencesStore(userDefaults: userDefaults)
+
+        #expect(store.syncAnnotationsToICloud)
+    }
+
+    /// Turning sync off is saved; AppEnvironment reads it on the next launch through a new store
+    @Test func secondStoreReadsSyncAnnotationsOff() throws {
+        let suiteName = UUID().uuidString
+        defer { UserDefaults().removePersistentDomain(forName: suiteName) }
+        let userDefaults = try #require(UserDefaults(suiteName: suiteName))
+
+        let writer = PreferencesStore(userDefaults: userDefaults)
+        writer.syncAnnotationsToICloud = false
+        let reader = PreferencesStore(userDefaults: userDefaults)
+
+        #expect(reader.syncAnnotationsToICloud == false)
+        #expect(userDefaults.object(forKey: Self.syncAnnotationsToICloudKey) as? Bool == false)
     }
 
     // MARK: Private Helpers

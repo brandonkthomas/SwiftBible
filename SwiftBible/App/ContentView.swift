@@ -85,6 +85,11 @@ struct ContentView: View {
         // Lives on the root view because it stays on screen while any tab is visible
         .onChange(of: libraryRepository.changeCount) {
             readerStore.refreshPassageHighlights()
+            // reload LibraryStore as well (otherwise it will only reload when focused)
+            libraryStore.load()
+            Task {
+                await libraryStore.loadMissingBookMetadata()
+            }
         }
     }
 }
