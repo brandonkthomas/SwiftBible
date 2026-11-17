@@ -31,6 +31,9 @@ protocol LibraryRepository {
 
     /// Delete a highlight/tag/note
     func delete(_ id: UUID) throws
+
+    /// Delete all highlights/tags/notes (DANGEROUS!)
+    func deleteAll() throws
 }
 
 enum LibraryRepositoryError: Error {

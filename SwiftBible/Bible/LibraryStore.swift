@@ -210,6 +210,21 @@ final class LibraryStore {
         return errorCount == 0
     }
 
+    /// Request deletion of ALL ANNOTATIONS (DANGEROUS!)
+    func deleteAll() -> Bool {
+        var errorCount: Int = 0
+
+        do {
+            try libraryRepository.deleteAll()
+        } catch {
+            Self.logger.error("Unable to delete annotations: \(error.localizedDescription)")
+            errorCount += 1
+        }
+
+        load()
+        return errorCount == 0
+    }
+
     /// Build AnnotationEditor instance for a given VerseAnnotation (reuses LibraryStore.libraryRepository)
     func annotationEditor(for annotation: VerseAnnotation) -> AnnotationEditor? {
         AnnotationEditor(annotation: annotation,

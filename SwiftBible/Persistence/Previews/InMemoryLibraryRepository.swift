@@ -39,4 +39,9 @@ nonisolated final class InMemoryLibraryRepository: LibraryRepository {
         annotations.removeAll { $0.id == id }
         changeCount += 1
     }
+
+    func deleteAll() throws {
+        annotations.removeAll()
+        changeCount += 1
+    }
 }

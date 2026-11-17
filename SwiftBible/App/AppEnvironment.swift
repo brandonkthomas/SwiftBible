@@ -64,7 +64,7 @@ final class AppEnvironment {
             // Hosted test runs launch the app too; keep them off iCloud so they never sync the real store
             let cloudKitDB: ModelConfiguration.CloudKitDatabase =
                 !Self.isRunningTests && prefStore.syncAnnotationsToICloud
-                ? .automatic
+                ? .private("iCloud.net.brandonthomas.SwiftBible")
                 : .none
             let modelConfiguration = ModelConfiguration(cloudKitDatabase: cloudKitDB)
 

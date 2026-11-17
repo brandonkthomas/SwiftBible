@@ -148,6 +148,17 @@ final class SwiftDataLibraryRepository: LibraryRepository {
         changeCount += 1
     }
 
+    /// Delete all StoredVerseAnnotations (DANGEROUS!)
+    func deleteAll() throws {
+        // Delete per-object (not batch) so relationships + CloudKit sync see each deletion
+        for annotation in try fetchAll() {
+            context.delete(annotation)
+        }
+
+        try context.save()
+        changeCount += 1
+    }
+
     /// Consolidate duplicate tags + repoint their annotations
     func mergeDuplicateTags() throws {
         let allTags = try context.fetch(FetchDescriptor<StoredTag>())
@@ -308,6 +319,12 @@ final class SwiftDataLibraryRepository: LibraryRepository {
         let annotations: [StoredVerseAnnotation] = try context.fetch(fetchDescriptor)
         
         return annotations.first // can be nil if not found
+    }
+    
+    private func fetchAll() throws -> [StoredVerseAnnotation] {
+        // No predicate means we get all results
+        let fetchDescriptor = FetchDescriptor<StoredVerseAnnotation>(predicate: nil)
+        return try context.fetch(fetchDescriptor)
     }
 
     private func map(from storedVerseAnnotations: [StoredVerseAnnotation]) -> [VerseAnnotation] {
