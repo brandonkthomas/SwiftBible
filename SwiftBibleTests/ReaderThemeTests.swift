@@ -80,6 +80,30 @@ struct ReaderThemeTests {
         #expect(isClose(themeResolved.backgroundColor.resolve(in: environment(.dark)), dark))
     }
 
+    /// The same color edits give equal colors on every read. A new, unequal color per read made
+    /// SwiftUI treat every Reader paragraph as changed, which broke the verse selection animation
+    @MainActor
+    @Test func customColorsAreEqualAcrossReads() {
+        let light = Color.Resolved(red: 0.9, green: 0.8, blue: 0.7)
+        let dark = Color.Resolved(red: 0.1, green: 0.2, blue: 0.3)
+        let edits = ReaderThemeCustom(backgroundColorLight: light,
+                                      primaryTextColorDark: dark,
+                                      secondaryTextColorLight: light)
+        let first = ReaderThemeResolved(basePreset: .ink, customizedPreset: edits)
+        let second = ReaderThemeResolved(basePreset: .ink, customizedPreset: edits)
+
+        #expect(first.backgroundColor == second.backgroundColor)
+        #expect(first.primaryTextColor == second.primaryTextColor)
+        #expect(first.secondaryTextColor == second.secondaryTextColor)
+
+        // different edits, or the same edits on another preset, still give a different color
+        let otherEdits = ReaderThemeResolved(basePreset: .ink,
+                                             customizedPreset: ReaderThemeCustom(backgroundColorLight: dark))
+        let otherPreset = ReaderThemeResolved(basePreset: .linen, customizedPreset: edits)
+        #expect(first.backgroundColor != otherEdits.backgroundColor)
+        #expect(first.backgroundColor != otherPreset.backgroundColor)
+    }
+
     // MARK: Fonts
 
     /// Every named font is installed; a missing family would quietly fall back to the system font

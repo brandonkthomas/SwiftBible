@@ -5,6 +5,7 @@
 //  Created by Brandon Thomas on 2026-11-13.
 //
 
+import Synchronization
 import SwiftUI
 
 /// ReaderTheme (base) with applied + computed customizations (ReaderThemeCustom)
@@ -297,14 +298,47 @@ struct ReaderThemeResolved: Equatable {
             return presetColor
         }
 
-        return Color(uiColor: UIColor { traits in
-            let isDark = traits.userInterfaceStyle == .dark
+        let key = AdaptiveColorKey(presetColor: presetColor, light: light, dark: dark)
 
-            var environment = EnvironmentValues()
-            environment.colorScheme = isDark ? .dark : .light
+        return adaptiveColorCache.withLock { cache in
+            if let cached = cache[key] {
+                return cached
+            }
 
-            let resolved = (isDark ? dark : light) ?? presetColor.resolve(in: environment)
-            return UIColor(Color(resolved))
-        })
+            // Dragging in a color picker adds an entry per value; start over past a small limit
+            if cache.count >= Self.adaptiveColorCacheLimit {
+                cache.removeAll()
+            }
+
+            let color = Color(uiColor: UIColor { traits in
+                let isDark = traits.userInterfaceStyle == .dark
+
+                var environment = EnvironmentValues()
+                environment.colorScheme = isDark ? .dark : .light
+
+                let resolved = (isDark ? dark : light) ?? presetColor.resolve(in: environment)
+                return UIColor(Color(resolved))
+            })
+            cache[key] = color
+            return color
+        }
     }
+
+    /// Inputs to `adaptiveColor`; equal inputs must produce the same `Color`
+    nonisolated private struct AdaptiveColorKey: Hashable {
+        let presetColor: Color
+        let light: Color.Resolved?
+        let dark: Color.Resolved?
+    }
+
+    /// Colors already built by `adaptiveColor`, keyed by their inputs.
+    ///
+    /// Two `UIColor { ... }` colors never compare equal, even with the same values, so building
+    /// one per read made every theme color "change" on every read. SwiftUI then treated each
+    /// Reader paragraph as changed on any update and animated it, which broke the verse
+    /// selection animation. Returning the same `Color` for the same inputs keeps them equal.
+    nonisolated private static let adaptiveColorCache = Mutex<[AdaptiveColorKey: Color]>([:])
+
+    /// Entries kept before `adaptiveColorCache` is cleared
+    nonisolated private static let adaptiveColorCacheLimit = 64
 }
