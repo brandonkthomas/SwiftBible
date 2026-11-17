@@ -22,9 +22,6 @@ struct SettingsAppearanceView: View {
     /// Is the "Reset Theme" popover visible?
     @State private var resetThemeConfirmationIsPresented: Bool = false
 
-    ///
-    @State private var appearanceSettingsSavedToCloudKit: Bool = false
-
     @ScaledMetric(relativeTo: .body) private var textRowHeight: CGFloat = 23
 
     /// Sample text for the theme preview window
@@ -190,18 +187,16 @@ struct SettingsAppearanceView: View {
 
             // Sync to iCloud
             Section {
-                Toggle(isOn: $appearanceSettingsSavedToCloudKit,
+                Toggle(isOn: $prefStore.syncAppearanceToICloud,
                        label: {
                     Text("Sync to iCloud")
-                    // , systemImage: "arrow.trianglehead.2.clockwise.rotate.90.icloud.fill"
-//                        .imageScale(.medium)
-//                        .foregroundStyle(.primary)
                 })
-                .disabled(true)
             } header: {
                 Text("Backup")
             } footer: {
-                Text(appearanceSettingsSavedToCloudKit ? "Appearance settings are available across your devices." : "Appearance settings apply to only this device.")
+                Text(prefStore.syncAppearanceToICloud ?
+                     "Appearance settings are available across your devices."
+                     : "Appearance settings apply to only this device.")
                     .font(.footnote)
             }
         }

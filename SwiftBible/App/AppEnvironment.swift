@@ -56,7 +56,8 @@ final class AppEnvironment {
         self.appConfiguration = appConfiguration
 
         // deps (set to self @ bottom of init)
-        let prefStore = PreferencesStore(userDefaults: .standard)
+        let prefStore = PreferencesStore(userDefaults: .standard,
+                                         ubiquitousStore: Self.isRunningTests ? nil : NSUbiquitousKeyValueStore.default)
 
         // ModelContainer - app-wide @Model storage
         do {

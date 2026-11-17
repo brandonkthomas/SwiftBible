@@ -20,6 +20,7 @@ struct PreferencesStoreTests {
     private static let readerThemeCustomChangesKey = "net.brandonthomas.SwiftBible.readerThemeCustomChanges"
     private static let readerTextSizeStepKey = "net.brandonthomas.SwiftBible.readerTextSizeStep"
     private static let syncAnnotationsToICloudKey = "net.brandonthomas.SwiftBible.syncAnnotationsToICloud"
+    private static let syncAppearanceToICloudKey = "net.brandonthomas.SwiftBible.syncAppearanceToICloud"
 
     // MARK: Reader Position
 
@@ -604,7 +605,254 @@ struct PreferencesStoreTests {
         #expect(userDefaults.object(forKey: Self.syncAnnotationsToICloudKey) as? Bool == false)
     }
 
+    // MARK: iCloud Key-Value Sync
+
+    /// Each Appearance setting is written to the iCloud key-value store under the same key and
+    /// with the same value as its UserDefaults copy
+    @Test func appearanceChangesReachUbiquitousStore() throws {
+        let suiteName = UUID().uuidString
+        defer { UserDefaults().removePersistentDomain(forName: suiteName) }
+        let userDefaults = try #require(UserDefaults(suiteName: suiteName))
+        let ubiquitousStore = InMemoryUbiquitousKeyValueStore()
+
+        let store = PreferencesStore(userDefaults: userDefaults, ubiquitousStore: ubiquitousStore)
+        store.readerTheme = .ink
+        store.preferredColorScheme = .dark
+        store.readerTextSizeStep = 2
+        store.replaceReaderThemeCustomChanges(ReaderThemeCustom(fontWeight: .regular), for: .ink)
+
+        #expect(ubiquitousStore.values[Self.readerThemeKey] as? String == "ink")
+        #expect(ubiquitousStore.values[Self.preferredColorSchemeKey] as? String == "dark")
+        #expect(ubiquitousStore.values[Self.readerTextSizeStepKey] as? Int == 2)
+        let customChanges = try #require(ubiquitousStore.values[Self.readerThemeCustomChangesKey] as? Data)
+        #expect(customChanges == userDefaults.data(forKey: Self.readerThemeCustomChangesKey))
+    }
+
+    /// Reader position and the annotation sync choice belong to this device; neither is synced
+    @Test func deviceLocalSettingsStayOffUbiquitousStore() throws {
+        let suiteName = UUID().uuidString
+        defer { UserDefaults().removePersistentDomain(forName: suiteName) }
+        let userDefaults = try #require(UserDefaults(suiteName: suiteName))
+        let ubiquitousStore = InMemoryUbiquitousKeyValueStore()
+
+        let store = PreferencesStore(userDefaults: userDefaults, ubiquitousStore: ubiquitousStore)
+        store.readerPosition = testPosition()
+        store.syncAnnotationsToICloud = false
+
+        #expect(ubiquitousStore.values.isEmpty)
+    }
+
+    /// Loading saved settings at launch writes nothing back; otherwise every launch would push
+    /// this device's values to iCloud over newer ones from another device
+    @Test func loadingSavedSettingsWritesNothing() throws {
+        let suiteName = UUID().uuidString
+        defer { UserDefaults().removePersistentDomain(forName: suiteName) }
+        let userDefaults = try #require(UserDefaults(suiteName: suiteName))
+        userDefaults.set("ink", forKey: Self.readerThemeKey)
+        userDefaults.set("dark", forKey: Self.preferredColorSchemeKey)
+        userDefaults.set(2, forKey: Self.readerTextSizeStepKey)
+        let ubiquitousStore = InMemoryUbiquitousKeyValueStore()
+
+        let store = PreferencesStore(userDefaults: userDefaults, ubiquitousStore: ubiquitousStore)
+
+        #expect(store.readerTheme == .ink)
+        #expect(store.readerTextSizeStep == 2)
+        #expect(ubiquitousStore.values.isEmpty)
+    }
+
+    // MARK: Applying Changes From Other Devices
+
+    /// values another device synced update the properties and this device's UserDefaults copy
+    @Test func ubiquitousChangesUpdatePropertiesAndUserDefaults() throws {
+        let suiteName = UUID().uuidString
+        defer { UserDefaults().removePersistentDomain(forName: suiteName) }
+        let userDefaults = try #require(UserDefaults(suiteName: suiteName))
+        let customChanges = try JSONEncoder().encode([ReaderTheme.ink.rawValue: ReaderThemeCustom(fontWeight: .regular)])
+        let ubiquitousStore = InMemoryUbiquitousKeyValueStore(values: [
+            Self.readerThemeKey: "ink",
+            Self.preferredColorSchemeKey: "dark",
+            Self.readerTextSizeStepKey: 3,
+            Self.readerThemeCustomChangesKey: customChanges
+        ])
+        let store = PreferencesStore(userDefaults: userDefaults, ubiquitousStore: ubiquitousStore)
+
+        store.applyUbiquitousChanges(forKeys: [Self.readerThemeKey,
+                                               Self.preferredColorSchemeKey,
+                                               Self.readerTextSizeStepKey,
+                                               Self.readerThemeCustomChangesKey])
+
+        #expect(store.readerTheme == .ink)
+        #expect(store.preferredColorScheme == .dark)
+        #expect(store.readerTextSizeStep == 3)
+        #expect(store.readerThemeCustomChanges[ReaderTheme.ink.rawValue] == ReaderThemeCustom(fontWeight: .regular))
+        #expect(userDefaults.string(forKey: Self.readerThemeKey) == "ink")
+        #expect(userDefaults.string(forKey: Self.preferredColorSchemeKey) == "dark")
+        #expect(userDefaults.integer(forKey: Self.readerTextSizeStepKey) == 3)
+        #expect(userDefaults.data(forKey: Self.readerThemeCustomChangesKey) != nil)
+    }
+
+    /// applying another device's values never writes them back to the key-value store
+    @Test func ubiquitousChangesAreNotWrittenBack() throws {
+        let suiteName = UUID().uuidString
+        defer { UserDefaults().removePersistentDomain(forName: suiteName) }
+        let userDefaults = try #require(UserDefaults(suiteName: suiteName))
+        let ubiquitousStore = InMemoryUbiquitousKeyValueStore(values: [
+            Self.readerThemeKey: "ink",
+            Self.readerTextSizeStepKey: 3
+        ])
+        let store = PreferencesStore(userDefaults: userDefaults, ubiquitousStore: ubiquitousStore)
+
+        store.applyUbiquitousChanges(forKeys: [Self.readerThemeKey, Self.readerTextSizeStepKey])
+
+        #expect(ubiquitousStore.writeCount == 0)
+
+        // local changes after applying still sync
+        store.readerTextSizeStep = 4
+        #expect(ubiquitousStore.values[Self.readerTextSizeStepKey] as? Int == 4)
+    }
+
+    /// another device's values pass the same checks as saved ones: an unknown theme or scheme
+    /// (e.g. from a newer app version) keeps the current value; text size is clamped; keys this
+    /// store doesn't sync are ignored
+    @Test func invalidUbiquitousChangesKeepCurrentValues() throws {
+        let suiteName = UUID().uuidString
+        defer { UserDefaults().removePersistentDomain(forName: suiteName) }
+        let userDefaults = try #require(UserDefaults(suiteName: suiteName))
+        userDefaults.set("folio", forKey: Self.readerThemeKey)
+        userDefaults.set("light", forKey: Self.preferredColorSchemeKey)
+        let ubiquitousStore = InMemoryUbiquitousKeyValueStore(values: [
+            Self.readerThemeKey: "not-a-theme",
+            Self.preferredColorSchemeKey: 42,
+            Self.readerTextSizeStepKey: 99,
+            Self.readerPositionKey: "ignored"
+        ])
+        let store = PreferencesStore(userDefaults: userDefaults, ubiquitousStore: ubiquitousStore)
+
+        store.applyUbiquitousChanges(forKeys: [Self.readerThemeKey,
+                                               Self.preferredColorSchemeKey,
+                                               Self.readerTextSizeStepKey,
+                                               Self.readerPositionKey])
+
+        #expect(store.readerTheme == .folio)
+        #expect(store.preferredColorScheme == .light)
+        #expect(store.readerTextSizeStep == ReaderThemeResolved.textSizeStepRange.upperBound)
+        #expect(store.readerPosition == nil)
+    }
+
+    // MARK: Listening for Changes From Other Devices
+    // Posting on the main thread to a `queue: .main` observer runs it before `post` returns,
+    // so these tests check right after posting
+
+    /// iCloud's change notification applies the keys it lists
+    @Test func externalChangeNotificationAppliesChangedKeys() throws {
+        let suiteName = UUID().uuidString
+        defer { UserDefaults().removePersistentDomain(forName: suiteName) }
+        let userDefaults = try #require(UserDefaults(suiteName: suiteName))
+        let ubiquitousStore = InMemoryUbiquitousKeyValueStore(values: [Self.readerThemeKey: "ink"])
+        let store = PreferencesStore(userDefaults: userDefaults, ubiquitousStore: ubiquitousStore)
+
+        postExternalChange(from: ubiquitousStore,
+                           reason: NSUbiquitousKeyValueStoreServerChange,
+                           keys: [Self.readerThemeKey])
+
+        #expect(store.readerTheme == .ink)
+    }
+
+    /// a quota-violation notification reports this device's rejected writes, not new values
+    @Test func quotaViolationNotificationIsIgnored() throws {
+        let suiteName = UUID().uuidString
+        defer { UserDefaults().removePersistentDomain(forName: suiteName) }
+        let userDefaults = try #require(UserDefaults(suiteName: suiteName))
+        let ubiquitousStore = InMemoryUbiquitousKeyValueStore(values: [Self.readerThemeKey: "ink"])
+        let store = PreferencesStore(userDefaults: userDefaults, ubiquitousStore: ubiquitousStore)
+
+        postExternalChange(from: ubiquitousStore,
+                           reason: NSUbiquitousKeyValueStoreQuotaViolationChange,
+                           keys: [Self.readerThemeKey])
+
+        #expect(store.readerTheme == .default)
+    }
+
+    /// launch asks iCloud for the latest values once; with no key-value store, nothing is asked
+    @Test func initRequestsLatestValuesOnce() throws {
+        let suiteName = UUID().uuidString
+        defer { UserDefaults().removePersistentDomain(forName: suiteName) }
+        let userDefaults = try #require(UserDefaults(suiteName: suiteName))
+        let ubiquitousStore = InMemoryUbiquitousKeyValueStore()
+
+        _ = PreferencesStore(userDefaults: userDefaults, ubiquitousStore: ubiquitousStore)
+
+        #expect(ubiquitousStore.synchronizeCount == 1)
+    }
+
+    // MARK: Sync Appearance to iCloud
+
+    /// Off: local changes stay on this device. The choice itself is saved (device-local) and
+    /// defaults to on
+    @Test func syncAppearanceOffWritesNothingToUbiquitousStore() throws {
+        let suiteName = UUID().uuidString
+        defer { UserDefaults().removePersistentDomain(forName: suiteName) }
+        let userDefaults = try #require(UserDefaults(suiteName: suiteName))
+        let ubiquitousStore = InMemoryUbiquitousKeyValueStore()
+
+        let store = PreferencesStore(userDefaults: userDefaults, ubiquitousStore: ubiquitousStore)
+        #expect(store.syncAppearanceToICloud)
+        store.syncAppearanceToICloud = false
+        store.readerTheme = .ink
+        store.readerTextSizeStep = 2
+
+        #expect(ubiquitousStore.writeCount == 0)
+        #expect(userDefaults.string(forKey: Self.readerThemeKey) == "ink")
+        #expect(PreferencesStore(userDefaults: userDefaults).syncAppearanceToICloud == false)
+    }
+
+    /// Off: other devices' changes are ignored
+    @Test func syncAppearanceOffIgnoresExternalChanges() throws {
+        let suiteName = UUID().uuidString
+        defer { UserDefaults().removePersistentDomain(forName: suiteName) }
+        let userDefaults = try #require(UserDefaults(suiteName: suiteName))
+        userDefaults.set(false, forKey: Self.syncAppearanceToICloudKey)
+        let ubiquitousStore = InMemoryUbiquitousKeyValueStore(values: [Self.readerThemeKey: "ink"])
+        let store = PreferencesStore(userDefaults: userDefaults, ubiquitousStore: ubiquitousStore)
+
+        postExternalChange(from: ubiquitousStore,
+                           reason: NSUbiquitousKeyValueStoreServerChange,
+                           keys: [Self.readerThemeKey])
+
+        #expect(store.readerTheme == .default)
+    }
+
+    /// Turning sync on adopts every value iCloud already has, and sends this device's value
+    /// for each key iCloud doesn't have yet
+    @Test func turningSyncAppearanceOnAdoptsICloudValuesAndSendsMissingOnes() throws {
+        let suiteName = UUID().uuidString
+        defer { UserDefaults().removePersistentDomain(forName: suiteName) }
+        let userDefaults = try #require(UserDefaults(suiteName: suiteName))
+        userDefaults.set(false, forKey: Self.syncAppearanceToICloudKey)
+        userDefaults.set(2, forKey: Self.readerTextSizeStepKey)
+        let ubiquitousStore = InMemoryUbiquitousKeyValueStore(values: [Self.readerThemeKey: "ink"])
+        let store = PreferencesStore(userDefaults: userDefaults, ubiquitousStore: ubiquitousStore)
+
+        store.syncAppearanceToICloud = true
+
+        #expect(store.readerTheme == .ink)
+        #expect(ubiquitousStore.values[Self.readerThemeKey] as? String == "ink")
+        #expect(ubiquitousStore.values[Self.readerTextSizeStepKey] as? Int == 2)
+        #expect(ubiquitousStore.values[Self.preferredColorSchemeKey] as? String == PreferredColorScheme.default.rawValue)
+        #expect(ubiquitousStore.values[Self.readerThemeCustomChangesKey] as? Data != nil)
+    }
+
     // MARK: Private Helpers
+
+    /// Posts the notification `NSUbiquitousKeyValueStore` sends when another device's values arrive
+    private func postExternalChange(from ubiquitousStore: InMemoryUbiquitousKeyValueStore,
+                                    reason: Int,
+                                    keys: [String]) {
+        NotificationCenter.default.post(name: NSUbiquitousKeyValueStore.didChangeExternallyNotification,
+                                        object: ubiquitousStore,
+                                        userInfo: [NSUbiquitousKeyValueStoreChangeReasonKey: reason,
+                                                   NSUbiquitousKeyValueStoreChangedKeysKey: keys])
+    }
 
     private func testPosition() -> ReaderPosition {
         ReaderPosition(translationID: 1849, bookCode: "JHN", chapter: 3)
