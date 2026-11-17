@@ -7,7 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		852A8D9F309451BB00B25CB3 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 852A8D9E309451BB00B25CB3 /* Localizable.xcstrings */; };
 		85BBD28C2FF0EC9B00C2FE15 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 85BBD28B2FF0EC9B00C2FE15 /* Assets.xcassets */; };
 		85E9A3FF30AB5BE8003A6153 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 85E9A3FE30AB5BE8003A6153 /* PrivacyInfo.xcprivacy */; };
 /* End PBXBuildFile section */
@@ -197,7 +196,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 2650;
-				LastUpgradeCheck = 2700;
+				LastUpgradeCheck = 2720;
 				TargetAttributes = {
 					8539B6712FEEE6C0007FC718 = {
 						CreatedOnToolsVersion = 26.5;
@@ -239,7 +238,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				85E9A3FF30AB5BE8003A6153 /* PrivacyInfo.xcprivacy in Resources */,
-				852A8D9F309451BB00B25CB3 /* Localizable.xcstrings in Resources */,
 				85BBD28C2FF0EC9B00C2FE15 /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
