@@ -359,6 +359,7 @@ private struct ReaderPassagePreviewHost: View {
         Group {
             if let renderedPassage = readerStore.selectedRenderedPassage {
                 ReaderPassageView(renderedPassage: renderedPassage)
+                    .id(readerStore.selectedReference)
             } else {
                 ProgressView()
             }

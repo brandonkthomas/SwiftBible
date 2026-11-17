@@ -7,7 +7,7 @@
 
 /// Represents local Bible general reference location
 /// (translation, book, chapter, verse)
-nonisolated struct ScriptureReference: Equatable {
+nonisolated struct ScriptureReference: Equatable, Hashable {
 
     // MARK: Properties
 

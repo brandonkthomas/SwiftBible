@@ -84,6 +84,7 @@ struct ReaderView: View {
                     case .loaded:
                         if let renderedPassage = readerStore.selectedRenderedPassage {
                             ReaderPassageView(renderedPassage: renderedPassage)
+                                .id(readerStore.selectedReference)
                         } else {
                             passageUnavailableView
                         }
