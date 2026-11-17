@@ -463,7 +463,6 @@ struct SettingsAppearanceView: View {
                 }
             }
             HStack(spacing: 16) {
-                let result = String(format: "%.2f", Double(preferencesStore.selectedReaderThemeResolved.wordSpacingPercent) / 100)
                 let percent = preferencesStore.selectedReaderThemeResolved.wordSpacingPercent
 
                 Slider(value: sliderSelection(resolved: \.wordSpacingPercent,
@@ -505,7 +504,6 @@ struct SettingsAppearanceView: View {
                 }
             }
             HStack(spacing: 16) {
-                let result = String(format: "%.2f", Double(preferencesStore.selectedReaderThemeResolved.characterSpacingPercent) / 100)
                 let percent = preferencesStore.selectedReaderThemeResolved.characterSpacingPercent
 
                 Slider(value: sliderSelection(resolved: \.characterSpacingPercent,
