@@ -75,7 +75,7 @@
       <CommandLineArguments>
          <CommandLineArgument
             argument = "-resetTips"
-            isEnabled = "YES">
+            isEnabled = "NO">
          </CommandLineArgument>
       </CommandLineArguments>
    </LaunchAction>

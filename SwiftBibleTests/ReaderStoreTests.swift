@@ -236,6 +236,34 @@ struct ReaderStoreTests {
         #expect(store.selectedVerses == nil)
     }
 
+    /// Tapping the first verse of the selection removes only that verse (TestFlight feedback:
+    /// select 1, then 2, then tap 1 should leave 2 selected)
+    @Test func tappingLowerEndTrimsIt() {
+        let store = readerStore()
+
+        store.selectedVerses = 1...2
+        store.handleVerseSelection(startVerse: 1, endVerse: nil)
+        #expect(store.selectedVerses == 2...2)
+    }
+
+    /// Tapping the last verse of the selection removes only that verse
+    @Test func tappingUpperEndTrimsIt() {
+        let store = readerStore()
+
+        store.selectedVerses = 3...8
+        store.handleVerseSelection(startVerse: 8, endVerse: nil)
+        #expect(store.selectedVerses == 3...7)
+    }
+
+    /// A combined tap target (e.g. verses 7-8 printed as one) at the end is removed as one unit
+    @Test func tappingCombinedUpperEndTrimsWholeTarget() {
+        let store = readerStore()
+
+        store.selectedVerses = 3...8
+        store.handleVerseSelection(startVerse: 7, endVerse: 8)
+        #expect(store.selectedVerses == 3...6)
+    }
+
     /// Saving a highlight via the save() method successfully saves to LibraryRepository
     /// then updates the ReaderStore's passageHighlightColors dict
     @Test func savingHighlightsPersistsToStore() async {

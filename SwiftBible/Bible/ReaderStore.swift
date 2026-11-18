@@ -407,9 +407,19 @@ final class ReaderStore {
         switch startVerse {
         // sv falls inside current selection range...
         case current: // Swift compares Int to ClosedRange<Int> here using ~=
-            // if the tapped verse IS the entire current selection, deselect;
-            // otherwise collapse the selection down to just this verse
-            self.selectedVerses = (current == startVerse...top) ? nil : startVerse...top
+            // tapped verse IS the entire selection: deselect
+            // tapped verse is the first verse: trim it off the start
+            // tapped verse is the last verse: trim it off the end
+            // otherwise (tapped verse is in the middle): select just the tapped range
+            if current == startVerse...top {
+                self.selectedVerses = nil
+            } else if startVerse == current.lowerBound && top < current.upperBound {
+                self.selectedVerses = (top + 1)...current.upperBound
+            } else if top == current.upperBound {
+                self.selectedVerses = current.lowerBound...(startVerse - 1)
+            } else {
+                self.selectedVerses = startVerse...top
+            }
         // sv is below current selection range...
         // add the difference to the selection
         case ..<current.lowerBound: // ..<x is Swift one-sided range
