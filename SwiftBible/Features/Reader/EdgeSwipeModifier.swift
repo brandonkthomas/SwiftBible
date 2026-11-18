@@ -52,6 +52,13 @@ struct EdgeSwipeModifier: ViewModifier {
     /// Fill % of circle (actually used for opacity right now
     @State private var dragFillProgress: CGFloat?
 
+    /// Have we decided the direction of this drag yet (from the first event fire)?
+    @State private var dragDecided: Bool = false
+
+    @State private var activeDirection: ChapterNavigationDirection?
+
+    @State private var trackedScrollViewContentWidth: CGFloat = 0
+
     // MARK: Properties (Private, Computed)
 
     /// X-offset adjusted to correct Edge
@@ -88,17 +95,13 @@ struct EdgeSwipeModifier: ViewModifier {
     /// Apply left/right overlays to the parent view
     func body(content: Content) -> some View {
         content
-            // Views: 2 edge zones
-            .overlay(alignment: .leading) {
-                if canGoPrevious {
-                    edgeZone(for: .previous)
-                }
+            .onGeometryChange(for: CGFloat.self) { proxy in
+                return proxy.size.width
+            } action: { newValue in
+                trackedScrollViewContentWidth = newValue
             }
-            .overlay(alignment: .trailing) {
-                if canGoNext {
-                    edgeZone(for: .next)
-                }
-            }
+            // runs alongside the ScrollView's own gestures, so the scroll indicator stays draggable
+            .simultaneousGesture(edgeSwipeGesture())
             // View: indicator circle
             .overlay(alignment: dragEdge == .leading ? .topLeading : .topTrailing) {
                 // only create view when we are mid-drag
@@ -119,70 +122,87 @@ struct EdgeSwipeModifier: ViewModifier {
                 trigger: triggerOnCommitHaptic) // no condition: play every time
     }
 
-    /// Create a tracked interaction zone on the left edge (full height) of the parent view
-    private func edgeZone(for direction: ChapterNavigationDirection) -> some View {
-        Rectangle()
-            // size
-//            .fill(.red.opacity(0.2)) // DEBUG
-            .fill(.clear)
-            .contentShape(Rectangle())
-            .frame(width: Self.edgeWidth)
-            .frame(maxHeight: .infinity)
-            // gesture
-            .gesture(
-                DragGesture(minimumDistance: Self.minimumDragDistance)
-                    .onChanged { value in
-                        let calculator = EdgeSwipeCalculator(currentHorizontalDragDistance: value.translation.width,
-                                                             chapterNavigationDirection: direction)
-                        Self.logger.debug("circleOffset: \(calculator.circleOffset)")
+    /// Decide once per drag whether it is an edge swipe; ignore it otherwise
+    private func edgeSwipeDirection(for value: DragGesture.Value) -> ChapterNavigationDirection? {
+        let isMostlyHorizontal = abs(value.translation.width) > abs(value.translation.height)
+        guard isMostlyHorizontal else { return nil }
 
-                        let hasPassedThreshold = calculator.hasPassedThreshold
+        if value.startLocation.x < Self.edgeWidth && canGoPrevious {
+            return .previous
+        } else if value.startLocation.x > trackedScrollViewContentWidth - Self.edgeWidth && canGoNext {
+            return .next
+        } else {
+            return nil
+        }
+    }
 
-                        if hasPassedThreshold {
-                            triggerThresholdMetHaptic = true // no .toggle(); dont want to spam
-                        } else {
-                            triggerThresholdMetHaptic = false
-                        }
+    /// Drag gesture over the whole content; only acts on drags that start at an edge and move sideways
+    private func edgeSwipeGesture() -> some Gesture {
+        DragGesture(minimumDistance: Self.minimumDragDistance)
+            .onChanged { value in
+                // first update of this drag: decide once, then stick with it
+                if !dragDecided {
+                    activeDirection = edgeSwipeDirection(for: value)
+                    dragDecided = true
+                }
+                guard let direction = activeDirection else { return }
 
-                        // adjust values
-                        dragEdge = switch direction {
-                        case .previous: .leading
-                        case .next: .trailing
-                        }
-                        dragCircleOffset = calculator.circleOffset
-                        dragCurrentY = value.location.y
-                        dragStartY = value.startLocation.y // this value never changes; safe to assign unconditionally
-                        dragThresholdPassed = hasPassedThreshold
-                        dragFillProgress = calculator.fillProgress
-                    }
-                    .onEnded { value in
-                        let calculator = EdgeSwipeCalculator(currentHorizontalDragDistance: value.translation.width,
-                                                             chapterNavigationDirection: direction)
-                        Self.logger.debug("hasPassedThreshold: \(calculator.hasPassedThreshold)")
+                let calculator = EdgeSwipeCalculator(currentHorizontalDragDistance: value.translation.width,
+                                                     chapterNavigationDirection: direction)
+                Self.logger.debug("circleOffset: \(calculator.circleOffset)")
 
-                        if calculator.hasPassedThreshold {
-                            Task { await onCommit(direction) }
-                            triggerOnCommitHaptic.toggle()
-                            EdgeSwipeTip().invalidate(reason: .actionPerformed)
-                        }
+                let hasPassedThreshold = calculator.hasPassedThreshold
 
-                        // reset values
-                        //   No need to reset these since we fade out the button on release
-                        //   Resetting them here would cause jump
+                if hasPassedThreshold {
+                    triggerThresholdMetHaptic = true // no .toggle(); dont want to spam
+                } else {
+                    triggerThresholdMetHaptic = false
+                }
+
+                // adjust values
+                dragEdge = switch direction {
+                case .previous: .leading
+                case .next: .trailing
+                }
+                dragCircleOffset = calculator.circleOffset
+                dragCurrentY = value.location.y
+                dragStartY = value.startLocation.y // this value never changes; safe to assign unconditionally
+                dragThresholdPassed = hasPassedThreshold
+                dragFillProgress = calculator.fillProgress
+            }
+            .onEnded { value in
+                // reset for the next drag, whether or not this one was an edge swipe
+                defer {
+                    activeDirection = nil
+                    dragDecided = false
+                }
+                guard let direction = activeDirection else { return }
+
+                let calculator = EdgeSwipeCalculator(currentHorizontalDragDistance: value.translation.width,
+                                                     chapterNavigationDirection: direction)
+                Self.logger.debug("hasPassedThreshold: \(calculator.hasPassedThreshold)")
+
+                if calculator.hasPassedThreshold {
+                    Task { await onCommit(direction) }
+                    triggerOnCommitHaptic.toggle()
+                    EdgeSwipeTip().invalidate(reason: .actionPerformed)
+                }
+
+                // reset values
+                //   No need to reset these since we fade out the button on release
+                //   Resetting them here would cause jump
 //                        dragEdge = nil
 //                        dragCircleOffset = nil
 //                        dragCurrentY = nil
 //                        dragStartY = nil
 //                        dragThresholdPassed = nil
-                        withAnimation(.snappy(duration: 0.3)) {
-                            dragFillProgress = nil
-                        }
+                withAnimation(.snappy(duration: 0.3)) {
+                    dragFillProgress = nil
+                }
 
-                        triggerThresholdMetHaptic = false
-                        // triggerOnCommitHaptic: no need to reset since we used toggle()
-                    }
-            )
-
+                triggerThresholdMetHaptic = false
+                // triggerOnCommitHaptic: no need to reset since we used toggle()
+            }
     }
 
     ///
