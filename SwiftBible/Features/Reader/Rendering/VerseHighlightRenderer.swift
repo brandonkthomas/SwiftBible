@@ -95,7 +95,9 @@ struct VerseHighlightRenderer: TextRenderer {
             }
 
             // calculate circlePath from all above info
-            let r: CGFloat = progress * maxRadius
+            // FIX: iOS 26.x drops ellipse-in animation when radius < 1
+//            let r: CGFloat = progress * maxRadius
+            let r: CGFloat = max(progress * maxRadius, 1)
             circlePath = Path(ellipseIn: CGRect(x: origin.x - r,
                                                 y: origin.y - r,
                                                 width: 2*r,
