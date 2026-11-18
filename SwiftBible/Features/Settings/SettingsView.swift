@@ -65,13 +65,17 @@ struct SettingsView: View {
                                         color: .blue)
                         }
                         // Language
-                        //                    NavigationLink {
-                        //                        // TODO
-                        //                    } label: {
-                        //                        settingsRow(title: "Language",
-                        //                                    symbol: "globe",
-                        //                                    color: .green)
-                        //                    }
+                        NavigationLink {
+                            ContentUnavailableView(
+                                "Language",
+                                systemImage: "globe",
+                                description: Text("Coming soon.")
+                            )
+                        } label: {
+                            settingsRow(title: "Language",
+                                        symbol: "globe",
+                                        color: .green)
+                        }
                     }
 
                     // About / Help
