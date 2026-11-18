@@ -88,7 +88,7 @@ struct PassagePickerView: View {
             // -- transition between this and VerseActionsView on tabBarAccessory
             passagePickerButtonView
             .transition(.blurReplace)
-            .popoverTip(passagePickerTip, arrowEdge: .bottom)
+            // its tip floats above the accessory from ReaderView (inline, not a popover)
 
             Spacer()
 

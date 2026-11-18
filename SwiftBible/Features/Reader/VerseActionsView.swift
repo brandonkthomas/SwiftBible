@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import TipKit
 
 struct VerseActionsView: View {
 
@@ -151,6 +152,7 @@ struct VerseActionsView: View {
             Button(action: {
                 // build an instance + assign it here so that the .sheet() listener fires
                 annotationEditor = readerStore.makeAnnotationEditor()
+                VerseActionsTip().invalidate(reason: .actionPerformed)
             }) {
                 Image(systemName: "bookmark.fill")
                     .font(.system(size: actionSymbolSize))
@@ -223,6 +225,8 @@ struct VerseActionsView: View {
             } else {
                 isHighlightPopoverPresented = true
             }
+
+            VerseActionsTip().invalidate(reason: .actionPerformed)
         }) {
             // highlighter symbol doesnt have fill style :(
             let symbolName = showEraser

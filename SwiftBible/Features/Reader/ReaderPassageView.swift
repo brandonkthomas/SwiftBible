@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import TipKit
 
 /// Main scrollview for text; only called once we've validated all other states
 struct ReaderPassageView: View {
@@ -259,6 +260,8 @@ struct ReaderPassageView: View {
 
         // #2: now "new" is the post-change selection
         let new = readerStore.selectedVerses
+
+        VerseSelectionTip().invalidate(reason: .actionPerformed)
 
         if let new {
             // Extend/fresh = the new range fully contains the old one (or there was none).

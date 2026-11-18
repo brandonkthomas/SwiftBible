@@ -7,6 +7,7 @@
 
 import OSLog
 import SwiftUI
+import TipKit
 
 struct EdgeSwipeModifier: ViewModifier {
 
@@ -162,6 +163,7 @@ struct EdgeSwipeModifier: ViewModifier {
                         if calculator.hasPassedThreshold {
                             Task { await onCommit(direction) }
                             triggerOnCommitHaptic.toggle()
+                            EdgeSwipeTip().invalidate(reason: .actionPerformed)
                         }
 
                         // reset values

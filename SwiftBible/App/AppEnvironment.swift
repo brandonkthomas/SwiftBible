@@ -186,7 +186,11 @@ final class AppEnvironment {
         // TipKit
         if !Self.isRunningTests {
             do {
-//                try Tips.resetDatastore()
+                // Show every tip again: Xcode runs only (the shared scheme passes -resetTips;
+                // archived/TestFlight builds never get scheme arguments)
+                if ProcessInfo.processInfo.arguments.contains("-resetTips") {
+                    try Tips.resetDatastore()
+                }
                 try Tips.configure()
             } catch {
                 Self.logger.error("Failed to initialize TipKit: \(error.localizedDescription)")
