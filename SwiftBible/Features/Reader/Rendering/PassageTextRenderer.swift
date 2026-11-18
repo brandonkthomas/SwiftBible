@@ -50,10 +50,12 @@ struct PassageTextRenderer {
                   verseHasFootnote,
                   let verseRange = accumulatingVerseRange else { return }
 
-            let marker = styledVerseEndMarker(for: verseRange,
-                                              readerTheme: readerTheme,
-                                              dynamicTypeSize: dynamicTypeSize,
-                                              useLinkAttribute: produceLinkAttributes)
+            let text = styledVerseEndMarker(for: verseRange,
+                                            readerTheme: readerTheme,
+                                            dynamicTypeSize: dynamicTypeSize,
+                                            useLinkAttribute: produceLinkAttributes)
+            let marker = Text(text)
+                .customAttribute(FootnoteMarkerAttribute(verseRange: verseRange))
 
             // '+' was deprecated in iOS 26.0:
             // Use string interpolation on `Text` instead: `Text("Hello \(name)")`

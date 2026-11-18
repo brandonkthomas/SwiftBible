@@ -131,6 +131,23 @@ struct ReaderPassageView: View {
                                     tappedParagraphIndex = paragraphIndex
                                 }
                             )
+                            // enlarged footnote marker tap areas, placed over the laid-out "†" runs;
+                            // sits above the Text so it wins taps over the verse links underneath
+                            .overlayPreferenceValue(Text.LayoutKey.self) { layouts in
+                                GeometryReader { proxy in
+                                    ForEach(footnoteTapTargets(in: layouts, proxy: proxy)) { target in
+                                        Color.clear
+                                            .contentShape(Rectangle())
+                                            .frame(width: target.rect.width, height: target.rect.height)
+                                            .position(x: target.rect.midX, y: target.rect.midY)
+                                            .onTapGesture {
+                                                selectedVerseRangeForFootnote = target.verseRange
+                                            }
+                                            // VoiceOver uses the marker's link instead
+                                            .accessibilityHidden(true)
+                                    }
+                                }
+                            }
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -340,6 +357,55 @@ struct ReaderPassageView: View {
             fadingVerses = nil
         }
     }
+
+    /// Tap areas for the collapsed footnote markers in a paragraph, in the overlay's coordinates
+    ///
+    /// Each area ends at the marker run's right edge (the "† " run ends where the next verse label
+    /// starts), reaches up to 44 pt left but never over an earlier verse label on the same line,
+    /// and spans the marker's line top to bottom. A footnote area never covers a verse label.
+    private func footnoteTapTargets(in layouts: Text.LayoutKey.Value,
+                                    proxy: GeometryProxy) -> [FootnoteTapTarget] {
+        let preferredWidth: CGFloat = 44
+        var targets: [FootnoteTapTarget] = []
+
+        for anchored in layouts {
+            // where this Text's (0, 0) sits inside the overlay
+            let origin = proxy[anchored.origin]
+
+            for line in anchored.layout {
+                let lineRect = line.typographicBounds.rect
+                // right edge of the last verse label seen on this line
+                var labelMaxX = -CGFloat.infinity
+
+                for run in line {
+                    let runRect = run.typographicBounds.rect
+
+                    if run[VerseLabelAttribute.self] != nil {
+                        labelMaxX = runRect.maxX
+                    } else if let marker = run[FootnoteMarkerAttribute.self],
+                              !targets.contains(where: { $0.verseRange == marker.verseRange }) {
+                        let minX = max(runRect.maxX - preferredWidth, labelMaxX)
+                        let rect = CGRect(x: minX,
+                                          y: lineRect.minY,
+                                          width: runRect.maxX - minX,
+                                          height: lineRect.height)
+                        targets.append(FootnoteTapTarget(verseRange: marker.verseRange,
+                                                         rect: rect.offsetBy(dx: origin.x, dy: origin.y)))
+                    }
+                }
+            }
+        }
+
+        return targets
+    }
+}
+
+/// One enlarged footnote marker tap area; one marker per verse range, so the range is the ID
+private struct FootnoteTapTarget: Identifiable {
+    let verseRange: RenderedVerseRange
+    let rect: CGRect
+
+    var id: RenderedVerseRange { verseRange }
 }
 
 // MARK: Xcode Canvas Previews
