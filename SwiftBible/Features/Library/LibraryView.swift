@@ -230,6 +230,9 @@ struct LibraryView: View {
             .padding(.horizontal, 16)
             .padding(.vertical, 8)
         }
+        // reset view when filtering (fixes LazyVStack scroll offset bug which permanently
+        // blanked view when scrolling down far then filtering to shorter list)
+        .id(libraryStore.filter)
         // Delete confirmation lives in each LibraryRowView (menu + swipe share it) so the
         //   popover anchors to the card being deleted rather than the whole ScrollView
         .swipeActionsContainerIfAvailable()

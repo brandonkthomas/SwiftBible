@@ -7,7 +7,7 @@
 
 import Foundation
 
-struct LibraryFilter: Equatable {
+struct LibraryFilter: Equatable, Hashable {
 
     // MARK: Properties
 
