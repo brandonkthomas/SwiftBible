@@ -2,36 +2,40 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>UIBackgroundModes</key>
+	<key>UIAppFonts</key>
 	<array>
-		<string>remote-notification</string>
+		<string>PatrickHand-Regular.ttf</string>
 	</array>
 	<key>UIApplicationShortcutItems</key>
 	<array>
 		<dict>
-			<key>UIApplicationShortcutItemType</key>
-			<string>read</string>
-			<key>UIApplicationShortcutItemTitle</key>
-			<string>Read</string>
 			<key>UIApplicationShortcutItemIconSymbolName</key>
 			<string>book</string>
+			<key>UIApplicationShortcutItemTitle</key>
+			<string>Read</string>
+			<key>UIApplicationShortcutItemType</key>
+			<string>read</string>
 		</dict>
 		<dict>
-			<key>UIApplicationShortcutItemType</key>
-			<string>saved</string>
-			<key>UIApplicationShortcutItemTitle</key>
-			<string>Saved</string>
 			<key>UIApplicationShortcutItemIconSymbolName</key>
 			<string>bookmark</string>
+			<key>UIApplicationShortcutItemTitle</key>
+			<string>Saved</string>
+			<key>UIApplicationShortcutItemType</key>
+			<string>saved</string>
 		</dict>
 		<dict>
-			<key>UIApplicationShortcutItemType</key>
-			<string>search</string>
-			<key>UIApplicationShortcutItemTitle</key>
-			<string>Search</string>
 			<key>UIApplicationShortcutItemIconSymbolName</key>
 			<string>magnifyingglass</string>
+			<key>UIApplicationShortcutItemTitle</key>
+			<string>Search</string>
+			<key>UIApplicationShortcutItemType</key>
+			<string>search</string>
 		</dict>
+	</array>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
 	</array>
 </dict>
 </plist>

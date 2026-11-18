@@ -12,7 +12,7 @@ struct SettingsAboutView: View {
     // MARK: Properties (Private, Dynamic Type)
 
     @ScaledMetric(relativeTo: .body) private var imageSize44: CGFloat = 44
-    @ScaledMetric(relativeTo: .body) private var imageSize72: CGFloat = 72
+    @ScaledMetric(relativeTo: .body) private var imageSize72: CGFloat = 64
     @ScaledMetric(relativeTo: .body) private var imageSize96: CGFloat = 96
 
     // MARK: Properties (Private)
@@ -138,7 +138,7 @@ struct SettingsAboutView: View {
             VStack(alignment: .leading) {
                 // App Title
                 Text("Bible")
-                    .font(.system(.title, weight: .medium))
+                    .font(.custom("PatrickHand-Regular", size: 28, relativeTo: .title))
 
                 // Version
                 if let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String,
