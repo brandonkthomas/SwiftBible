@@ -41,6 +41,9 @@ struct AnnotationEditorSheetView: View {
     /// Which field is focused right now (if any) -- note / new tag?
     @FocusState private var focusedField: FocusedField?
 
+//    /// Used for grid liquid glass effect
+//    @Namespace private var tagGridNamespace
+
     /// Are we currently creating a new tag using the UI?
     @State private var isCreatingTag = false
     /// What is our new tag's text (temporary)?
@@ -111,12 +114,20 @@ struct AnnotationEditorSheetView: View {
             }
             .font(readerTheme.font(.body))
             .padding(EdgeInsets(top: 4, leading: 20, bottom: 16, trailing: 20))
+            // Measure at ideal height so the measurement doesn't depend on the sheet's height
+            // (horizontal ScrollView otherwise absorbs proposed height -> detent feedback loop)
+            .fixedSize(horizontal: false, vertical: true)
             // Measure padded content so sheet can hug it; add fixed allowance for inline navigation bar
             .onGeometryChange(for: CGFloat.self) { proxy in
                 proxy.size.height
             } action: { height in
-                contentHeight = height + navigationBarAllowance
+                // Ignore sub-point jitter so the detent can't oscillate
+                let newHeight = (height + navigationBarAllowance).rounded(.up)
+                if abs(newHeight - contentHeight) >= 1 {
+                    contentHeight = newHeight
+                }
             }
+            .frame(maxHeight: .infinity, alignment: .top)
             .navigationTitle(sheetTitle)
             .navigationSubtitle(sheetSubtitle)
             .navigationBarTitleDisplayMode(.inline)
@@ -170,6 +181,7 @@ struct AnnotationEditorSheetView: View {
     private var tagChipsView: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             // TwoRowFlowLayout (not LazyHGrid which is column-major)
+//            GlassEffectContainer(spacing: 8) {
             TwoRowFlowLayout(spacing: 8) {
                 // "+ Tag" cell which swaps to an inline text field
                 addTagCell
@@ -181,6 +193,7 @@ struct AnnotationEditorSheetView: View {
             }
             .padding(.horizontal, 4)
             .padding(.vertical, 2)
+//            }
         }
     }
 
@@ -261,12 +274,17 @@ struct AnnotationEditorSheetView: View {
                 editor[tagIsSelected: tag] = !isSelected
             }
         } label: {
-            HStack(spacing: 4) {
+            // "x" stays in hierarchy; directly animate width/opacity instead of conditional insert/remove
+            // Fades do not seem to survive glass compositing
+            HStack(spacing: 0) {
                 Text(tag)
-                if isSelected {
-                    Image(systemName: "xmark")
-                        .font(.system(size: captionSymbolSize9, weight: .bold))
-                }
+                Image(systemName: "xmark")
+                    .font(.system(size: captionSymbolSize9, weight: .bold))
+                    .padding(.leading, 4)
+                    .frame(width: isSelected ? nil : 0, alignment: .leading)
+                    .clipped()
+                    .opacity(isSelected ? 1 : 0)
+                    .accessibilityHidden(!isSelected)
             }
             .font(readerTheme.font(.caption, weight: .semibold))
             .foregroundStyle(isSelected ? Color.white : Color.primary)
@@ -278,6 +296,7 @@ struct AnnotationEditorSheetView: View {
                      ? .regular.tint(.accentColor).interactive()
                      : .regular.interactive(),
                      in: .capsule)
+//        .glassEffectID(tag.hashValue, in: tagGridNamespace)
     }
 
     // MARK: Functions (Private)
