@@ -83,6 +83,9 @@ struct PassagePreviewView: View {
     @State private var revealingVerses: ClosedRange<Int>?
     @State private var fadingVerses: ClosedRange<Int>?
 
+    ///
+    @State private var lastSelectedRange: ClosedRange<Int>?
+
     // MARK: Properties (Scrolling, Private)
 
     /// Paragraphs after recycling has started; nil = the passage's own paragraphs
@@ -309,6 +312,7 @@ struct PassagePreviewView: View {
     /// When scrolling, the top edge is pushed down by the distance the text scrolls during
     /// one selection, so a selected paragraph stays fully visible until it fades out
     private func randomVisibleVerseRange() -> ClosedRange<Int>? {
+        // which ones are we allowed to select?
         let scrollAllowance = scrolls ? Self.scrollSpeed * Self.selectionLifetime : 0
         let visibleTop = viewport.visibleRange.lowerBound + scrollAllowance
         let visibleBottom = viewport.visibleRange.upperBound
@@ -333,9 +337,26 @@ struct PassagePreviewView: View {
             return nil
         }
 
-        let length = Int.random(in: 1...min(3, lastVerse - firstVerse + 1))
-        let start = Int.random(in: firstVerse...(lastVerse - length + 1))
-        return start...(start + length - 1)
+        // subtract the previous range from the current-calculated range
+        let allowed = (firstVerse...lastVerse).filter { !(lastSelectedRange?.contains($0) ?? false) }
+
+        // nothing left outside the last selection (one verse visible): allow a repeat
+        guard let start = allowed.randomElement() ?? (firstVerse...lastVerse).randomElement() else {
+            return nil
+        }
+
+        // grow range forward while next verse is still allowed
+        let maxLength = Int.random(in: 1...3)
+        var end = start
+        while end - start + 1 < maxLength,
+              end + 1 <= lastVerse,
+              !(lastSelectedRange?.contains(end + 1) ?? false) {
+            end += 1
+        }
+
+        let final = start...end
+        lastSelectedRange = final
+        return final
     }
 
     // MARK: Functions (Private, Scrolling)
