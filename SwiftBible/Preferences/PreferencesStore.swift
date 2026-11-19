@@ -109,6 +109,13 @@ final class PreferencesStore {
         }
     }
 
+    /// If true, ReaderView will temporarily disable device Auto-Lock while focused
+    var disableReaderAutoLock: Bool {
+        didSet {
+            userDefaults.set(disableReaderAutoLock, forKey: Self.disableReaderAutoLockKey)
+        }
+    }
+
     // MARK: Properties (NOT Persisted)
 
     /// Resolved ReaderTheme for the currently selected preset + all its user customizations
@@ -152,6 +159,9 @@ final class PreferencesStore {
 
     /// Stable UserDefaults key for Appearance settings' iCloud syncing storage
     private static let syncAppearanceToICloudKey = "net.brandonthomas.SwiftBible.syncAppearanceToICloud"
+
+    /// Stable UserDefaults key for storage of Reader AutoLock preference
+    static let disableReaderAutoLockKey = "net.brandonthomas.SwiftBible.disableReaderAutoLock"
 
     private static let logger = Logger(subsystem: "SwiftBible", category: "PreferencesStore")
 
@@ -204,7 +214,12 @@ final class PreferencesStore {
         let syncAppearance = userDefaults.object(forKey: Self.syncAppearanceToICloudKey) as? Bool
         self.syncAppearanceToICloud = syncAppearance ?? true
 
-        // lastly... run this last AFTER above userDefaults checks so we don't override them
+        // Reader Auto-Lock
+        // OK to use .bool() here because default false is what we want
+        self.disableReaderAutoLock = userDefaults.bool(forKey: Self.disableReaderAutoLockKey)
+
+        // lastly...
+        // run this last AFTER above userDefaults checks so we don't override them
         self.userDefaults = userDefaults
         self.ubiquitousStore = ubiquitousStore
 
@@ -233,7 +248,7 @@ final class PreferencesStore {
         }
     }
 
-    // MARK: Functions
+    // MARK: Functions (ReaderTheme)
 
     /// Returns a resolved ReaderTheme for a given preset + all its user customizations
     func readerThemeResolved(for preset: ReaderTheme) -> ReaderThemeResolved {
@@ -242,6 +257,7 @@ final class PreferencesStore {
                             textSizeStep: readerTextSizeStep)
     }
 
+    /// Returns a resolved ReaderTheme for a given preset + a given set of user customizations
     func readerThemeResolved(for preset: ReaderTheme,
                              previewing draft: ReaderThemeCustom?) -> ReaderThemeResolved {
         if let draft {
@@ -249,9 +265,7 @@ final class PreferencesStore {
                                 customizedPreset: draft,
                                 textSizeStep: readerTextSizeStep)
         } else {
-            ReaderThemeResolved(basePreset: preset,
-                                customizedPreset: readerThemeCustomChanges[preset.rawValue],
-                                textSizeStep: readerTextSizeStep)
+            readerThemeResolved(for: preset)
         }
     }
 
@@ -343,6 +357,7 @@ final class PreferencesStore {
         modifyTextSize(by: -1)
     }
 
+    /// Reset text size step to 0
     func resetTextSize() {
         self.readerTextSizeStep = 0
     }

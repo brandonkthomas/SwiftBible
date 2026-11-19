@@ -36,6 +36,19 @@ struct ContentView: View {
     /// Observed for changeCount only; see .onChange below
     @Environment(\.libraryRepository) private var libraryRepository
 
+    // MARK: Properties (Private, Reader AutoLock)
+
+    /// local preference
+    @AppStorage(PreferencesStore.disableReaderAutoLockKey) private var disableReaderAutoLockKey = false
+
+    /// Is SwiftBible foregrounded?
+    @Environment(\.scenePhase) private var scenePhase
+
+    /// Auto-lock is suppressed only while actively reading with the preference on
+    private var shouldDisableIdleTimer: Bool {
+        disableReaderAutoLockKey && selectedTab == .read && scenePhase == .active
+    }
+
     // MARK: Views
 
     /// Primary application body
@@ -104,6 +117,10 @@ struct ContentView: View {
             Task {
                 await libraryStore.loadMissingBookMetadata()
             }
+        }
+        // Reader Auto-Lock
+        .onChange(of: shouldDisableIdleTimer, initial: true) { _, disabled in
+            UIApplication.shared.isIdleTimerDisabled = disabled
         }
     }
 }

@@ -664,6 +664,7 @@ struct SettingsAppearanceView: View {
             }
         }
         .padding([.leading, .trailing], 2)
+        .frame(height: 18)
     }
 
     private var secondaryTextColorPickerRow: some View {
