@@ -98,11 +98,7 @@ struct SettingsView: View {
                         }
                         // Help/Email
                         NavigationLink {
-                            ContentUnavailableView(
-                                "Help & Support",
-                                systemImage: "questionmark.circle",
-                                description: Text("Coming soon.")
-                            )
+                            SettingsHelpView()
                         } label: {
                             settingsRow(title: "Help & Support",
                                         symbol: "questionmark.circle.fill",

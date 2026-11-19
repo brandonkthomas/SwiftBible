@@ -10,6 +10,7 @@ import SwiftUI
 struct SettingsHelpView: View {
 
     private static let address = "feedback@brandonthomas.net"
+    private static let privacyPolicyURL = "https://github.com/brandonkthomas/SwiftBible/blob/main/Public/Privacy-Policy.md"
 
     /// Alert steps for the "Report an Issue" flow, in presentation order
     private enum ReportStep {
@@ -36,6 +37,7 @@ struct SettingsHelpView: View {
     /// Main body
     var body: some View {
         List {
+            // SUPPORT
             Section {
                 // Contact
                 Button {
@@ -65,6 +67,31 @@ struct SettingsHelpView: View {
                     }
                     .foregroundStyle(.blue)
                 }
+            } header: {
+                Text("Support")
+                    .foregroundStyle(.secondary)
+            }
+            .foregroundStyle(.primary)
+
+            // LEGAL
+            Section {
+                // Privacy Policy
+                Button {
+                    guard let url = URL(string: Self.privacyPolicyURL) else { return }
+                    UIApplication.shared.open(url)
+                } label: {
+                    HStack{
+                        Image(systemName: "lock.document.fill")
+                            .frame(width: 25)
+                        Text("Privacy Policy")
+                            .padding(.leading, 8)
+                        Spacer()
+                    }
+                    .foregroundStyle(.blue)
+                }
+            } header: {
+                Text("Legal")
+                    .foregroundStyle(.secondary)
             }
             .foregroundStyle(.primary)
         }
@@ -206,3 +233,4 @@ struct SettingsHelpView: View {
         SettingsHelpView()
     }
 }
+
