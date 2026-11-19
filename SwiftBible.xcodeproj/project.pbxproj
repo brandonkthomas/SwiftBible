@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		85BBD28C2FF0EC9B00C2FE15 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 85BBD28B2FF0EC9B00C2FE15 /* Assets.xcassets */; };
+		85BF06BF30AEA9E300BFC441 /* SwiftBibleUI.xctestplan in Resources */ = {isa = PBXBuildFile; fileRef = 85BF06BE30AEA9E300BFC441 /* SwiftBibleUI.xctestplan */; };
 		85E9A3FF30AB5BE8003A6153 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 85E9A3FE30AB5BE8003A6153 /* PrivacyInfo.xcprivacy */; };
 /* End PBXBuildFile section */
 
@@ -34,6 +35,8 @@
 		8539B67F2FEEE6C0007FC718 /* SwiftBibleTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SwiftBibleTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		8539B6892FEEE6C0007FC718 /* SwiftBibleUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SwiftBibleUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		85BBD28B2FF0EC9B00C2FE15 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		85BF06BD30AEA9B300BFC441 /* SwiftBible.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = text; path = SwiftBible.xctestplan; sourceTree = "<group>"; };
+		85BF06BE30AEA9E300BFC441 /* SwiftBibleUI.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = text; path = SwiftBibleUI.xctestplan; sourceTree = "<group>"; };
 		85E9A3FE30AB5BE8003A6153 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -96,6 +99,8 @@
 		8539B6692FEEE6C0007FC718 = {
 			isa = PBXGroup;
 			children = (
+				85BF06BE30AEA9E300BFC441 /* SwiftBibleUI.xctestplan */,
+				85BF06BD30AEA9B300BFC441 /* SwiftBible.xctestplan */,
 				85E9A3FE30AB5BE8003A6153 /* PrivacyInfo.xcprivacy */,
 				852A8D9E309451BB00B25CB3 /* Localizable.xcstrings */,
 				85BBD28B2FF0EC9B00C2FE15 /* Assets.xcassets */,
@@ -239,6 +244,7 @@
 			files = (
 				85E9A3FF30AB5BE8003A6153 /* PrivacyInfo.xcprivacy in Resources */,
 				85BBD28C2FF0EC9B00C2FE15 /* Assets.xcassets in Resources */,
+				85BF06BF30AEA9E300BFC441 /* SwiftBibleUI.xctestplan in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

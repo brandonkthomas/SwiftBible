@@ -1,0 +1,37 @@
+{
+  "configurations" : [
+    {
+      "id" : "42BA6319-530F-4D9B-8289-9E080F793859",
+      "name" : "Test Scheme Action",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "commandLineArgumentEntries" : [
+      {
+        "argument" : "-resetTips",
+        "enabled" : false
+      }
+    ],
+    "performanceAntipatternCheckerEnabled" : true,
+    "targetForVariableExpansion" : {
+      "containerPath" : "container:SwiftBible.xcodeproj",
+      "identifier" : "8539B6712FEEE6C0007FC718",
+      "name" : "SwiftBible"
+    },
+    "testInteropMode" : "complete"
+  },
+  "testTargets" : [
+    {
+      "parallelizable" : true,
+      "target" : {
+        "containerPath" : "container:SwiftBible.xcodeproj",
+        "identifier" : "8539B67E2FEEE6C0007FC718",
+        "name" : "SwiftBibleTests"
+      }
+    }
+  ],
+  "version" : 1
+}

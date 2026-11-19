@@ -124,6 +124,8 @@ struct ReaderPassageView: View {
                                 fadeProgress: fadeProgress,
                                 bookmarkColor: readerTheme.backgroundColor,
                                 persistedHighlights: readerStore.passageHighlightColors))
+                            // the renderer's highlights are drawn only, so VoiceOver can't detect them
+                            .accessibilityValue(highlightedVersesAccessibilityValue(for: paragraphs[paragraphIndex]))
                             // record tap gestures for use with VerseHighlightRenderer
                             .simultaneousGesture(SpatialTapGesture(coordinateSpace: .local)
                                 .onEnded {
@@ -252,6 +254,33 @@ struct ReaderPassageView: View {
     }
 
     // MARK: Functions (Private)
+
+    /// VoiceOver description of this paragraph's highlighted verses (empty when there are none)
+    private func highlightedVersesAccessibilityValue(for paragraph: RenderedParagraph) -> String {
+        var paragraphVerses = Set<Int>()
+
+        for run in paragraph.runs {
+            guard let verseRange = run.verseRange else { continue }
+            let lastVerse = max(verseRange.endVerse ?? verseRange.startVerse, verseRange.startVerse)
+            paragraphVerses.formUnion(verseRange.startVerse...lastVerse)
+        }
+
+        let highlightedVerses = paragraphVerses
+            .filter { readerStore.passageHighlightColors[$0] != nil }
+            .sorted()
+
+        guard !highlightedVerses.isEmpty else { return "" }
+
+        let verseList = highlightedVerses
+            .map { String($0) }
+            .formatted(.list(type: .and))
+
+        return highlightedVerses.count == 1
+            ? String(localized: "Highlighted verse \(verseList)",
+                     comment: "VoiceOver value on a Reader paragraph with one highlighted verse")
+            : String(localized: "Highlighted verses \(verseList)",
+                     comment: "VoiceOver value on a Reader paragraph with several highlighted verses")
+    }
 
     /// Handle updating verse tap selection in store + calculating delta + animating text
     private func handleVerseSelection(components: URLComponents,

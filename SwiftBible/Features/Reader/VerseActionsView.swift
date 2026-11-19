@@ -128,6 +128,7 @@ struct VerseActionsView: View {
                     .font(.system(size: actionSymbolSize,
                                   weight: .bold))
             }
+            .accessibilityLabel("Deselect Verses")
 
             // Label
             // this will smoothly transition when bar is collapsed/expanded in real time
@@ -157,6 +158,7 @@ struct VerseActionsView: View {
                 Image(systemName: "bookmark.fill")
                     .font(.system(size: actionSymbolSize))
             }
+            .accessibilityLabel("Notes and Tags") // opens the editor; the icon alone reads as "Bookmark"
 
             // Share
             ShareLink(item: "",
@@ -240,6 +242,7 @@ struct VerseActionsView: View {
                 // allow transition between image states
                 .contentTransition(.symbolEffect(.replace.offUp.byLayer, options: .nonRepeating))
         }
+        .accessibilityLabel(showEraser ? Text("Remove Highlight") : Text("Highlight"))
         .popover(isPresented: $isHighlightPopoverPresented,
                  attachmentAnchor: .point(.top),
                  arrowEdge: .bottom,

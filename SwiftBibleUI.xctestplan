@@ -1,0 +1,25 @@
+{
+  "configurations" : [
+    {
+      "id" : "640E416C-D4C7-4192-8433-B10EC30AF2C9",
+      "name" : "Configuration 1",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "testInteropMode" : "complete",
+    "testTimeoutsEnabled" : true
+  },
+  "testTargets" : [
+    {
+      "target" : {
+        "containerPath" : "container:SwiftBible.xcodeproj",
+        "identifier" : "8539B6882FEEE6C0007FC718",
+        "name" : "SwiftBibleUITests"
+      }
+    }
+  ],
+  "version" : 1
+}

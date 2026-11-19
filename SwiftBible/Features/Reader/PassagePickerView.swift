@@ -77,6 +77,7 @@ struct PassagePickerView: View {
                                   weight: .bold))
                     .foregroundStyle(.foreground)
             }
+            .accessibilityLabel("Previous Chapter")
             .disabled(isPrevNavigationDisabled)
             .opacity(isPrevNavigationDisabled ? 0.35 : 1)
             // trigger slight haptic feedback on tap
@@ -104,6 +105,7 @@ struct PassagePickerView: View {
                                   weight: .bold))
                     .foregroundStyle(.foreground)
             }
+            .accessibilityLabel("Next Chapter")
             .disabled(isNextNavigationDisabled)
             .opacity(isNextNavigationDisabled ? 0.35 : 1)
             // trigger slight haptic feedback on tap

@@ -53,6 +53,7 @@ struct HighlightPickerView: View {
     /// Produces a selectable circle button for a given highlight color
     private func highlightColorButton(for color: VerseAnnotationHighlightColor) -> some View {
         let selected = existingHighlightColors?.contains(color) ?? false
+        let colorName = color.rawValue.capitalized
 
         return Button(action: {
             withAnimation(.snappy(duration: 0.35)) {
@@ -71,6 +72,10 @@ struct HighlightPickerView: View {
             .frame(width: buttonSize, height: buttonSize)
             .foregroundColor(Color.primary)
         }
+        // on the Button: its visible content is only a checkmark or empty text
+        .accessibilityLabel(selected
+                            ? Text("Remove \(colorName) Highlight")
+                            : Text("Add \(colorName) Highlight"))
         // blend in w/ surrounding elements; interactive; tint to correct color
         .glassEffect(.regular.tint(color.uiColor).interactive(),in: .circle)
         // haptic on selection; warning when removing an existing highlight
@@ -85,6 +90,9 @@ struct HighlightPickerView: View {
         isHighlightPopoverPresented = true
     }) {
         Image(systemName: "pencil")
+            .glassEffect(.regular, in: .circle)
+            .imageScale(.large)
+            .scaleEffect(3)
             .symbolRenderingMode(.palette)
             .foregroundStyle(.primary, .gray)
         // allow transition between image states
