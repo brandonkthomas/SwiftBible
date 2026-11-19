@@ -50,9 +50,12 @@ struct SettingsHelpView: View {
                         Text("Contact")
                             .padding(.leading, 8)
                         Spacer()
+                        Image(systemName: "arrow.up.right.square")
+                            .foregroundStyle(.secondary)
+                            .accessibilityHidden(true)
                     }
-                    .foregroundStyle(.blue)
                 }
+                .foregroundStyle(.accent)
 
                 // Report an Issue
                 Button {
@@ -65,13 +68,11 @@ struct SettingsHelpView: View {
                             .padding(.leading, 8)
                         Spacer()
                     }
-                    .foregroundStyle(.blue)
                 }
+                .foregroundStyle(.accent)
             } header: {
                 Text("Support")
-                    .foregroundStyle(.secondary)
             }
-            .foregroundStyle(.primary)
 
             // LEGAL
             Section {
@@ -86,18 +87,19 @@ struct SettingsHelpView: View {
                         Text("Privacy Policy")
                             .padding(.leading, 8)
                         Spacer()
+                        Image(systemName: "arrow.up.right.square")
+                            .foregroundStyle(.secondary)
+                            .accessibilityHidden(true)
                     }
-                    .foregroundStyle(.blue)
                 }
+                .foregroundStyle(.accent)
             } header: {
                 Text("Legal")
-                    .foregroundStyle(.secondary)
             }
-            .foregroundStyle(.primary)
         }
         .navigationTitle("Help & Support")
         .alert("Report an Issue", isPresented: isPresenting(.type)) {
-            Button("Bug") { selectType(.bug) }
+            Button("Issue") { selectType(.bug) }
             Button("Feature Request") { selectType(.featureRequest) }
             Button("Other") { selectType(.other) }
             Button("Cancel", role: .cancel) { reportStep = nil }

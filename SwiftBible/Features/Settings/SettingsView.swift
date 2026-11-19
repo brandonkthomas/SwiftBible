@@ -11,6 +11,8 @@ struct SettingsView: View {
 
     // MARK: Properties (Private)
 
+    private static let appReviewLink = "https://apps.apple.com/us/app/bible-read-annotate/id6790014524?action=write-review"
+
     @ScaledMetric(relativeTo: .body) private var rowFontSize: CGFloat = 16
     @ScaledMetric(relativeTo: .body) private var iconFontSize: CGFloat = 13
     @ScaledMetric(relativeTo: .body) private var iconSize: CGFloat = 28
@@ -105,13 +107,12 @@ struct SettingsView: View {
                                         color: .orange)
                         }
                         // Rate link (app store)
-                        NavigationLink {
-                            // TODO
-                        } label: {
+                        Link(destination: URL(string: Self.appReviewLink)!) {
                             settingsRow(title: "Rate Bible",
                                         symbol: "star.fill",
                                         color: .yellow)
                         }
+                        .foregroundStyle(.primary)
                     }
                 }
                 .listStyle(.insetGrouped)
