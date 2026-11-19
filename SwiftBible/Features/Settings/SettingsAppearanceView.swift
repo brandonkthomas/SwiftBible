@@ -9,7 +9,7 @@ import SwiftUI
 
 struct SettingsAppearanceView: View {
 
-    // MARK: Properties (Private)
+    // MARK: Properties (Private, Env)
 
     @Environment(\.self) private var environment
 
@@ -27,6 +27,10 @@ struct SettingsAppearanceView: View {
 
     /// Is the "Reset Theme" popover visible?
     @State private var resetThemeConfirmationIsPresented: Bool = false
+
+    /// Used to save slider/etc changes then update all at once after event ends
+    /// (prevents ReaderView from redrawing every frame and lagging the main thread)
+    @State private var draftThemeChanges: ReaderThemeCustom?
 
     // MARK: Properties (Private, Scaling/Fonts)
 
@@ -68,6 +72,12 @@ struct SettingsAppearanceView: View {
                 $0.fontDesign = newValue
             }
         }
+    }
+
+    ///
+    private var displayedTheme: ReaderThemeResolved {
+        preferencesStore.readerThemeResolved(for: preferencesStore.readerTheme,
+                                             previewing: draftThemeChanges)
     }
 
     // MARK: Properties (Private, Static)
@@ -203,7 +213,7 @@ struct SettingsAppearanceView: View {
         .safeAreaInset(edge: .top, spacing: 16) {
             VStack(spacing: 16) {
                 PassagePreviewView(verses: Self.previewVerses,
-                                   readerTheme: prefStore.selectedReaderThemeResolved)
+                                   readerTheme: displayedTheme) // use local cache so we can instantly draw changes
                     .padding(.horizontal, 16)
                 Divider()
             }
@@ -213,6 +223,14 @@ struct SettingsAppearanceView: View {
         .font(.system(.body))
         // navigation title
         .navigationTitle("Appearance")
+        // saved state moved on (other controls, iCloud, Slider ending without a final callback):
+        // drop any draft so it can't hide the new values
+        .onChange(of: preferencesStore.readerThemeCustomChanges) {
+            draftThemeChanges = nil
+        }
+        .onChange(of: preferencesStore.readerTheme) {
+            draftThemeChanges = nil
+        }
     }
 
     // MARK: Views (Rows/Labels)
@@ -422,13 +440,15 @@ struct SettingsAppearanceView: View {
                 }
             }
             HStack(spacing: 16) {
-                let result = String(format: "%.2f", Double(preferencesStore.selectedReaderThemeResolved.lineSpacingPercent) / 100)
+                let result = String(format: "%.2f", Double(displayedTheme.lineSpacingPercent) / 100)
 
                 Slider(value: sliderSelection(resolved: \.lineSpacingPercent,
                                               custom: \.lineSpacingPercent),
                        in: Self.lineSpacingPercentRangeDouble,
                        step: 5) {
                     Text("Line Spacing")
+                } onEditingChanged: { isDragging in
+                    sliderEditingChanged(isDragging)
                 }
                        .accessibilityValue(result) // otherwise it will read "135%"
                 Text(result)
@@ -463,13 +483,15 @@ struct SettingsAppearanceView: View {
                 }
             }
             HStack(spacing: 16) {
-                let percent = preferencesStore.selectedReaderThemeResolved.wordSpacingPercent
+                let percent = displayedTheme.wordSpacingPercent
 
                 Slider(value: sliderSelection(resolved: \.wordSpacingPercent,
                                               custom: \.wordSpacingPercent),
                        in: Self.wordSpacingPercentRangeDouble,
                        step: 5) {
                     Text("Word Spacing")
+                } onEditingChanged: { isDragging in
+                    sliderEditingChanged(isDragging)
                 }
                        .accessibilityValue(Text(percent, format: .percent))
                 Text(percent, format: .percent)
@@ -504,13 +526,15 @@ struct SettingsAppearanceView: View {
                 }
             }
             HStack(spacing: 16) {
-                let percent = preferencesStore.selectedReaderThemeResolved.characterSpacingPercent
+                let percent = displayedTheme.characterSpacingPercent
 
                 Slider(value: sliderSelection(resolved: \.characterSpacingPercent,
                                               custom: \.characterSpacingPercent),
                        in: Self.charSpacingPercentRangeDouble,
                        step: 1) {
                     Text("Character Spacing")
+                } onEditingChanged: { isDragging in
+                    sliderEditingChanged(isDragging)
                 }
                        .accessibilityValue(Text(percent, format: .percent))
                 Text(percent, format: .percent)
@@ -545,13 +569,15 @@ struct SettingsAppearanceView: View {
                 }
             }
             HStack(spacing: 16) {
-                let result = String(format: "%.0f", Double(preferencesStore.selectedReaderThemeResolved.marginPoints))
+                let result = String(format: "%.0f", Double(displayedTheme.marginPoints))
 
                 Slider(value: sliderSelection(resolved: \.marginPoints,
                                               custom: \.marginPoints),
                        in: Self.marginPointsRangeDouble,
                        step: 1) {
                     Text("Margins")
+                } onEditingChanged: { isDragging in
+                    sliderEditingChanged(isDragging)
                 }
                        .accessibilityValue("\(result) points")
                 Text(result)
@@ -772,14 +798,31 @@ struct SettingsAppearanceView: View {
 
     /// Used for Layout slider rows
     private func sliderSelection(resolved: KeyPath<ReaderThemeResolved, Int>,
-                                 custom: WritableKeyPath<ReaderThemeCustom, Int?>) -> Binding<Double> {
+                                          custom: WritableKeyPath<ReaderThemeCustom, Int?>) -> Binding<Double> {
         Binding {
-            Double(preferencesStore.selectedReaderThemeResolved[keyPath: resolved])
+            Double(displayedTheme[keyPath: resolved])
         } set: { newValue in
-            let currentTheme = preferencesStore.readerTheme
-            preferencesStore.updateReaderThemeCustomChanges(for: currentTheme) {
-                $0[keyPath: custom] = Int(newValue.rounded())
+            if draftThemeChanges != nil {
+                draftThemeChanges![keyPath: custom] = Int(newValue.rounded())
+            } else {
+                let currentTheme = preferencesStore.readerTheme
+                preferencesStore.updateReaderThemeCustomChanges(for: currentTheme) {
+                    $0[keyPath: custom] = Int(newValue.rounded())
+                }
             }
+        }
+    }
+
+    /// Update draft while editing; save draft to preferenceStore when finished editing
+    private func sliderEditingChanged(_ isEditing: Bool) {
+        let currentTheme = preferencesStore.readerTheme
+
+        if isEditing {
+            // start from saved changes; empty (not nil) so an unedited theme still drags in the draft
+            draftThemeChanges = preferencesStore.readerThemeCustomChanges[currentTheme.rawValue] ?? ReaderThemeCustom()
+        } else if let draftThemeChanges {
+            preferencesStore.replaceReaderThemeCustomChanges(draftThemeChanges, for: currentTheme)
+            self.draftThemeChanges = nil // otherwise displayedTheme keeps hiding saved changes
         }
     }
 

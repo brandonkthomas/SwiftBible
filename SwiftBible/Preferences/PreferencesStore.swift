@@ -242,6 +242,19 @@ final class PreferencesStore {
                             textSizeStep: readerTextSizeStep)
     }
 
+    func readerThemeResolved(for preset: ReaderTheme,
+                             previewing draft: ReaderThemeCustom?) -> ReaderThemeResolved {
+        if let draft {
+            ReaderThemeResolved(basePreset: preset,
+                                customizedPreset: draft,
+                                textSizeStep: readerTextSizeStep)
+        } else {
+            ReaderThemeResolved(basePreset: preset,
+                                customizedPreset: readerThemeCustomChanges[preset.rawValue],
+                                textSizeStep: readerTextSizeStep)
+        }
+    }
+
     /// Apply modified custom changes (skip unmodified options)
     ///
     /// Starts from nothing + overrides ALL customizations for a given base preset

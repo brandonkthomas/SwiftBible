@@ -842,6 +842,54 @@ struct PreferencesStoreTests {
         #expect(ubiquitousStore.values[Self.readerThemeCustomChangesKey] as? Data != nil)
     }
 
+    // MARK: Previewing Draft Changes
+
+    /// With no draft, a preview is the same theme the rest of the app is using
+    @Test func previewWithoutDraftMatchesSavedTheme() throws {
+        let suiteName = UUID().uuidString
+        defer { UserDefaults().removePersistentDomain(forName: suiteName) }
+        let userDefaults = try #require(UserDefaults(suiteName: suiteName))
+
+        let store = PreferencesStore(userDefaults: userDefaults)
+        store.replaceReaderThemeCustomChanges(ReaderThemeCustom(characterSpacingPercent: 5), for: .folio)
+
+        #expect(store.readerThemeResolved(for: .folio, previewing: nil) == store.readerThemeResolved(for: .folio))
+    }
+
+    /// A draft replaces the saved changes in the preview; the text size step still applies
+    @Test func previewUsesDraftInsteadOfSavedChanges() throws {
+        let suiteName = UUID().uuidString
+        defer { UserDefaults().removePersistentDomain(forName: suiteName) }
+        let userDefaults = try #require(UserDefaults(suiteName: suiteName))
+
+        let store = PreferencesStore(userDefaults: userDefaults)
+        store.readerTextSizeStep = 2
+        store.replaceReaderThemeCustomChanges(ReaderThemeCustom(characterSpacingPercent: 5), for: .folio)
+
+        let preview = store.readerThemeResolved(for: .folio,
+                                                previewing: ReaderThemeCustom(characterSpacingPercent: 12))
+
+        #expect(preview.characterSpacingPercent == 12)
+        #expect(preview.textSizeStep == 2)
+    }
+
+    /// Previewing a draft saves nothing: the store and a later launch still see the old value
+    @Test func previewDoesNotSaveDraft() throws {
+        let suiteName = UUID().uuidString
+        defer { UserDefaults().removePersistentDomain(forName: suiteName) }
+        let userDefaults = try #require(UserDefaults(suiteName: suiteName))
+
+        let store = PreferencesStore(userDefaults: userDefaults)
+        store.replaceReaderThemeCustomChanges(ReaderThemeCustom(characterSpacingPercent: 5), for: .folio)
+
+        _ = store.readerThemeResolved(for: .folio,
+                                      previewing: ReaderThemeCustom(characterSpacingPercent: 12))
+
+        #expect(store.readerThemeCustomChanges[ReaderTheme.folio.rawValue]?.characterSpacingPercent == 5)
+        let secondStore = PreferencesStore(userDefaults: userDefaults)
+        #expect(secondStore.readerThemeCustomChanges[ReaderTheme.folio.rawValue]?.characterSpacingPercent == 5)
+    }
+
     // MARK: Private Helpers
 
     /// Posts the notification `NSUbiquitousKeyValueStore` sends when another device's values arrive
