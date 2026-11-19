@@ -5,7 +5,7 @@
 
 import XCTest
 
-/// VoiceOver smoke tests for the Reader's controls
+/// VoiceOver smoke tests for the Reader, passage picker, Saved, and Settings
 ///
 /// Run on an iOS 27 or later Simulator or device; `XCUIVoiceOverService` doesn't exist earlier.
 /// Needs network access unless the opening passage is already cached.
@@ -86,7 +86,97 @@ final class SwiftBibleVoiceOverUITests: XCTestCase {
                                       "Add Purple Highlight"])
     }
 
+    func testTabBarIsAnnounced() throws {
+        try voiceOver.enable()
+
+        try assertVoiceOverAnnounces(["Read", "Saved", "Settings", "Search"])
+    }
+
+    func testPassagePickerIsAnnounced() throws {
+        try openPassagePicker()
+        try voiceOver.enable()
+
+        // "Expanded": the current book's row opens with its chapters showing
+        try assertVoiceOverAnnounces(["Books", "Translations", "Close", "Expanded"])
+    }
+
+    func testSavedIsAnnounced() throws {
+        try openTab("Saved")
+
+        if app.staticTexts["No Annotations"].waitForExistence(timeout: 2) {
+            try voiceOver.enable()
+            try assertVoiceOverAnnounces(["No Annotations"])
+        } else {
+            try voiceOver.enable()
+            try assertVoiceOverAnnounces(["Select Annotations", "Filter", "Sort By", "Group By"])
+        }
+    }
+
+    func testSettingsIsAnnounced() throws {
+        try openTab("Settings")
+        try voiceOver.enable()
+
+        try assertVoiceOverAnnounces(["Annotations",
+                                      "Appearance",
+                                      "Language",
+                                      "About",
+                                      "Acknowledgments",
+                                      "Help & Support",
+                                      "Rate Bible"])
+    }
+
+    func testAppearanceSettingsAreAnnounced() throws {
+        try openTab("Settings")
+
+        let appearanceRow = app.buttons["Appearance"]
+        XCTAssertTrue(appearanceRow.waitForExistence(timeout: 5), "Settings has no Appearance row")
+        appearanceRow.tap()
+
+        XCTAssertTrue(app.buttons["Increase Font Size"].waitForExistence(timeout: 5),
+                      "Appearance settings did not open")
+
+        try voiceOver.enable()
+
+        try assertVoiceOverAnnounces(["Classic",
+                                      "Decrease Font Size",
+                                      "Reset Text Size",
+                                      "Increase Font Size",
+                                      "Font",
+                                      "Weight",
+                                      "Style",
+                                      "Line Spacing",
+                                      "Word Spacing",
+                                      "Character Spacing",
+                                      "Margins",
+                                      "Background",
+                                      "Primary Text",
+                                      "Secondary Text",
+                                      "Sync to iCloud"])
+    }
+
     // MARK: Functions (Private)
+
+    /// Switches tabs with a normal tap (VoiceOver is enabled afterwards)
+    private func openTab(_ name: String) throws {
+        let tabBarButton = app.tabBars.buttons[name]
+        let tab = tabBarButton.waitForExistence(timeout: 2) ? tabBarButton : app.buttons[name]
+        XCTAssertTrue(tab.waitForExistence(timeout: 5), "No \(name) tab")
+        tab.tap()
+    }
+
+    /// Opens the passage picker sheet; its button's label is the current passage, so tap
+    /// the space between the chapter buttons instead of looking it up by label
+    private func openPassagePicker() throws {
+        let previousFrame = app.buttons["Previous Chapter"].frame
+        let nextFrame = app.buttons["Next Chapter"].frame
+        let center = CGVector(dx: (previousFrame.maxX + nextFrame.minX) / 2,
+                              dy: (previousFrame.midY + nextFrame.midY) / 2)
+
+        app.coordinate(withNormalizedOffset: .zero).withOffset(center).tap()
+
+        XCTAssertTrue(app.buttons["Close"].waitForExistence(timeout: 5),
+                      "The passage picker did not open")
+    }
 
     /// Taps down the middle of the passage until a verse is selected
     private func selectVerse() throws {
