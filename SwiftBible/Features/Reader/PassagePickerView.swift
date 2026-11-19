@@ -54,11 +54,24 @@ struct PassagePickerView: View {
 
     // MARK: Properties (Private, Dynamic Type)
 
+    // The accessory's height is fixed, so these stop growing at the largest standard size;
+    // each control shows the Large Content Viewer instead (long press)
+
+    private static let chevronSymbolBaseSize: CGFloat = 20
+    private static let labelFontBaseSize: CGFloat = 14
+
+    @ScaledMetric(relativeTo: .body) private var scaledChevronSymbolSize = PassagePickerView.chevronSymbolBaseSize
+    @ScaledMetric(relativeTo: .body) private var scaledLabelFontSize = PassagePickerView.labelFontBaseSize
+
     /// Previous/next chevron symbol size
-    @ScaledMetric(relativeTo: .body) private var chevronSymbolSize: CGFloat = 20
+    private var chevronSymbolSize: CGFloat {
+        ScaledMetricLimit.capped(scaledChevronSymbolSize, base: Self.chevronSymbolBaseSize)
+    }
 
     /// Book/chapter/translation label font size
-    @ScaledMetric(relativeTo: .body) private var labelFontSize: CGFloat = 14
+    private var labelFontSize: CGFloat {
+        ScaledMetricLimit.capped(scaledLabelFontSize, base: Self.labelFontBaseSize)
+    }
 
     // MARK: Views
 
@@ -78,6 +91,7 @@ struct PassagePickerView: View {
                     .foregroundStyle(.foreground)
             }
             .accessibilityLabel("Previous Chapter")
+            .accessibilityShowsLargeContentViewer()
             .disabled(isPrevNavigationDisabled)
             .opacity(isPrevNavigationDisabled ? 0.35 : 1)
             // trigger slight haptic feedback on tap
@@ -106,6 +120,7 @@ struct PassagePickerView: View {
                     .foregroundStyle(.foreground)
             }
             .accessibilityLabel("Next Chapter")
+            .accessibilityShowsLargeContentViewer()
             .disabled(isNextNavigationDisabled)
             .opacity(isNextNavigationDisabled ? 0.35 : 1)
             // trigger slight haptic feedback on tap
@@ -133,6 +148,8 @@ struct PassagePickerView: View {
         }
         .buttonStyle(.plain)
         .foregroundStyle(.primary) // Automatically adapts to light/dark
+        // label truncates at the largest sizes; a long press shows it in full
+        .accessibilityShowsLargeContentViewer()
         .sheet(isPresented: $isPickerSheetPresented) {
             PassagePickerSheetView()
                 .navigationTransition(.zoom(sourceID: PassagePickerView.presentationID,

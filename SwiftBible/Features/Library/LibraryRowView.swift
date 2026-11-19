@@ -136,45 +136,23 @@ struct LibraryRowView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             // Row 1: Annotation summary
-            HStack {
-                // Annotation type icon
-                // TODO: normalize size
-                Group {
-                    switch data.annotation.content {
-                    case .highlight(_):
-                        Image(systemName: "pencil.line")
-                    case .note(_):
-                        Image(systemName: "text.alignleft")
-                    case .tags(_):
-                        Image(systemName: "tag")
+            // At accessibility sizes the passage gets the full width on its own lines;
+            // squeezed between the icon and the menu, book names broke mid-word
+            if systemDynamicTypeSize.isAccessibilitySize {
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack {
+                        annotationTypeIcon
+                        Spacer()
+                        rowTrailingControl
                     }
+                    passageLabels(in: AnyLayout(VStackLayout(alignment: .leading, spacing: 2)))
                 }
-                .frame(width: frameSize16, height: frameSize16)
-                .font(readerTheme.font(fixedSize: fontSize16, weight: .regular))
-                .foregroundStyle(.secondary)
-
-                // Chapter / verse range / translation
-                HStack(spacing: 8) {
-                    Text(data.passageLabel)
-                    Text(data.translationLabel)
-                        .foregroundStyle(.secondary)
-                }
-                .font(readerTheme.font(fixedSize: fontSize16, weight: .medium))
-                .contentShape(Rectangle())
-
-                Spacer()
-
-                // Action menu / select circle
-                // Animated by the withAnimation around the selection change in LibraryView;
-                //   withAnimation inside body runs while building views, so it animates nothing
-                if isRowSelected == true {
-                    Image(systemName: "checkmark.circle.fill")
-                        .foregroundStyle(.accent)
-                } else if isRowSelected == false {
-                    Image(systemName: "circle")
-                        .foregroundStyle(.accent)
-                } else {
-                    annotationItemMenu
+            } else {
+                HStack {
+                    annotationTypeIcon
+                    passageLabels(in: AnyLayout(HStackLayout(spacing: 8)))
+                    Spacer()
+                    rowTrailingControl
                 }
             }
 
@@ -390,6 +368,52 @@ struct LibraryRowView: View {
                 bookmarkColor: readerTheme.backgroundColor,
                 persistedHighlights: data.annotation.highlightedVerses,
                 opacity: 0.5)) // custom for this view only (default 1)
+    }
+
+    /// Annotation type icon
+    // TODO: normalize size
+    private var annotationTypeIcon: some View {
+        Group {
+            switch data.annotation.content {
+            case .highlight(_):
+                Image(systemName: "pencil.line")
+            case .note(_):
+                Image(systemName: "text.alignleft")
+            case .tags(_):
+                Image(systemName: "tag")
+            }
+        }
+        .frame(width: frameSize16, height: frameSize16)
+        .font(readerTheme.font(fixedSize: fontSize16, weight: .regular))
+        .foregroundStyle(.secondary)
+    }
+
+    /// Chapter / verse range / translation, side by side or stacked
+    private func passageLabels(in layout: AnyLayout) -> some View {
+        layout {
+            Text(data.passageLabel)
+            Text(data.translationLabel)
+                .foregroundStyle(.secondary)
+        }
+        .font(readerTheme.font(fixedSize: fontSize16, weight: .medium))
+        .contentShape(Rectangle())
+    }
+
+    /// Action menu / select circle
+    ///
+    /// Animated by the withAnimation around the selection change in LibraryView;
+    /// withAnimation inside body runs while building views, so it animates nothing
+    @ViewBuilder
+    private var rowTrailingControl: some View {
+        if isRowSelected == true {
+            Image(systemName: "checkmark.circle.fill")
+                .foregroundStyle(.accent)
+        } else if isRowSelected == false {
+            Image(systemName: "circle")
+                .foregroundStyle(.accent)
+        } else {
+            annotationItemMenu
+        }
     }
 
     /// All items in annotation submenu

@@ -34,17 +34,38 @@ struct VerseActionsView: View {
 
     // MARK: Properties (Private, Dynamic Type)
 
+    // The accessory's height is fixed, so these stop growing at the largest standard size;
+    // each control shows the Large Content Viewer instead (long press)
+
+    private static let actionSymbolBaseSize: CGFloat = 20
+    private static let eraserSymbolBaseSize: CGFloat = 22
+    private static let penSymbolBaseSize: CGFloat = 26
+    private static let labelFontBaseSize: CGFloat = 14
+
+    @ScaledMetric(relativeTo: .body) private var scaledActionSymbolSize = VerseActionsView.actionSymbolBaseSize
+    @ScaledMetric(relativeTo: .body) private var scaledEraserSymbolSize = VerseActionsView.eraserSymbolBaseSize
+    @ScaledMetric(relativeTo: .body) private var scaledPenSymbolSize = VerseActionsView.penSymbolBaseSize
+    @ScaledMetric(relativeTo: .body) private var scaledLabelFontSize = VerseActionsView.labelFontBaseSize
+
     /// Action button symbol size
-    @ScaledMetric(relativeTo: .body) private var actionSymbolSize: CGFloat = 20
+    private var actionSymbolSize: CGFloat {
+        ScaledMetricLimit.capped(scaledActionSymbolSize, base: Self.actionSymbolBaseSize)
+    }
 
     /// Highlight action symbol size (eraser)
-    @ScaledMetric(relativeTo: .body) private var eraserSymbolSize: CGFloat = 22
+    private var eraserSymbolSize: CGFloat {
+        ScaledMetricLimit.capped(scaledEraserSymbolSize, base: Self.eraserSymbolBaseSize)
+    }
 
     /// Highlight action symbol size (pen)
-    @ScaledMetric(relativeTo: .body) private var penSymbolSize: CGFloat = 26
+    private var penSymbolSize: CGFloat {
+        ScaledMetricLimit.capped(scaledPenSymbolSize, base: Self.penSymbolBaseSize)
+    }
 
     /// Chapter/verse label font size
-    @ScaledMetric(relativeTo: .body) private var labelFontSize: CGFloat = 14
+    private var labelFontSize: CGFloat {
+        ScaledMetricLimit.capped(scaledLabelFontSize, base: Self.labelFontBaseSize)
+    }
 
     // MARK: Properties (Private, State)
 
@@ -129,6 +150,7 @@ struct VerseActionsView: View {
                                   weight: .bold))
             }
             .accessibilityLabel("Deselect Verses")
+            .accessibilityShowsLargeContentViewer()
 
             // Label
             // this will smoothly transition when bar is collapsed/expanded in real time
@@ -159,6 +181,7 @@ struct VerseActionsView: View {
                     .font(.system(size: actionSymbolSize))
             }
             .accessibilityLabel("Notes and Tags") // opens the editor; the icon alone reads as "Bookmark"
+            .accessibilityShowsLargeContentViewer()
 
             // Share
             ShareLink(item: "",
@@ -168,6 +191,7 @@ struct VerseActionsView: View {
                     .font(.system(size: actionSymbolSize))
                     .labelStyle(.iconOnly)
             }
+            .accessibilityShowsLargeContentViewer()
         }
         // font, color
         .font(readerTheme.font(fixedSize: labelFontSize, weight: .medium))
@@ -243,6 +267,7 @@ struct VerseActionsView: View {
                 .contentTransition(.symbolEffect(.replace.offUp.byLayer, options: .nonRepeating))
         }
         .accessibilityLabel(showEraser ? Text("Remove Highlight") : Text("Highlight"))
+        .accessibilityShowsLargeContentViewer()
         .popover(isPresented: $isHighlightPopoverPresented,
                  attachmentAnchor: .point(.top),
                  arrowEdge: .bottom,

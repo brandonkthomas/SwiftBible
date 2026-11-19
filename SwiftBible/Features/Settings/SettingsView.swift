@@ -13,10 +13,18 @@ struct SettingsView: View {
 
     private static let appReviewLink = "https://apps.apple.com/us/app/bible-read-annotate/id6790014524?action=write-review"
 
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
     @ScaledMetric(relativeTo: .body) private var rowFontSize: CGFloat = 16
-    @ScaledMetric(relativeTo: .body) private var iconFontSize: CGFloat = 13
-    @ScaledMetric(relativeTo: .body) private var iconSize: CGFloat = 28
-    @ScaledMetric(relativeTo: .body) private var iconCornerRadius: CGFloat = 7
+    @ScaledMetric(relativeTo: .body) private var scaledIconFontSize: CGFloat = 13
+    @ScaledMetric(relativeTo: .body) private var scaledIconSize: CGFloat = 28
+    @ScaledMetric(relativeTo: .body) private var scaledIconCornerRadius: CGFloat = 7
+
+    // Icon tiles stop growing at the largest standard size so the row titles keep their width
+
+    private var iconFontSize: CGFloat { ScaledMetricLimit.capped(scaledIconFontSize, base: 13) }
+    private var iconSize: CGFloat { ScaledMetricLimit.capped(scaledIconSize, base: 28) }
+    private var iconCornerRadius: CGFloat { ScaledMetricLimit.capped(scaledIconCornerRadius, base: 7) }
 
     // MARK: Views
 
@@ -133,20 +141,37 @@ struct SettingsView: View {
     ///
     /// title is LocalizedStringKey (not String) so the literals callers pass are looked up in
     /// the String Catalog; Text(String) would show them verbatim
+    ///
+    /// At accessibility sizes the icon sits above the title so the title gets the full row width;
+    /// beside the icon, longer titles broke mid-word
+    @ViewBuilder
     private func settingsRow(title: LocalizedStringKey,
                              symbol: String,
                              color: Color) -> some View {
-        Label {
-            Text(title)
-        } icon: {
-            Image(systemName: symbol)
-                .font(.system(size: iconFontSize,
-                              weight: .semibold))
-                .frame(width: iconSize, height: iconSize)
-                .foregroundColor(Color.white)
-                .background(color, in: RoundedRectangle(cornerRadius: iconCornerRadius,
-                                                        style: .continuous))
+        if dynamicTypeSize.isAccessibilitySize {
+            VStack(alignment: .leading, spacing: 8) {
+                settingsIcon(symbol: symbol, color: color)
+                Text(title)
+            }
+        } else {
+            Label {
+                Text(title)
+            } icon: {
+                settingsIcon(symbol: symbol, color: color)
+            }
         }
+    }
+
+    /// Colored rounded-square icon tile
+    private func settingsIcon(symbol: String, color: Color) -> some View {
+        Image(systemName: symbol)
+            .font(.system(size: iconFontSize,
+                          weight: .semibold))
+            .frame(width: iconSize, height: iconSize)
+            .foregroundColor(Color.white)
+            .background(color, in: RoundedRectangle(cornerRadius: iconCornerRadius,
+                                                    style: .continuous))
+            .accessibilityHidden(true)
     }
 }
 

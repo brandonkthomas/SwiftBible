@@ -82,8 +82,12 @@ struct LibraryView: View {
     // MARK: Properties (Private, Dynamic Type)
 
     @ScaledMetric(relativeTo: .body) private var deleteSymbolSize24: CGFloat = 24
-    @ScaledMetric(relativeTo: .body) private var frameSize40: CGFloat = 40
-    @ScaledMetric(relativeTo: .body) private var frameSize42: CGFloat = 42
+    @ScaledMetric(relativeTo: .body) private var scaledFrameSize40: CGFloat = 40
+    @ScaledMetric(relativeTo: .body) private var scaledFrameSize42: CGFloat = 42
+
+    /// Toolbar circle sizes stop growing at the largest standard size
+    private var frameSize40: CGFloat { ScaledMetricLimit.capped(scaledFrameSize40, base: 40) }
+    private var frameSize42: CGFloat { ScaledMetricLimit.capped(scaledFrameSize42, base: 42) }
 
     // MARK: Views
 
@@ -577,8 +581,10 @@ struct LibraryView: View {
                     .backgroundStyle(.clear)
                     .frame(width: frameSize40, height: frameSize40)
                     .glassEffect(.regular.tint(.accent).interactive(), in: .circle)
+                    .dynamicTypeSize(...DynamicTypeSize.xxxLarge) // symbol stays inside the circle
             }
             .buttonStyle(.plain)
+            .accessibilityShowsLargeContentViewer()
         } else {
             Button {
                 withAnimation(.snappy(duration: 0.35)) {
@@ -592,8 +598,10 @@ struct LibraryView: View {
                 //                        .backgroundStyle(.clear)
                     .frame(width: frameSize42, height: frameSize42)
                     .glassEffect(.regular.interactive(), in: .circle)
+                    .dynamicTypeSize(...DynamicTypeSize.xxxLarge) // symbol stays inside the circle
             }
             .buttonStyle(.plain)
+            .accessibilityShowsLargeContentViewer()
         }
     }
 
