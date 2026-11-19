@@ -89,6 +89,10 @@ struct PassagePickerView: View {
                     .font(.system(size: chevronSymbolSize,
                                   weight: .bold))
                     .foregroundStyle(.foreground)
+                    // 44 pt minimum tap area
+                    // keep chevron at the edge and extend area inward
+                    .frame(minWidth: 44, minHeight: 44, alignment: .leading)
+                    .contentShape(Rectangle())
             }
             .accessibilityLabel("Previous Chapter")
             .accessibilityShowsLargeContentViewer()
@@ -118,6 +122,10 @@ struct PassagePickerView: View {
                     .font(.system(size: chevronSymbolSize,
                                   weight: .bold))
                     .foregroundStyle(.foreground)
+                    // 44 pt minimum tap area
+                    // keep chevron at the edge and extend area inward
+                    .frame(minWidth: 44, minHeight: 44, alignment: .trailing)
+                    .contentShape(Rectangle())
             }
             .accessibilityLabel("Next Chapter")
             .accessibilityShowsLargeContentViewer()
