@@ -8,6 +8,7 @@
 import Foundation
 import OSLog
 
+// MARK: PassageHTMLParser
 /// Handles parsing/rendering of YouVersion API's passage HTML responses into usable SwiftUI
 nonisolated struct PassageHTMLParser {
 
@@ -38,6 +39,7 @@ nonisolated struct PassageHTMLParser {
     }
 }
 
+// MARK: PassageHTMLParserDelegate
 /// Specialized delegate implementation for PassageHTMLParser's XMLParser
 private nonisolated final class PassageHTMLParserDelegate: NSObject, XMLParserDelegate {
 
@@ -81,6 +83,11 @@ private nonisolated final class PassageHTMLParserDelegate: NSObject, XMLParserDe
     /// (e.g. "John’" + "s"), so text is appended once per node, at the next tag.
     private var pendingText: String = ""
 
+    /// Used for Title tracking
+    private var paragraphTextStyle: RenderedPassageTextStyle = []
+
+    // MARK: Properties (Private, Static)
+
     private static let logger = Logger(subsystem: "SwiftBible", category: "PassageHTMLParserDelegate")
 
     // MARK: Functions (Delegate)
@@ -95,7 +102,8 @@ private nonisolated final class PassageHTMLParserDelegate: NSObject, XMLParserDe
         qualifiedName qName: String?,
         attributes attributeDict: [String : String] = [:]
     ) {
-        flushPendingText()
+        let currentStyle = spanStyles.current.union(paragraphTextStyle)
+        flushPendingText(currentStyle: currentStyle)
 
         if footnoteDepth > 0 {
             // we're already inside a footnote; keep tracking depth + short-circuit
@@ -136,6 +144,13 @@ private nonisolated final class PassageHTMLParserDelegate: NSObject, XMLParserDe
         // New paragraph: <div class="p">, <div class="q1">, etc.
         if elementName == "div",
            let paragraphStyle = paragraphStyle(for: attributeDict) {
+            // Every new paragraph should set this style + track titles
+            if hasClass("d", in: attributeDict) {
+                self.paragraphTextStyle = .title
+            } else {
+                self.paragraphTextStyle = []
+            }
+
             currentParagraph = .init(style: paragraphStyle,
                                      runs: [])
         }
@@ -193,7 +208,8 @@ private nonisolated final class PassageHTMLParserDelegate: NSObject, XMLParserDe
         namespaceURI: String?,
         qualifiedName qName: String?
     ) {
-        flushPendingText()
+        let currentStyle = spanStyles.current.union(paragraphTextStyle)
+        flushPendingText(currentStyle: currentStyle)
 
         // we're already inside a footnote; keep tracking depth + short-circuit
         if footnoteDepth > 0 {
@@ -243,13 +259,14 @@ private nonisolated final class PassageHTMLParserDelegate: NSObject, XMLParserDe
            let finishedParagraph = self.currentParagraph {
             paragraphs.append(finishedParagraph)
             self.currentParagraph = nil
+            self.paragraphTextStyle = []
         }
     }
 
     // MARK: Functions (Private)
 
     /// Append the text node collected since the last tag
-    private func flushPendingText() {
+    private func flushPendingText(currentStyle: RenderedPassageTextStyle) {
         let trimmedText = pendingText.trimmingCharacters(in: .whitespacesAndNewlines)
         pendingText = ""
 
@@ -264,7 +281,7 @@ private nonisolated final class PassageHTMLParserDelegate: NSObject, XMLParserDe
         } else {
             // Text (Verse Content)
             currentParagraph.appendText(trimmedText,
-                                        style: spanStyles.current,
+                                        style: currentStyle,
                                         verseRange: currentVerseRange)
         }
 
@@ -301,9 +318,17 @@ private nonisolated final class PassageHTMLParserDelegate: NSObject, XMLParserDe
     ) -> RenderedParagraphStyle? {
         let classes = HTMLClassList.names(in: attributes)
 
+        // unknown... do not append this
+        guard !classes.isEmpty else {
+            Self.logger.debug("paragraphStyle: no classes for \(attributes); skipping")
+            return nil
+        }
+
         for className in classes {
             switch className {
-            case "p", "m", "pm", "pmo", "pmc", "pmr":
+            case "p", "m",
+                "pm", "pmo", "pmc", "pmr", // prayer
+                "d": // titles (Psalm)
                 return .paragraph
 
             case "q", "q1":
@@ -325,11 +350,6 @@ private nonisolated final class PassageHTMLParserDelegate: NSObject, XMLParserDe
                     return quoteLevel == 1
                         ? .quoteLine
                         : .indentedLine
-                }
-
-                // unknown... do not append this
-                if classes.isEmpty {
-                    return nil
                 }
             }
         }
@@ -373,6 +393,8 @@ private nonisolated final class PassageHTMLParserDelegate: NSObject, XMLParserDe
         HTMLClassList.contains(expectedClass, in: attributes)
     }
 }
+
+// MARK: PassageHTMLParserError
 /// PassageHTMLParser error definitions
 enum PassageHTMLParserError: Error {
     case invalidHTML

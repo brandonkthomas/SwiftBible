@@ -63,11 +63,12 @@ nonisolated struct CrosswayPassageParser {
 ///
 /// Paragraph-level:
 /// - `<p>` (any class: `starts-chapter`, `virtual`, none) -> `RenderedParagraphStyle.paragraph`
+/// - `psalm-title` -- maps to .paragraph
 /// - `<span class="line">` inside `<p class="block-indent">` -> `RenderedParagraphStyle.quoteLine`
 /// - `<span class="indent line">` -> `RenderedParagraphStyle.indentedLine`
 ///
 /// Skipped with everything inside them:
-/// - `h1`-`h6` (section headings, `psalm-title`)
+/// - `h1`-`h6` (section headings)
 /// - `<div class="footnotes">` (footnote bodies are read from each marker's `title` instead)
 /// - `<a class="copyright">` and the "(ESV)" paragraph around it
 ///
@@ -109,6 +110,9 @@ private nonisolated final class CrosswayPassageParserDelegate: NSObject, XMLPars
     /// (e.g. "John’" + "s"), so text is appended once per node, at the next tag.
     private var pendingText: String = ""
 
+    /// Used for Title tracking
+    private var paragraphTextStyle: RenderedPassageTextStyle = []
+
     private static let headingElements: Set<String> = ["h1", "h2", "h3", "h4", "h5", "h6"]
 
     private static let inlineStyleElements: Set<String> = ["span", "i", "em"]
@@ -146,6 +150,13 @@ private nonisolated final class CrosswayPassageParserDelegate: NSObject, XMLPars
         if isSkipped(elementName: elementName, attributes: attributeDict) {
             skippedDepth = 1
             return
+        }
+
+        // Titles (Psalm)
+        if elementName == "h4" {
+            finishParagraph()
+            self.currentParagraph = .init(style: .paragraph, runs: [])
+            self.paragraphTextStyle = .title
         }
 
         // Footnote marker: <a class="fn" title="<note>...</note>">1</a>; its "1" is skipped
@@ -228,6 +239,12 @@ private nonisolated final class CrosswayPassageParserDelegate: NSObject, XMLPars
         if elementName == "p" {
             finishParagraph()
         }
+
+        // Title
+        if elementName == "h4" {
+            finishParagraph()
+            self.paragraphTextStyle = []
+        }
     }
 
     /// Log the parser's own failure reason
@@ -260,7 +277,7 @@ private nonisolated final class CrosswayPassageParserDelegate: NSObject, XMLPars
         }
 
         paragraph.appendText(trimmedText,
-                             style: inlineStyles.current,
+                             style: inlineStyles.current.union(paragraphTextStyle),
                              verseRange: currentVerseRange)
         currentParagraph = paragraph
     }
@@ -278,7 +295,11 @@ private nonisolated final class CrosswayPassageParserDelegate: NSObject, XMLPars
     private func isSkipped(elementName: String,
                            attributes: [String: String]) -> Bool {
         if Self.headingElements.contains(elementName) {
-            return true
+            if elementName == "h4" && HTMLClassList.contains("psalm-title", in: attributes) {
+                return false
+            } else {
+                return true
+            }
         }
 
         return elementName == "div"

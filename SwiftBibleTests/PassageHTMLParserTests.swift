@@ -439,4 +439,49 @@ struct PassageHTMLParserTests {
         #expect(passage.paragraphs[0].runs.last == .text("First.", verseRange: .init(startVerse: 1)))
         #expect(passage.paragraphs[1].runs.last == .text("Second.", verseRange: .init(startVerse: 2)))
     }
+
+    // MARK: Psalm Titles
+
+    /// USFM `d` (descriptive title, e.g. TPT Psalm 139) is its own paragraph of title-styled text
+    /// with no verse, so it renders bold on its own line and selection/sharing skip it.
+    /// The title style ends with its `<div>`; verse 1 after it is plain text
+    @Test func descriptiveTitleIsTitleParagraphWithoutVerse() async throws {
+        let html = """
+            <div><div class="d">For the Pure and Shining One</div><div class="d">King David’s poetic song</div>\
+            <div class="q1"><span class="yv-v" v="1"></span><span class="yv-vlbl">1</span>Lord, you know everything.</div></div>
+            """
+
+        let parser = PassageHTMLParser()
+        let passage = try parser.parse(html: html)
+
+        #expect(passage.paragraphs.count == 3)
+        #expect(passage.paragraphs[0].style == .paragraph)
+        #expect(passage.paragraphs[0].runs == [
+            .styledText("For the Pure and Shining One", style: .title, verseRange: nil)
+        ])
+        #expect(passage.paragraphs[1].runs == [
+            .styledText("King David’s poetic song", style: .title, verseRange: nil)
+        ])
+        #expect(passage.paragraphs[2].style == .quoteLine)
+        #expect(passage.paragraphs[2].runs == [
+            .verseLabel(displayText: "1", verseRange: .init(startVerse: 1)),
+            .text("Lord, you know everything.", verseRange: .init(startVerse: 1))
+        ])
+    }
+
+    /// Inline styles inside a title keep the title style too
+    @Test func inlineStyleInsideDescriptiveTitleKeepsTitleStyle() async throws {
+        let html = """
+            <div><div class="d">A song to the <span class="nd">Lord</span></div></div>
+            """
+
+        let parser = PassageHTMLParser()
+        let passage = try parser.parse(html: html)
+
+        #expect(passage.paragraphs.count == 1)
+        #expect(passage.paragraphs[0].runs == [
+            .styledText("A song to the", style: .title, verseRange: nil),
+            .styledText("Lord", style: [.title, .divineName], verseRange: nil)
+        ])
+    }
 }

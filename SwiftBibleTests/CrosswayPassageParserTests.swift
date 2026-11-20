@@ -40,10 +40,12 @@ struct CrosswayPassageParserTests {
         ])
     }
 
+    /// Section headings, Psalm 119's acrostic letters, the footnote list and the copyright are
+    /// dropped (`psalm-title` is not; see `psalmTitleIsTitleParagraphWithoutVerse`)
     @Test func headingsFootnoteListAndCopyrightAreSkipped() throws {
         let html = """
             <h3 id="p01001001_01-1">Sample Heading</h3>
-            <h4 id="p01001001_06-1" class="psalm-title">A sample title.</h4>
+            <h4 id="p01001001_09-1" class="psalm-acrostic-title">Aleph</h4>
             <p id="p01001001_06-1"><b class="verse-num" id="v01001001-1">1&nbsp;</b>Alpha text.</p>
             <div class="footnotes extra_text">
             <h3>Footnotes</h3>
@@ -61,6 +63,31 @@ struct CrosswayPassageParserTests {
             .text("Alpha text.", verseRange: .init(startVerse: 1))
         ])
         #expect(passage.footnotes.isEmpty)
+    }
+
+    /// ESV sends a Psalm's title as `<h4 class="psalm-title">` before verse 1, even with
+    /// `include-headings=false` (markup from ESV Psalm 3, text made up). It becomes its own
+    /// paragraph of title-styled text with no verse; verse 1 after it is plain text
+    @Test func psalmTitleIsTitleParagraphWithoutVerse() throws {
+        let html = """
+            <h4 id="p19003001_06-1" class="psalm-title">A Psalm of Alpha, when he fled.</h4>
+            <p class="block-indent"><span class="begin-line-group"></span>
+            <span id="p19003001_06-1" class="line"><b class="chapter-num" id="v19003001-1">3:1&nbsp;</b>&nbsp;&nbsp;Beta line,</span><br /></p>
+            """
+
+        let passage = try parser.parse(html: html)
+
+        // require, not expect: a failed count would crash on the index below
+        try #require(passage.paragraphs.count == 2)
+        #expect(passage.paragraphs[0].style == .paragraph)
+        #expect(passage.paragraphs[0].runs == [
+            .styledText("A Psalm of Alpha, when he fled.", style: .title, verseRange: nil)
+        ])
+        #expect(passage.paragraphs[1].style == .quoteLine)
+        #expect(passage.paragraphs[1].runs == [
+            .verseLabel(displayText: "1", verseRange: .init(startVerse: 1)),
+            .text("Beta line,", verseRange: .init(startVerse: 1))
+        ])
     }
 
     /// XMLParser splits some text nodes at a curly apostrophe ("Alpha’" + "s")

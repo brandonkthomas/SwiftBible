@@ -239,6 +239,10 @@ struct PassageTextRenderer {
             result.font = readerTheme.divineNameFont
         }
 
+        if style.contains(.title) {
+            result.font = readerTheme.titleFont
+        }
+
         return result
     }
 

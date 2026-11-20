@@ -121,6 +121,10 @@ struct ReaderThemeResolved: Equatable {
         self.font(.body, weight: self.emphasisWeight(minimum: .semibold))
     }
 
+    var titleFont: Font {
+        self.font(.body, weight: self.emphasisWeight(minimum: .bold))
+    }
+
     var verseLabelFont: Font {
         self.font(.caption2)
     }

@@ -415,6 +415,29 @@ struct ReaderThemeTests {
         #expect(resolve(seravek.divineNameFont).isBold)
     }
 
+    // MARK: Title Font
+
+    /// Psalm titles are bold: with a regular body (Classic, New York) the title font is body bold
+    @MainActor
+    @Test func titleFontIsBoldForRegularBody() {
+        let classic = ReaderThemeResolved(basePreset: .classic)
+
+        #expect(resolve(classic.titleFont) == resolve(.system(.body, design: .serif, weight: .bold)))
+    }
+
+    /// The title stays heavier than a heavy body, the same way the divine name does: Charter with
+    /// a bold body gets Black; Seravek (no Semibold) is still bold
+    @MainActor
+    @Test func titleFontUsesEmphasisWeight() {
+        let charterBold = ReaderThemeResolved(basePreset: .linen,
+                                              customizedPreset: ReaderThemeCustom(fontWeight: .bold, font: .charter))
+        let seravek = ReaderThemeResolved(basePreset: .linen,
+                                          customizedPreset: ReaderThemeCustom(font: .seravek))
+
+        #expect(resolve(charterBold.titleFont) == resolve(charterBold.font(.body, weight: .black)))
+        #expect(resolve(seravek.titleFont).isBold)
+    }
+
     // MARK: Marker Baseline Offset
 
     /// Classic (New York) gets the same raise as the old serif-only calculation

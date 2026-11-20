@@ -13,6 +13,7 @@ nonisolated struct RenderedPassageTextStyle: OptionSet, Equatable {
     static let italic = RenderedPassageTextStyle(rawValue: 1 << 0)
     static let wordsOfJesus = RenderedPassageTextStyle(rawValue: 1 << 1)
     static let divineName = RenderedPassageTextStyle(rawValue: 1 << 2)
+    static let title = RenderedPassageTextStyle(rawValue: 1 << 3)
 }
 
 /// A single run extracted from a passage's HTML
