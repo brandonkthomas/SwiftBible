@@ -20,7 +20,7 @@ enum ReaderTips {
 // Tip 1: Passage Picker
 struct PassagePickerTip: Tip {
     var title: Text {
-        Text("Choose a Passage")
+        Text("Welcome to Bible")
     }
 
     var message: Text? {
