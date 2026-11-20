@@ -44,12 +44,17 @@ final class BiblePassageStore {
     /// In-flight reads of diskLimitedEntries, so concurrent requests read each translation once
     private var diskLimitedEntryLoads: [Translation.ID: Task<[PassageCacheEntry], Never>] = [:]
 
+    /// Stored network status instance
+    private let networkStatus: any NetworkStatusProviding
+
     // MARK: Init
 
     init(repository: any BibleRepository,
-         passageCache: any PassageCache) {
+         passageCache: any PassageCache,
+         networkStatus: any NetworkStatusProviding) {
         self.repository = repository
         self.passageCache = passageCache
+        self.networkStatus = networkStatus
     }
 
     // MARK: Functions
@@ -57,6 +62,12 @@ final class BiblePassageStore {
     /// Retrieve a passage by ID.
     /// If it exists in cache, return; else, load + persist to cache + return
     func passage(for key: BiblePassageKey) async throws -> LoadedBiblePassage {
+        // first, ensure we're online (if required)
+        if ArtificialNetworkConstraint.isNetworkRequired,
+           await !networkStatus.isOnline {
+            throw BiblePassageStoreError.offline
+        }
+
         // the provider's terms decide where (and how much of) its passages may be kept
         let cachePolicy = repository.passageCachePolicy(for: key.translationID)
 
@@ -285,4 +296,6 @@ enum BiblePassageStoreError: Error {
     /// Thrown when passage() is given an invalid key which, i.e., cannot be used in the
     /// creation of a valid ScriptureReference
     case invalidBiblePassageKey
+    /// Thrown when device is offline (either real or via ArtificialnetworkConstraint)
+    case offline
 }

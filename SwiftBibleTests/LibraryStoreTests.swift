@@ -17,7 +17,8 @@ struct LibraryStoreTests {
         let libraryRepository = InMemoryLibraryRepository()
         let passageRepository = LibraryPassageCountingRepository()
         let passageStore = BiblePassageStore(repository: passageRepository,
-                                             passageCache: InMemoryPassageCache())
+                                             passageCache: InMemoryPassageCache(),
+                                             networkStatus: FakeNetworkStatus())
         let libraryStore = LibraryStore(libraryRepository: libraryRepository,
                                         catalogStore: BibleCatalogStore(repository: FakeBibleRepository()),
                                         passageStore: passageStore)
@@ -48,7 +49,8 @@ struct LibraryStoreTests {
         let libraryRepository = InMemoryLibraryRepository()
         let passageRepository = LibraryPassageCountingRepository()
         let passageStore = BiblePassageStore(repository: passageRepository,
-                                             passageCache: InMemoryPassageCache())
+                                             passageCache: InMemoryPassageCache(),
+                                             networkStatus: FakeNetworkStatus())
         let libraryStore = LibraryStore(libraryRepository: libraryRepository,
                                         catalogStore: BibleCatalogStore(repository: FakeBibleRepository()),
                                         passageStore: passageStore)
@@ -85,7 +87,8 @@ struct LibraryStoreTests {
         let libraryRepository = InMemoryLibraryRepository()
         let passageRepository = LibraryPassageCountingRepository()
         let passageStore = BiblePassageStore(repository: passageRepository,
-                                             passageCache: InMemoryPassageCache())
+                                             passageCache: InMemoryPassageCache(),
+                                             networkStatus: FakeNetworkStatus())
         let libraryStore = LibraryStore(libraryRepository: libraryRepository,
                                         catalogStore: BibleCatalogStore(repository: FakeBibleRepository()),
                                         passageStore: passageStore)
@@ -121,7 +124,8 @@ struct LibraryStoreTests {
         let libraryRepository = InMemoryLibraryRepository()
         let passageRepository = LibraryPassageCountingRepository()
         let passageStore = BiblePassageStore(repository: passageRepository,
-                                             passageCache: InMemoryPassageCache())
+                                             passageCache: InMemoryPassageCache(),
+                                             networkStatus: FakeNetworkStatus())
         let libraryStore = LibraryStore(libraryRepository: libraryRepository,
                                         catalogStore: BibleCatalogStore(repository: FakeBibleRepository()),
                                         passageStore: passageStore)
@@ -151,7 +155,8 @@ struct LibraryStoreTests {
     @Test func deleteReportsSuccessAndRemovesAnnotation() throws {
         let libraryRepository = InMemoryLibraryRepository()
         let passageStore = BiblePassageStore(repository: LibraryPassageCountingRepository(),
-                                             passageCache: InMemoryPassageCache())
+                                             passageCache: InMemoryPassageCache(),
+                                             networkStatus: FakeNetworkStatus())
         let libraryStore = LibraryStore(libraryRepository: libraryRepository,
                                         catalogStore: BibleCatalogStore(repository: FakeBibleRepository()),
                                         passageStore: passageStore)
@@ -178,7 +183,8 @@ struct LibraryStoreTests {
     @Test func deleteSetRemovesOnlySelectedAnnotations() throws {
         let libraryRepository = InMemoryLibraryRepository()
         let passageStore = BiblePassageStore(repository: LibraryPassageCountingRepository(),
-                                             passageCache: InMemoryPassageCache())
+                                             passageCache: InMemoryPassageCache(),
+                                             networkStatus: FakeNetworkStatus())
         let libraryStore = LibraryStore(libraryRepository: libraryRepository,
                                         catalogStore: BibleCatalogStore(repository: FakeBibleRepository()),
                                         passageStore: passageStore)
@@ -214,7 +220,8 @@ struct LibraryStoreTests {
     @Test func deleteEmptySetReportsSuccessAndChangesNothing() throws {
         let libraryRepository = InMemoryLibraryRepository()
         let passageStore = BiblePassageStore(repository: LibraryPassageCountingRepository(),
-                                             passageCache: InMemoryPassageCache())
+                                             passageCache: InMemoryPassageCache(),
+                                             networkStatus: FakeNetworkStatus())
         let libraryStore = LibraryStore(libraryRepository: libraryRepository,
                                         catalogStore: BibleCatalogStore(repository: FakeBibleRepository()),
                                         passageStore: passageStore)
@@ -236,7 +243,8 @@ struct LibraryStoreTests {
     @Test func changeHighlightColorPersistsNewColorAndRefreshesAnnotations() throws {
         let libraryRepository = InMemoryLibraryRepository()
         let passageStore = BiblePassageStore(repository: LibraryPassageCountingRepository(),
-                                             passageCache: InMemoryPassageCache())
+                                             passageCache: InMemoryPassageCache(),
+                                             networkStatus: FakeNetworkStatus())
         let libraryStore = LibraryStore(libraryRepository: libraryRepository,
                                         catalogStore: BibleCatalogStore(repository: FakeBibleRepository()),
                                         passageStore: passageStore)
@@ -272,7 +280,8 @@ struct LibraryStoreTests {
     @Test func changeHighlightColorReportsFailureForUnknownID() throws {
         let libraryRepository = InMemoryLibraryRepository()
         let passageStore = BiblePassageStore(repository: LibraryPassageCountingRepository(),
-                                             passageCache: InMemoryPassageCache())
+                                             passageCache: InMemoryPassageCache(),
+                                             networkStatus: FakeNetworkStatus())
         let libraryStore = LibraryStore(libraryRepository: libraryRepository,
                                         catalogStore: BibleCatalogStore(repository: FakeBibleRepository()),
                                         passageStore: passageStore)
@@ -294,7 +303,8 @@ struct LibraryStoreTests {
     @Test func annotationEditorLoadsNoteAndTagsForSameVerseRange() throws {
         let libraryRepository = InMemoryLibraryRepository()
         let passageStore = BiblePassageStore(repository: LibraryPassageCountingRepository(),
-                                             passageCache: InMemoryPassageCache())
+                                             passageCache: InMemoryPassageCache(),
+                                             networkStatus: FakeNetworkStatus())
         let libraryStore = LibraryStore(libraryRepository: libraryRepository,
                                         catalogStore: BibleCatalogStore(repository: FakeBibleRepository()),
                                         passageStore: passageStore)
@@ -329,14 +339,16 @@ struct LibraryStoreTests {
         let libraryRepository = InMemoryLibraryRepository()
         let bibleRepository = FakeBibleRepository()
         let readerStore = ReaderStore(passageStore: BiblePassageStore(repository: bibleRepository,
-                                                                      passageCache: InMemoryPassageCache()),
+                                                                      passageCache: InMemoryPassageCache(),
+                                                                      networkStatus: FakeNetworkStatus()),
                                       catalogStore: BibleCatalogStore(repository: bibleRepository),
                                       preferencesStore: PreferencesStore(userDefaults: userDefaults()),
                                       libraryRepository: libraryRepository)
         let libraryStore = LibraryStore(libraryRepository: libraryRepository,
                                         catalogStore: BibleCatalogStore(repository: FakeBibleRepository()),
                                         passageStore: BiblePassageStore(repository: bibleRepository,
-                                                                        passageCache: InMemoryPassageCache()))
+                                                                        passageCache: InMemoryPassageCache(),
+                                                                        networkStatus: FakeNetworkStatus()))
 
         // Reader defaults to translation 1234, GEN 1
         await readerStore.loadTranslationsAndBooks(languageTag: "en")

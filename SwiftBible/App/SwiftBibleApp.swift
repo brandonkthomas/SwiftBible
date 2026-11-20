@@ -51,6 +51,7 @@ struct SwiftBibleApp: App {
                 .environment(appEnvironment.catalogStore)
                 .environment(appEnvironment.libraryStore)
                 .environment(appEnvironment.preferencesStore)
+                .environment(appEnvironment.networkMonitor)
                 // inject custom env/key value for LibraryRepository protocol
                 // this is a service/dependency, so we need key-path environment
                 // Keypath-keyed is for existential (anything: value types, services, protocols)

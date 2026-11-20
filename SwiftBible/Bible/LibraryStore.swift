@@ -84,6 +84,10 @@ final class LibraryStore {
     /// LibraryStore to produce 1 passage request
     private(set) var loadedPassages: [BiblePassageKey: LoadedBiblePassage] = [:]
 
+    /// Chapters whose last load failed; their cards show why instead of a loading spinner,
+    /// and networkConnectionChanged(isConnected: true) retries them
+    private(set) var passageLoadFailures: [BiblePassageKey: LibraryPassageLoadFailure] = [:]
+
     /// OS Logging
     private static let logger = Logger(subsystem: "SwiftBible", category: "LibraryStore")
 
@@ -115,8 +119,11 @@ final class LibraryStore {
     /// Load a specific annotation's passage
     func loadPassage(for annotation: VerseAnnotation) async {
         // dont need (for:) here since "self" is implied
-        let biblePassageKey = passageKey(for: annotation)
+        await loadPassage(for: passageKey(for: annotation))
+    }
 
+    /// Load one chapter, recording a failure for its cards if it can't be loaded
+    private func loadPassage(for biblePassageKey: BiblePassageKey) async {
         // no need to load again if already done
         // Assigning here notifies every @Observing view even if value is unchanged;
         //   therefore we need this check to ensure that the whole list doesnt re-eval for
@@ -128,10 +135,56 @@ final class LibraryStore {
         do {
             let loadedPassage = try await passageStore.passage(for: biblePassageKey)
             loadedPassages[biblePassageKey] = loadedPassage
+
+            // only write when needed: every write notifies all observing cards
+            if passageLoadFailures[biblePassageKey] != nil {
+                passageLoadFailures[biblePassageKey] = nil
+            }
         } catch {
-            // do not remove existing entries on failure; just log
+            // do not remove existing entries on failure; record why so the card stops spinning
             Self.logger.error("Unable to load passage: \(error.localizedDescription)")
+            passageLoadFailures[biblePassageKey] = error.isOfflineError ? .offline : .failed
         }
+    }
+
+    /// Called by ContentView whenever NetworkMonitor reports a new reading
+    ///
+    /// - Connected: retry every chapter whose load failed
+    /// - Disconnected: when passages are online only, take loaded passages off screen
+    func networkConnectionChanged(isConnected: Bool) async {
+        guard isConnected else {
+            guard ArtificialNetworkConstraint.isNetworkRequired,
+                  !loadedPassages.isEmpty else {
+                return
+            }
+
+            for key in loadedPassages.keys {
+                passageLoadFailures[key] = .offline
+            }
+            loadedPassages = [:]
+            return
+        }
+
+        let failedKeys = Array(passageLoadFailures.keys)
+
+        guard !failedKeys.isEmpty else {
+            return
+        }
+
+        passageLoadFailures = [:]
+
+        await withDiscardingTaskGroup { group in
+            for key in failedKeys {
+                group.addTask {
+                    await self.loadPassage(for: key)
+                }
+            }
+        }
+    }
+
+    /// Why an annotation's chapter could not be loaded, if its last load failed
+    func passageLoadFailure(for annotation: VerseAnnotation) -> LibraryPassageLoadFailure? {
+        passageLoadFailures[passageKey(for: annotation)]
     }
 
     /// Called on view load (LibraryView); gets missing book display names
@@ -239,4 +292,12 @@ final class LibraryStore {
                                bookCode: annotation.bookCode,
                                chapter: annotation.chapter)
     }
+}
+
+/// Why a Library card's passage is not shown
+enum LibraryPassageLoadFailure: Equatable {
+    /// No connection (or online-only passages while offline); reloads on reconnect
+    case offline
+    /// Any other failure; retried on reconnect or when the card appears again
+    case failed
 }

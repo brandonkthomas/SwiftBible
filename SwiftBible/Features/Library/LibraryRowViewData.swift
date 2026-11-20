@@ -21,6 +21,9 @@ struct LibraryRowViewData {
     /// Label for the translation (i.e. "NIV")
     let translationLabel: String
 
+    /// Optional reason for load failure
+    let passageLoadFailure: LibraryPassageLoadFailure?
+
     init(annotation: VerseAnnotation,
          bibleCatalogStore: BibleCatalogStore,
          libraryStore: LibraryStore) {
@@ -34,5 +37,6 @@ struct LibraryRowViewData {
         self.renderedPassageRuns = renderedPassageRunsForAnnotation
         self.passageLabel = bibleCatalogStore.friendlyPassageName(for: annotation)
         self.translationLabel = bibleCatalogStore.translation(for: annotation.translationID)?.abbreviation ?? ""
+        self.passageLoadFailure = libraryStore.passageLoadFailure(for: annotation)
     }
 }

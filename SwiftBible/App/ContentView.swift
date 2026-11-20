@@ -36,6 +36,9 @@ struct ContentView: View {
     /// Observed for changeCount only; see .onChange below
     @Environment(\.libraryRepository) private var libraryRepository
 
+    /// Observed for isConnected only; see .onChange below
+    @Environment(NetworkMonitor.self) private var networkMonitor
+
     // MARK: Properties (Private, Reader AutoLock)
 
     /// local preference
@@ -116,6 +119,15 @@ struct ContentView: View {
             libraryStore.load()
             Task {
                 await libraryStore.loadMissingBookMetadata()
+            }
+        }
+        // Connection changes: reload failures/if we went offline; remove passages from screen
+        // immediately if required; must run on every tab
+        .onChange(of: networkMonitor.isConnected) { _, isConnected in
+            guard let isConnected else { return }
+            Task {
+                await readerStore.networkConnectionChanged(isConnected: isConnected)
+                await libraryStore.networkConnectionChanged(isConnected: isConnected)
             }
         }
         // Reader Auto-Lock

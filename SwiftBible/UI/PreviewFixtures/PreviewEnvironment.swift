@@ -20,13 +20,19 @@ struct PreviewEnvironment {
     let preferencesStore: PreferencesStore
     let libraryRepository: LibraryRepository
 
+    /// Not started; reports online so previews never show offline state
+    let networkMonitor: NetworkMonitor
+
     // MARK: Init
 
     init(repository: FakeBibleRepository = FakeBibleRepository(),
          libraryRepository: LibraryRepository = InMemoryLibraryRepository()) {
         self.libraryRepository = libraryRepository
+        self.networkMonitor = NetworkMonitor()
+        self.networkMonitor.record(isConnected: true)
         self.passageStore = BiblePassageStore(repository: repository,
-                                              passageCache: InMemoryPassageCache())
+                                              passageCache: InMemoryPassageCache(),
+                                              networkStatus: AlwaysOnlineNetworkStatus())
         self.catalogStore = BibleCatalogStore(repository: repository)
         self.preferencesStore = PreferencesStore(userDefaults: .standard)
         self.readerStore = ReaderStore(passageStore: passageStore,
@@ -47,6 +53,7 @@ extension View {
             .environment(environment.catalogStore)
             .environment(environment.libraryStore)
             .environment(environment.preferencesStore)
+            .environment(environment.networkMonitor)
             .environment(\.libraryRepository, environment.libraryRepository)
     }
 }

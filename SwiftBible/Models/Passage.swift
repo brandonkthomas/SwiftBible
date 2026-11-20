@@ -18,5 +18,7 @@ enum PassageLoadState: Equatable {
     case idle
     case loading
     case loaded
+    /// No connection; reloads when the network returns
+    case offline
     case failed(String)
 }

@@ -183,6 +183,10 @@ struct PassagePickerView: View {
                 Text("Content Unavailable")
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .lineLimit(1)
+            case .offline:
+                Text("Offline")
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .lineLimit(1)
             default:
                 ViewThatFits(in: .horizontal) {
                     // Case 1

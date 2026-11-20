@@ -205,7 +205,7 @@ final class ReaderStore {
         // Only load if we're not doing anything right now OR if we failed previously
         // (allow retries)
         switch loadState {
-        case .idle, .failed(_):
+        case .idle, .failed(_), .offline:
             break
         default:
             return
@@ -242,7 +242,9 @@ final class ReaderStore {
         } catch {
             // TODO: log exception
             clearAllStates()
-            self.loadState = .failed(String(localized: "An error occurred while loading Bibles."))
+            self.loadState = error.isOfflineError
+                ? .offline
+                : .failed(String(localized: "An error occurred while loading Bibles."))
         }
     }
 
@@ -348,7 +350,7 @@ final class ReaderStore {
         // Only load if we're not doing anything right now OR if we failed previously
         // (allow retries)
         switch self.passageLoadState {
-        case .idle, .failed(_):
+        case .idle, .failed(_), .offline:
             break
         default:
             return
@@ -387,7 +389,51 @@ final class ReaderStore {
         } catch {
             // TODO: log exception
             self.selectedPassage = nil
-            self.passageLoadState = .failed(String(localized: "An error occurred while loading the selected passage."))
+            self.selectedRenderedPassage = nil
+            self.passageLoadState = error.isOfflineError
+                ? .offline
+                : .failed(String(localized: "An error occurred while loading the selected passage."))
+        }
+    }
+
+    /// Called by ContentView whenever NetworkMonitor reports a new reading
+    ///
+    /// - Connected: retry anything that failed (translations/books then passage)
+    /// - Disconnected: when passages are online-only, take shown passage off screen
+    func networkConnectionChanged(isConnected: Bool) async {
+        guard isConnected else {
+            guard ArtificialNetworkConstraint.isNetworkRequired,
+                  passageLoadState == .loaded else {
+                return
+            }
+
+            clearPassageStates()
+            self.passageLoadState = .offline
+            return
+        }
+
+        var didReloadCatalog = false
+
+        switch loadState {
+        case .failed(_), .offline:
+            await loadTranslationsAndBooks()
+            didReloadCatalog = true
+        default:
+            break
+        }
+
+        guard loadState == .loaded else {
+            return
+        }
+
+        switch passageLoadState {
+        case .failed(_), .offline:
+            await loadSelectedPassage()
+        case .idle where didReloadCatalog:
+            // a fresh catalog load leaves the passage idle; ReaderView's .task already ran
+            await loadSelectedPassage()
+        default:
+            break
         }
     }
 
@@ -655,7 +701,9 @@ final class ReaderStore {
         } catch {
             // TODO: log exception
             clearBookChapterAndPassageStates()
-            self.loadState = .failed(String(localized: "Unable to load books and chapters."))
+            self.loadState = error.isOfflineError
+                ? .offline
+                : .failed(String(localized: "Unable to load books and chapters."))
         }
     }
 
@@ -797,5 +845,7 @@ enum ReaderLoadState: Equatable {
     case emptyTranslations
     case emptyBooks
     case emptyChapters
+    /// No connection; auto reloads when we get network back
+    case offline
     case failed(String)
 }

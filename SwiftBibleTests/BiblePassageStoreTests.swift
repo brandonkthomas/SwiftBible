@@ -20,7 +20,8 @@ struct BiblePassageStoreTests {
     @Test func cacheMissFetchesParsesAndStores() async throws {
         let repository = PassageCountingBibleRepository()
         let store = BiblePassageStore(repository: repository,
-                                      passageCache: InMemoryPassageCache())
+                                      passageCache: InMemoryPassageCache(),
+                                      networkStatus: FakeNetworkStatus())
         let key = BiblePassageKey(translationID: 1234,
                                   bookCode: "GEN",
                                   chapter: 1)
@@ -48,7 +49,8 @@ struct BiblePassageStoreTests {
     @Test func repositoryParsesTheFetchedPassage() async throws {
         let repository = CustomRenderingBibleRepository()
         let store = BiblePassageStore(repository: repository,
-                                      passageCache: InMemoryPassageCache())
+                                      passageCache: InMemoryPassageCache(),
+                                      networkStatus: FakeNetworkStatus())
         let key = BiblePassageKey(translationID: 1234,
                                   bookCode: "GEN",
                                   chapter: 1)
@@ -69,7 +71,7 @@ struct BiblePassageStoreTests {
         let seededPassage = Passage(id: "GEN.1", reference: "Genesis 1", htmlContent: "<p>seeded")
         try await passageCache.save(seededPassage, for: seededKey)
 
-        let store = BiblePassageStore(repository: repository, passageCache: passageCache)
+        let store = BiblePassageStore(repository: repository, passageCache: passageCache, networkStatus: FakeNetworkStatus())
 
         _ = try await store.passage(for: seededKey)
         _ = try await store.passage(for: makeKey(chapter: 2))
@@ -82,7 +84,7 @@ struct BiblePassageStoreTests {
     /// Over the verse limit, the least recently used chapter is dropped and fetched again later
     @Test func memoryOnlyPolicyEvictsOldestChapterOverVerseLimit() async throws {
         let repository = VerseLimitedBibleRepository(maximumVerseCount: 5, versesPerChapter: 3)
-        let store = BiblePassageStore(repository: repository, passageCache: InMemoryPassageCache())
+        let store = BiblePassageStore(repository: repository, passageCache: InMemoryPassageCache(), networkStatus: FakeNetworkStatus())
 
         _ = try await store.passage(for: makeKey(chapter: 1))
         _ = try await store.passage(for: makeKey(chapter: 2)) // 6 verses > 5: drops chapter 1
@@ -95,7 +97,7 @@ struct BiblePassageStoreTests {
     /// Reading a cached chapter makes it the most recently used, so another is dropped first
     @Test func memoryOnlyCacheHitRefreshesRecency() async throws {
         let repository = VerseLimitedBibleRepository(maximumVerseCount: 6, versesPerChapter: 3)
-        let store = BiblePassageStore(repository: repository, passageCache: InMemoryPassageCache())
+        let store = BiblePassageStore(repository: repository, passageCache: InMemoryPassageCache(), networkStatus: FakeNetworkStatus())
 
         _ = try await store.passage(for: makeKey(chapter: 1))
         _ = try await store.passage(for: makeKey(chapter: 2))
@@ -112,7 +114,7 @@ struct BiblePassageStoreTests {
         let repository = VerseLimitedBibleRepository(maximumVerseCount: 5,
                                                      versesPerChapter: 3,
                                                      limitedTranslationID: 59)
-        let store = BiblePassageStore(repository: repository, passageCache: InMemoryPassageCache())
+        let store = BiblePassageStore(repository: repository, passageCache: InMemoryPassageCache(), networkStatus: FakeNetworkStatus())
 
         _ = try await store.passage(for: makeKey(translationID: 1234, chapter: 1))
         _ = try await store.passage(for: makeKey(translationID: 59, chapter: 1))
@@ -132,9 +134,9 @@ struct BiblePassageStoreTests {
                                                      storesOnDisk: true)
         let passageCache = InMemoryPassageCache()
 
-        _ = try await BiblePassageStore(repository: repository, passageCache: passageCache)
+        _ = try await BiblePassageStore(repository: repository, passageCache: passageCache, networkStatus: FakeNetworkStatus())
             .passage(for: makeKey(chapter: 1))
-        _ = try await BiblePassageStore(repository: repository, passageCache: passageCache)
+        _ = try await BiblePassageStore(repository: repository, passageCache: passageCache, networkStatus: FakeNetworkStatus())
             .passage(for: makeKey(chapter: 1))
 
         #expect(repository.passageRequests == [1])
@@ -148,7 +150,7 @@ struct BiblePassageStoreTests {
                                                      versesPerChapter: 3,
                                                      storesOnDisk: true)
         let passageCache = InMemoryPassageCache()
-        let store = BiblePassageStore(repository: repository, passageCache: passageCache)
+        let store = BiblePassageStore(repository: repository, passageCache: passageCache, networkStatus: FakeNetworkStatus())
 
         _ = try await store.passage(for: makeKey(chapter: 1))
         _ = try await store.passage(for: makeKey(chapter: 2)) // 6 verses > 5: drops chapter 1
@@ -169,11 +171,11 @@ struct BiblePassageStoreTests {
                                                      storesOnDisk: true)
         let passageCache = InMemoryPassageCache()
 
-        let firstLaunch = BiblePassageStore(repository: repository, passageCache: passageCache)
+        let firstLaunch = BiblePassageStore(repository: repository, passageCache: passageCache, networkStatus: FakeNetworkStatus())
         _ = try await firstLaunch.passage(for: makeKey(chapter: 1))
         _ = try await firstLaunch.passage(for: makeKey(chapter: 2))
 
-        let secondLaunch = BiblePassageStore(repository: repository, passageCache: passageCache)
+        let secondLaunch = BiblePassageStore(repository: repository, passageCache: passageCache, networkStatus: FakeNetworkStatus())
         _ = try await secondLaunch.passage(for: makeKey(chapter: 1)) // disk hit: chapter 2 is now oldest
         _ = try await secondLaunch.passage(for: makeKey(chapter: 3)) // 9 verses > 6: drops chapter 2
 
@@ -193,7 +195,7 @@ struct BiblePassageStoreTests {
         let seededPassage = Passage(id: "GEN.1", reference: "Genesis 1", htmlContent: "<p>seeded")
         try await passageCache.save(seededPassage, for: makeKey(chapter: 1))
 
-        let store = BiblePassageStore(repository: repository, passageCache: passageCache)
+        let store = BiblePassageStore(repository: repository, passageCache: passageCache, networkStatus: FakeNetworkStatus())
         _ = try await store.passage(for: makeKey(chapter: 1))
 
         #expect(repository.passageRequests == [1])
@@ -207,7 +209,8 @@ struct BiblePassageStoreTests {
     @Test func cacheHitAvoidsAnotherRequest() async throws {
         let repository = PassageCountingBibleRepository()
         let store = BiblePassageStore(repository: repository,
-                                      passageCache: InMemoryPassageCache())
+                                      passageCache: InMemoryPassageCache(),
+                                      networkStatus: FakeNetworkStatus())
         let key = BiblePassageKey(translationID: 1234,
                                   bookCode: "GEN",
                                   chapter: 1)
@@ -228,7 +231,8 @@ struct BiblePassageStoreTests {
     @Test func translationIdentityIsolatesCacheEntries() async throws {
         let repository = PassageCountingBibleRepository()
         let store = BiblePassageStore(repository: repository,
-                                      passageCache: InMemoryPassageCache())
+                                      passageCache: InMemoryPassageCache(),
+                                      networkStatus: FakeNetworkStatus())
         let firstKey = BiblePassageKey(translationID: 1234,
                                        bookCode: "GEN",
                                        chapter: 1)
@@ -257,7 +261,8 @@ struct BiblePassageStoreTests {
     @Test func invalidChapterKeyThrowsWithoutFetching() async {
         let repository = PassageCountingBibleRepository()
         let store = BiblePassageStore(repository: repository,
-                                      passageCache: InMemoryPassageCache())
+                                      passageCache: InMemoryPassageCache(),
+                                      networkStatus: FakeNetworkStatus())
         let invalidKey = BiblePassageKey(translationID: 1234,
                                          bookCode: "GEN",
                                          chapter: 0)
@@ -271,7 +276,8 @@ struct BiblePassageStoreTests {
     @Test func simultaneousRequestsForSameKeyShareOneRepositoryRequest() async throws {
         let repository = ControllablePassageRepository()
         let store = BiblePassageStore(repository: repository,
-                                      passageCache: InMemoryPassageCache())
+                                      passageCache: InMemoryPassageCache(),
+                                      networkStatus: FakeNetworkStatus())
         let key = BiblePassageKey(translationID: 1234,
                                   bookCode: "GEN",
                                   chapter: 1)
@@ -300,7 +306,8 @@ struct BiblePassageStoreTests {
     @Test func simultaneousRequestsForDifferentKeysRemainIndependent() async throws {
         let repository = ControllablePassageRepository()
         let store = BiblePassageStore(repository: repository,
-                                      passageCache: InMemoryPassageCache())
+                                      passageCache: InMemoryPassageCache(),
+                                      networkStatus: FakeNetworkStatus())
         let firstKey = BiblePassageKey(translationID: 1234,
                                        bookCode: "GEN",
                                        chapter: 1)
@@ -331,7 +338,8 @@ struct BiblePassageStoreTests {
     @Test func failedRequestIsRemovedAndCanBeRetried() async throws {
         let repository = ControllablePassageRepository()
         let store = BiblePassageStore(repository: repository,
-                                      passageCache: InMemoryPassageCache())
+                                      passageCache: InMemoryPassageCache(),
+                                      networkStatus: FakeNetworkStatus())
         let key = BiblePassageKey(translationID: 1234,
                                   bookCode: "GEN",
                                   chapter: 1)
@@ -382,7 +390,8 @@ struct BiblePassageStoreTests {
 
         let repository = PassageCountingBibleRepository()
         let store = BiblePassageStore(repository: repository,
-                                      passageCache: passageCache)
+                                      passageCache: passageCache,
+                                      networkStatus: FakeNetworkStatus())
 
         let loadedPassage = try await store.passage(for: key)
 
@@ -409,7 +418,8 @@ struct BiblePassageStoreTests {
 
         let repository = PassageCountingBibleRepository()
         let store = BiblePassageStore(repository: repository,
-                                      passageCache: diskCache)
+                                      passageCache: diskCache,
+                                      networkStatus: FakeNetworkStatus())
 
         let loadedPassage = try await store.passage(for: key)
 
@@ -424,7 +434,8 @@ struct BiblePassageStoreTests {
         let diskCache = try DiskPassageCache(baseDirectory: tempDirectory)
         let repository = PassageCountingBibleRepository()
         let store = BiblePassageStore(repository: repository,
-                                      passageCache: diskCache)
+                                      passageCache: diskCache,
+                                      networkStatus: FakeNetworkStatus())
         let key = BiblePassageKey(translationID: 1234,
                                   bookCode: "GEN",
                                   chapter: 1)
@@ -456,13 +467,15 @@ struct BiblePassageStoreTests {
         )
 
         let firstStore = BiblePassageStore(repository: PassageCountingBibleRepository(),
-                                           passageCache: sharedCache)
+                                           passageCache: sharedCache,
+                                           networkStatus: FakeNetworkStatus())
         _ = try await firstStore.passage(for: key)
 
         // second store has its own repository so we can prove it never gets used
         let secondRepository = PassageCountingBibleRepository()
         let secondStore = BiblePassageStore(repository: secondRepository,
-                                            passageCache: sharedCache)
+                                            passageCache: sharedCache,
+                                            networkStatus: FakeNetworkStatus())
         let secondResult = try await secondStore.passage(for: key)
 
         #expect(secondResult.passage == expectedPassage)
@@ -476,7 +489,8 @@ struct BiblePassageStoreTests {
         let diskCache = try DiskPassageCache(baseDirectory: tempDirectory)
         let repository = ControllablePassageRepository()
         let store = BiblePassageStore(repository: repository,
-                                      passageCache: diskCache)
+                                      passageCache: diskCache,
+                                      networkStatus: FakeNetworkStatus())
         let key = BiblePassageKey(translationID: 1234,
                                   bookCode: "GEN",
                                   chapter: 1)
@@ -497,7 +511,8 @@ struct BiblePassageStoreTests {
     @Test func saveFailureDoesNotFailTheRequest() async throws {
         let repository = PassageCountingBibleRepository()
         let store = BiblePassageStore(repository: repository,
-                                      passageCache: ThrowingSavePassageCache())
+                                      passageCache: ThrowingSavePassageCache(),
+                                      networkStatus: FakeNetworkStatus())
         let key = BiblePassageKey(translationID: 1234,
                                   bookCode: "GEN",
                                   chapter: 1)

@@ -121,7 +121,8 @@ struct LibraryRowViewDataTests {
         LibraryStore(libraryRepository: libraryRepository,
                      catalogStore: BibleCatalogStore(repository: FakeBibleRepository()),
                      passageStore: BiblePassageStore(repository: FakeBibleRepository(),
-                                                     passageCache: InMemoryPassageCache()))
+                                                     passageCache: InMemoryPassageCache(),
+                                                     networkStatus: FakeNetworkStatus()))
     }
 
     private func makeAnnotation(

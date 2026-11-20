@@ -179,7 +179,9 @@ struct LibraryRowView: View {
                 Color.clear
                     .frame(height: collapsedPassageHeight)
                     .overlay {
-                        if isPassageLoadSpinnerVisible {
+                        if let failure = data.passageLoadFailure {
+                            passageLoadFailureMessage(failure)
+                        } else if isPassageLoadSpinnerVisible {
                             ProgressView()
                                 .accessibilityLabel("Loading passage...")
                         }
@@ -368,6 +370,23 @@ struct LibraryRowView: View {
                 bookmarkColor: readerTheme.backgroundColor,
                 persistedHighlights: data.annotation.highlightedVerses,
                 opacity: 0.5)) // custom for this view only (default 1)
+    }
+
+    /// Shown when passage could not be loaded
+    private func passageLoadFailureMessage(_ failure: LibraryPassageLoadFailure) -> some View {
+        Label {
+            switch failure {
+            case .offline:
+                Text("Connect to the Internet to view this passage.")
+            case .failed:
+                Text("Unable to load this passage.")
+            }
+        } icon: {
+            Image(systemName: failure == .offline ? "wifi.slash" : "exclamationmark.triangle")
+        }
+        .font(readerTheme.font(.footnote))
+        .foregroundStyle(.secondary)
+        .multilineTextAlignment(.center)
     }
 
     /// Annotation type icon

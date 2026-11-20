@@ -28,6 +28,7 @@ final class AppEnvironment {
     let catalogStore: BibleCatalogStore
     let libraryStore: LibraryStore
     let preferencesStore: PreferencesStore
+    let networkMonitor: NetworkMonitor
 
     let appConfiguration: AppConfiguration
 
@@ -153,8 +154,14 @@ final class AppEnvironment {
             passageCache = InMemoryPassageCache()
         }
 
+        // NetworkMonitor - live connection status (online only passages, reload on reconnect)
+        let networkMonitor = NetworkMonitor()
+        networkMonitor.start()
+        self.networkMonitor = networkMonitor
+
         self.passageStore = BiblePassageStore(repository: bibleRepository,
-                                              passageCache: passageCache)
+                                              passageCache: passageCache,
+                                              networkStatus: networkMonitor)
 
         // BibleCatalogStore (+ DiskCatalogCache)
         var catalogCache: any CatalogCache

@@ -48,7 +48,8 @@ struct ReaderStoreTests {
     @Test func loadTranslationsWithBookWithoutChaptersStopsAtEmptyChapters() async {
         let repository = FakeBibleRepository(books: FakeBibleRepository.booksWithoutChapters)
         let passageStore = BiblePassageStore(repository: repository,
-                                             passageCache: InMemoryPassageCache())
+                                             passageCache: InMemoryPassageCache(),
+                                             networkStatus: FakeNetworkStatus())
         let readerStore = ReaderStore(passageStore: passageStore,
                                       catalogStore: BibleCatalogStore(repository: repository),
                                       preferencesStore: PreferencesStore(userDefaults: userDefaults()),
@@ -67,7 +68,8 @@ struct ReaderStoreTests {
     @Test func noTranslationsReturned() async {
         let repository = FakeBibleRepository(translations: [])
         let passageStore = BiblePassageStore(repository: repository,
-                                             passageCache: InMemoryPassageCache())
+                                             passageCache: InMemoryPassageCache(),
+                                             networkStatus: FakeNetworkStatus())
         let readerStore = ReaderStore(passageStore: passageStore,
                                       catalogStore: BibleCatalogStore(repository: repository),
                                       preferencesStore: PreferencesStore(userDefaults: userDefaults()),
@@ -86,7 +88,8 @@ struct ReaderStoreTests {
     @Test func noBooksReturned() async {
         let repository = FakeBibleRepository(books: [])
         let passageStore = BiblePassageStore(repository: repository,
-                                             passageCache: InMemoryPassageCache())
+                                             passageCache: InMemoryPassageCache(),
+                                             networkStatus: FakeNetworkStatus())
         let readerStore = ReaderStore(passageStore: passageStore,
                                       catalogStore: BibleCatalogStore(repository: repository),
                                       preferencesStore: PreferencesStore(userDefaults: userDefaults()),
@@ -105,7 +108,8 @@ struct ReaderStoreTests {
     @Test func selectionsClearedOnLoadTranslationsThrow() async {
         let repository = FakeBibleRepository(throwWhenLoadingTranslations: true)
         let passageStore = BiblePassageStore(repository: repository,
-                                             passageCache: InMemoryPassageCache())
+                                             passageCache: InMemoryPassageCache(),
+                                             networkStatus: FakeNetworkStatus())
         let readerStore = ReaderStore(passageStore: passageStore,
                                       catalogStore: BibleCatalogStore(repository: repository),
                                       preferencesStore: PreferencesStore(userDefaults: userDefaults()),
@@ -295,7 +299,8 @@ struct ReaderStoreTests {
     @Test func failedBookReloadClearsStalePassageState() async {
         let repository = FakeBibleRepository()
         let passageStore = BiblePassageStore(repository: repository,
-                                             passageCache: InMemoryPassageCache())
+                                             passageCache: InMemoryPassageCache(),
+                                             networkStatus: FakeNetworkStatus())
         let readerStore = ReaderStore(passageStore: passageStore,
                                       catalogStore: BibleCatalogStore(repository: repository),
                                       preferencesStore: PreferencesStore(userDefaults: userDefaults()),
@@ -557,7 +562,8 @@ struct ReaderStoreTests {
     ) -> ReaderStore {
         let repository = FakeBibleRepository(translations: translations, books: books)
         let passageStore = BiblePassageStore(repository: repository,
-                                             passageCache: InMemoryPassageCache())
+                                             passageCache: InMemoryPassageCache(),
+                                             networkStatus: FakeNetworkStatus())
         return ReaderStore(passageStore: passageStore,
                            catalogStore: BibleCatalogStore(repository: repository),
                            preferencesStore: preferencesStore ?? PreferencesStore(userDefaults: userDefaults()),

@@ -63,6 +63,8 @@ struct ReaderView: View {
                     systemImage: "text.page.slash",
                     description: Text("The selected book is unavailable.")
                 )
+            case .offline:
+                offlineView
             case .failed(let message):
                 ContentUnavailableView(
                     "Content Unavailable",
@@ -81,6 +83,8 @@ struct ReaderView: View {
                     case .loading:
                         ProgressView()
                             .controlSize(.large)
+                    case .offline:
+                        offlineView
                     case .failed(let message):
                         ContentUnavailableView(
                             "Content Unavailable",
@@ -166,6 +170,15 @@ struct ReaderView: View {
                           onCommit: { direction in
             await readerStore.selectAdjacentChapter(direction)
         })
+    }
+
+    /// No connection; ContentView reloads thru ReaderStore when our network returns
+    var offlineView: some View {
+        ContentUnavailableView(
+            "No Internet Connection",
+            systemImage: "wifi.slash",
+            description: Text("Connect to the Internet to read passages.")
+        )
     }
 
     /// Selected Passage is unavailable / doesnt exist
