@@ -350,4 +350,93 @@ struct PassageHTMLParserTests {
         #expect(passage.paragraphs[0].runs[1] == .text("John’s disciples didn’t go.",
                                                        verseRange: verseRange))
     }
+
+    /// NIV John 17 (trimmed): verse 1 is in `p`, the prayer that follows is in `pm` (USFM embedded text paragraph)
+    @Test func parserKeepsVersesInsideEmbeddedTextParagraphs() async throws {
+        let html = """
+            <div class="p"><span class="yv-v" v="1"></span><span class="yv-vlbl">1</span>After Jesus said this, he looked toward heaven and prayed:</div>\
+            <div class="pm"><span class="wj">“Father, the hour has come.</span> <span class="yv-v" v="2"></span><span class="yv-vlbl">2</span><span class="wj">For you granted him authority.</span></div>\
+            <div class="pm"><span class="yv-v" v="6"></span><span class="yv-vlbl">6</span> <span class="wj">“I have revealed you</span> <span class="yv-n f"><span class="fr">17:6 </span><span class="ft">Greek </span><span class="fqa">your name</span></span><span class="wj">to those whom you gave me.</span></div>
+            """
+
+        let parser = PassageHTMLParser()
+        let passage = try parser.parse(html: html)
+
+        let verse1 = RenderedVerseRange(startVerse: 1)
+        let verse2 = RenderedVerseRange(startVerse: 2)
+        let verse6 = RenderedVerseRange(startVerse: 6)
+
+        #expect(passage.paragraphs.count == 3)
+        #expect(passage.paragraphs.allSatisfy { $0.style == .paragraph })
+
+        #expect(passage.paragraphs[1].runs.count == 3)
+        #expect(passage.paragraphs[1].runs[0] == .styledText("“Father, the hour has come.",
+                                                             style: .wordsOfJesus,
+                                                             verseRange: verse1))
+        #expect(passage.paragraphs[1].runs[1] == .verseLabel(displayText: "2",
+                                                             verseRange: verse2))
+        #expect(passage.paragraphs[1].runs[2] == .styledText("For you granted him authority.",
+                                                             style: .wordsOfJesus,
+                                                             verseRange: verse2))
+
+        #expect(passage.paragraphs[2].runs.count == 4)
+        #expect(passage.paragraphs[2].runs[0] == .verseLabel(displayText: "6",
+                                                             verseRange: verse6))
+        #expect(passage.paragraphs[2].runs[2] == .footnoteMarker(0,
+                                                                 verseRange: verse6))
+
+        #expect(passage.footnotes.count == 1)
+    }
+
+    /// USFM embedded text family: \pm, \pmo (opening), \pmc (closing), \pmr (refrain)
+    @Test(arguments: ["pm", "pmo", "pmc", "pmr"])
+    func parserTreatsEmbeddedTextClassesAsParagraphs(className: String) async throws {
+        let html = """
+            <div class="p"><span class="yv-v" v="1"></span><span class="yv-vlbl">1</span>Narrative text.</div>
+            <div class="\(className)"><span class="yv-v" v="2"></span><span class="yv-vlbl">2</span>Embedded text.</div>
+            """
+
+        let parser = PassageHTMLParser()
+        let passage = try parser.parse(html: html)
+
+        #expect(passage.paragraphs.count == 2)
+        #expect(passage.paragraphs[1].style == .paragraph)
+        #expect(passage.paragraphs[1].runs == [
+            .verseLabel(displayText: "2", verseRange: .init(startVerse: 2)),
+            .text("Embedded text.", verseRange: .init(startVerse: 2))
+        ])
+    }
+
+    /// A paragraph class the parser doesn't recognize falls back to `.paragraph` instead of dropping its text
+    @Test func parserKeepsTextInsideUnknownParagraphClass() async throws {
+        let html = """
+            <div class="p"><span class="yv-v" v="1"></span><span class="yv-vlbl">1</span>Known paragraph.</div>
+            <div class="zz-unknown"><span class="yv-v" v="2"></span><span class="yv-vlbl">2</span>Unknown paragraph.</div>
+            """
+
+        let parser = PassageHTMLParser()
+        let passage = try parser.parse(html: html)
+
+        #expect(passage.paragraphs.count == 2)
+        #expect(passage.paragraphs[1].style == .paragraph)
+        #expect(passage.paragraphs[1].runs == [
+            .verseLabel(displayText: "2", verseRange: .init(startVerse: 2)),
+            .text("Unknown paragraph.", verseRange: .init(startVerse: 2))
+        ])
+    }
+
+    /// YouVersion wraps `content` in a classless `<div>`; it must not become its own paragraph
+    @Test func parserDoesNotTreatClasslessWrapperDivAsParagraph() async throws {
+        let html = """
+            <div><div class="p"><span class="yv-v" v="1"></span><span class="yv-vlbl">1</span>First.</div>\
+            <div class="p"><span class="yv-v" v="2"></span><span class="yv-vlbl">2</span>Second.</div></div>
+            """
+
+        let parser = PassageHTMLParser()
+        let passage = try parser.parse(html: html)
+
+        #expect(passage.paragraphs.count == 2)
+        #expect(passage.paragraphs[0].runs.last == .text("First.", verseRange: .init(startVerse: 1)))
+        #expect(passage.paragraphs[1].runs.last == .text("Second.", verseRange: .init(startVerse: 2)))
+    }
 }

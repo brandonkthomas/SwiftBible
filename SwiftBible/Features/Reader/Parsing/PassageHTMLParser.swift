@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import OSLog
 
 /// Handles parsing/rendering of YouVersion API's passage HTML responses into usable SwiftUI
 nonisolated struct PassageHTMLParser {
@@ -79,6 +80,8 @@ private nonisolated final class PassageHTMLParserDelegate: NSObject, XMLParserDe
     /// XMLParser can split one text node across several foundCharacters calls
     /// (e.g. "John’" + "s"), so text is appended once per node, at the next tag.
     private var pendingText: String = ""
+
+    private static let logger = Logger(subsystem: "SwiftBible", category: "PassageHTMLParserDelegate")
 
     // MARK: Functions (Delegate)
 
@@ -300,7 +303,7 @@ private nonisolated final class PassageHTMLParserDelegate: NSObject, XMLParserDe
 
         for className in classes {
             switch className {
-            case "p", "m":
+            case "p", "m", "pm", "pmo", "pmc", "pmr":
                 return .paragraph
 
             case "q", "q1":
@@ -323,10 +326,17 @@ private nonisolated final class PassageHTMLParserDelegate: NSObject, XMLParserDe
                         ? .quoteLine
                         : .indentedLine
                 }
+
+                // unknown... do not append this
+                if classes.isEmpty {
+                    return nil
+                }
             }
         }
 
-        return nil
+        // else, we dont know what this is; append it as a paragraph rather than dropping it
+        Self.logger.warning("paragraphStyle: no match for classnames \(classes); returning para")
+        return .paragraph
     }
 
     private func isNumberedClass(
