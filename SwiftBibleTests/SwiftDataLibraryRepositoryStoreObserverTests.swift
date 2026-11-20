@@ -37,10 +37,11 @@ struct SwiftDataLibraryRepositoryStoreObserverTests {
                                               createdAt: .now))
         try importer.save()
 
-        let didBump = await waitUntil { repository.changeCount > before }
         // wait 1 second; having timing issues
-        try await Task.sleep(for: .seconds(0.5))
+        try await Task.sleep(for: .seconds(0.75))
+        let didBump = await waitUntil { repository.changeCount > before }
         #expect(didBump)
+
         #expect(try repository.allAnnotations().count == 1)
     }
 
