@@ -77,7 +77,7 @@ struct PassagePickerView: View {
 
     /// Tab bar accessory for Reader view
     var body: some View {
-        HStack(spacing: 15) {
+        HStack(spacing: 0) { // no gap needed since 44px arrows give their own gap
             // Previous Chapter Button
             Button {
                 Task {
@@ -100,16 +100,21 @@ struct PassagePickerView: View {
             .opacity(isPrevNavigationDisabled ? 0.35 : 1)
             // trigger slight haptic feedback on tap
             .sensoryFeedback(.selection, trigger: triggerHaptic)
+            // if passage label overlaps the frame, chevron gets the tap
+            .zIndex(1)
 
-            Spacer()
+            Spacer(minLength: 0) // remove spacer's own gap
 
             // Actual Menu Component
             // -- transition between this and VerseActionsView on tabBarAccessory
             passagePickerButtonView
+            // negative padding so ViewThatFits mesaures against width who reaches inner edge
+            // of the glyphs
+            .padding(.horizontal, -14)
             .transition(.blurReplace)
             // its tip floats above the accessory from ReaderView (inline, not a popover)
 
-            Spacer()
+            Spacer(minLength: 0) // remove spacer's own gap
 
             // Next Chapter Button
             Button {
@@ -133,6 +138,8 @@ struct PassagePickerView: View {
             .opacity(isNextNavigationDisabled ? 0.35 : 1)
             // trigger slight haptic feedback on tap
             .sensoryFeedback(.selection, trigger: triggerHaptic)
+            // if passage label overlaps the frame, chevron gets the tap
+            .zIndex(1)
         }
         // frame, padding, bounding
         .frame(maxWidth: .infinity, maxHeight: .infinity)
