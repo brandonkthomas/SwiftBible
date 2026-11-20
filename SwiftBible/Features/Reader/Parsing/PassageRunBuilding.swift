@@ -7,7 +7,7 @@
 
 import Foundation
 
-// Helpers shared by every provider's XMLParser delegate (YouVersion, Tyndale)
+// Helpers shared by every provider's XMLParser delegate
 
 // MARK: - HTML class attribute
 

@@ -11,35 +11,28 @@ import Testing
 
 struct AppConfigurationTests {
 
-    // MARK: Tyndale key
-
-    @Test func tyndaleKeyIsReadAndTrimmed() throws {
-        let configuration = try makeConfiguration(secrets: ["TYNDALE_APP_KEY": "  tyndale-key\n"])
-
-        #expect(configuration.tyndaleApiKey == "tyndale-key")
-    }
+    // MARK: Keys
 
     /// Empty, whitespace, and the unexpanded build-setting placeholder all mean "no key"
-    @Test(arguments: ["", "   ", "$(TYNDALE_APP_KEY)"])
-    func unusableTyndaleKeyIsNil(value: String) throws {
-        let configuration = try makeConfiguration(secrets: ["TYNDALE_APP_KEY": value])
+    @Test(arguments: ["", "   ", "$(CROSSWAY_APP_KEY)"])
+    func unusableKeyIsNil(value: String) throws {
+        let configuration = try makeConfiguration(secrets: ["CROSSWAY_APP_KEY": value])
 
-        #expect(configuration.tyndaleApiKey == nil)
+        #expect(configuration.crosswayApiKey == nil)
     }
 
-    /// A missing Tyndale key must not affect the YouVersion key
+    /// A missing Crossway key must not affect the YouVersion key
     @Test func keysAreReadIndependently() throws {
         let configuration = try makeConfiguration(secrets: ["YOUVERSION_APP_KEY": "youversion-key"])
 
         #expect(configuration.youVersionApiKey == "youversion-key")
-        #expect(configuration.tyndaleApiKey == nil)
+        #expect(configuration.crosswayApiKey == nil)
     }
 
     @Test func missingSecretsFileLeavesAllKeysNil() throws {
         let configuration = AppConfiguration(bundle: try makeBundle(secrets: nil))
 
         #expect(configuration.youVersionApiKey == nil)
-        #expect(configuration.tyndaleApiKey == nil)
         #expect(configuration.crosswayApiKey == nil)
     }
 
@@ -50,12 +43,6 @@ struct AppConfigurationTests {
 
         #expect(configuration.crosswayApiKey == "crossway-key")
         #expect(configuration.crosswayBaseURL.absoluteString == "https://api.esv.org")
-    }
-
-    @Test func tyndaleBaseURLDefaultsToNLTAPI() throws {
-        let configuration = try makeConfiguration(secrets: [:])
-
-        #expect(configuration.tyndaleBaseURL.absoluteString == "https://api.nlt.to")
     }
 
     // MARK: Functions (Private Helpers)

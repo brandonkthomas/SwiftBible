@@ -39,6 +39,9 @@ struct PassagePickerSheetView: View {
     /// Row frames + visible scroll area, used to decide whether expanding needs a scroll
     @State private var bookListGeometry = BookListGeometry()
 
+    /// Disabled translation whose "Unavailable" alert is showing (nil = no alert)
+    @State private var tappedDisabledTranslation: DisabledTranslation?
+
     // MARK: Properties (Private, Layout)
 
     /// Coordinate space of books ScrollView content (matches ScrollGeometry content coordinates)
@@ -62,6 +65,11 @@ struct PassagePickerSheetView: View {
 
     private var sortedTranslations: [Translation] {
         readerStore.translations.sorted { $0.title < $1.title }
+    }
+
+    /// Shown after the (English) list once it has loaded
+    private var disabledTranslations: [DisabledTranslation] {
+        readerStore.translations.isEmpty ? [] : DisabledTranslation.english
     }
 
     // MARK: Views
@@ -219,32 +227,61 @@ struct PassagePickerSheetView: View {
     // MARK: Views (Translations)
 
     private var translationsListView: some View {
-        List(sortedTranslations) { translation in
-            let isSelected = readerStore.selectedTranslation?.id == translation.id
-            Button {
-                select(translation: translation)
-            } label: {
-                HStack {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(verbatim: translation.title)
-                        Text(verbatim: translation.abbreviation)
-                            .font(readerTheme.font(.caption))
-                            .foregroundStyle(.secondary)
+        List {
+            ForEach(sortedTranslations) { translation in
+                let isSelected = readerStore.selectedTranslation?.id == translation.id
+                Button {
+                    select(translation: translation)
+                } label: {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(verbatim: translation.title)
+                            Text(verbatim: translation.abbreviation)
+                                .font(readerTheme.font(.caption))
+                                .foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        if isSelected {
+                            Image(systemName: "checkmark")
+                                .fontWeight(.semibold)
+                                .foregroundStyle(.tint)
+                                .accessibilityHidden(true)
+                        }
                     }
-                    Spacer()
-                    if isSelected {
-                        Image(systemName: "checkmark")
-                            .fontWeight(.semibold)
-                            .foregroundStyle(.tint)
-                            .accessibilityHidden(true)
-                    }
+                    .contentShape(Rectangle())
                 }
-                .contentShape(Rectangle())
+                .buttonStyle(.plain)
+                .accessibilityAddTraits(isSelected ? .isSelected : [])
             }
-            .buttonStyle(.plain)
-            .accessibilityAddTraits(isSelected ? .isSelected : [])
+
+            // look disabled but stay tappable, so each can explain why
+            ForEach(disabledTranslations) { translation in
+                Button {
+                    tappedDisabledTranslation = translation
+                } label: {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(verbatim: translation.title)
+                            Text(verbatim: translation.abbreviation)
+                                .font(readerTheme.font(.caption))
+                        }
+                        Spacer()
+                        Text("Unavailable")
+                    }
+                    .foregroundStyle(.secondary)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+            }
         }
         .listStyle(.plain)
+        .alert(tappedDisabledTranslation.map { Text("\($0.abbreviation) Unavailable") } ?? Text(verbatim: ""),
+               isPresented: Binding(get: { tappedDisabledTranslation != nil },
+                                    set: { if !$0 { tappedDisabledTranslation = nil } })) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text(tappedDisabledTranslation?.reason ?? "")
+        }
     }
 
     // MARK: Functions (Private)

@@ -10,7 +10,7 @@ import SwiftUI
 /// Copyright notice for every available translation, plus a link to each text provider
 ///
 /// Notices come from Translation.license: YouVersion's per-version copyright, or the
-/// notices TyndaleBibleRepository and CrosswayBibleRepository define.
+/// notice CrosswayBibleRepository defines
 struct SettingsAcknowledgmentsView: View {
 
     // MARK: Types (Private)
@@ -35,9 +35,6 @@ struct SettingsAcknowledgmentsView: View {
         Provider(name: "YouVersion",
                  translations: nil,
                  url: URL(string: "https://www.youversion.com")!),
-        Provider(name: "Tyndale House Publishers",
-                 translations: "NLT, KJV",
-                 url: URL(string: "https://www.tyndale.com")!),
         Provider(name: "Crossway",
                  translations: "ESV",
                  url: URL(string: "https://www.esv.org")!)

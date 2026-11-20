@@ -142,19 +142,9 @@ final class AppEnvironment {
         let youVersionRepository = YouVersionBibleRepository(apiKey: apiKey,
                                                              baseURL: appConfiguration.youVersionBaseURL,
                                                              urlSession: .shared)
-        // Tyndale serves NLT and KJV; without its key those IDs stay with YouVersion
+        // NLT and KJV (Tyndale) were removed 2026-11-20: Tyndale ends public API access on
+        // 2027-01-01; the picker lists them as unavailable (DisabledTranslation)
         var routes: [RoutingBibleRepository.Route] = []
-
-        if let tyndaleApiKey = appConfiguration.tyndaleApiKey {
-            let tyndaleRepository = TyndaleBibleRepository(apiKey: tyndaleApiKey,
-                                                           baseURL: appConfiguration.tyndaleBaseURL,
-                                                           urlSession: .shared)
-            routes.append(.init(translationIDs: [TyndaleBibleRepository.nltTranslation.id,
-                                                 TyndaleBibleRepository.kjvTranslation.id],
-                                repository: tyndaleRepository))
-        } else {
-            Self.logger.error("Missing TYNDALE_APP_KEY in bundled Secrets.plist; NLT/KJV routing disabled")
-        }
 
         // Crossway serves the ESV; without its key that ID stays with YouVersion
         if let crosswayApiKey = appConfiguration.crosswayApiKey {
