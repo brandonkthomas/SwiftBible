@@ -47,6 +47,16 @@ final class AppEnvironment {
         || NSClassFromString("XCTestCase") != nil
     }
 
+    /// True when launched with `-seedLibrary` (DEBUG builds only)
+    /// Library will use in-memorystore seeded from `LibrarySeedFixtures`... on-disk store and iCloud are ignored
+    private static var isSeedingLibrary: Bool {
+        #if DEBUG
+        ProcessInfo.processInfo.arguments.contains("-seedLibrary")
+        #else
+        false
+        #endif
+    }
+
     // MARK: Init
 
     // Failable init is not desirable here;
@@ -69,12 +79,15 @@ final class AppEnvironment {
                 !Self.isRunningTests && prefStore.syncAnnotationsToICloud
                 ? .private("iCloud.net.brandonthomas.SwiftBible")
                 : .none
-            let modelConfiguration = ModelConfiguration(cloudKitDatabase: cloudKitDB)
+            let modelConfiguration = Self.isSeedingLibrary
+                ? ModelConfiguration(isStoredInMemoryOnly: true, cloudKitDatabase: .none)
+                : ModelConfiguration(cloudKitDatabase: cloudKitDB)
 
             // Perform best-effort backup (if needed) BEFORE we assign modelContainer
             do {
                 if let currentBuildNumber = Bundle.main.infoDictionary?["CFBundleVersion"] as? String,
-                   !Self.isRunningTests {
+                   !Self.isRunningTests,
+                   !Self.isSeedingLibrary {
                     let backupURL = URL.applicationSupportDirectory
                         .appending(path: "SwiftBible")
                         .appending(path: "LibraryStoreBackups")
@@ -98,6 +111,18 @@ final class AppEnvironment {
 
         // LibraryRepository - storage for annotations
         let libraryRepository = SwiftDataLibraryRepository(modelContainer: modelContainer)
+
+        #if DEBUG
+        if Self.isSeedingLibrary {
+            do {
+                for annotation in LibrarySeedFixtures.annotations {
+                    try libraryRepository.save(annotation)
+                }
+            } catch {
+                Self.logger.error("Seeding library from LibrarySeedFixtures failed: \(error.localizedDescription)")
+            }
+        }
+        #endif
 
         do {
             // Try to merge dupes first (iCloud race/edge case)
