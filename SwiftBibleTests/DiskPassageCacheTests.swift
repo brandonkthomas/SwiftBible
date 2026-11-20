@@ -66,8 +66,6 @@ struct DiskPassageCacheTests {
                              for: key)
 
         let fileUrl = tempDirectory
-            .appending(path: "net.brandonthomas.SwiftBible", directoryHint: .isDirectory)
-            .appending(path: "Cache", directoryHint: .isDirectory)
             .appending(path: "Passage", directoryHint: .isDirectory)
             .appending(path: "sbc_1234_GEN_1.json", directoryHint: .notDirectory)
 

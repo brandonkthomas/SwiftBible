@@ -30,21 +30,13 @@ actor DiskCatalogCache: CatalogCache {
 
     // MARK: Init
 
-    /// - Parameter baseDirectory: where the cache folder lives; defaults to the system Caches
-    ///   directory, which iOS already excludes from iCloud and device backups.
-    ///   Tests pass a temporary directory so they never touch the real cache
+    /// - Parameter baseDirectory: where the cache folder lives; defaults to AppDirectories.caches
+    ///
+    /// Tests pass a temporary directory so they never touch the real cache
     init(baseDirectory: URL? = nil) throws {
-        // FileManager.default rather than self.fileManager: stored properties are not readable
-        // until every property has a value
-        let resolvedBase = try baseDirectory
-        ?? FileManager.default.url(for: .cachesDirectory,
-                                   in: .userDomainMask,
-                                   appropriateFor: nil,
-                                   create: true)
+        let resolvedBase = baseDirectory ?? AppDirectories.caches
 
         self.catalogDirectory = resolvedBase
-            .appending(path: "net.brandonthomas.SwiftBible", directoryHint: .isDirectory)
-            .appending(path: "Cache", directoryHint: .isDirectory)
             .appending(path: "Catalog", directoryHint: .isDirectory)
     }
 

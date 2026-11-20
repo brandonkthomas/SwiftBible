@@ -149,7 +149,7 @@ struct EdgeSwipeModifier: ViewModifier {
 
                 let calculator = EdgeSwipeCalculator(currentHorizontalDragDistance: value.translation.width,
                                                      chapterNavigationDirection: direction)
-                Self.logger.debug("circleOffset: \(calculator.circleOffset)")
+//                Self.logger.debug("circleOffset: \(calculator.circleOffset)")
 
                 let hasPassedThreshold = calculator.hasPassedThreshold
 
@@ -180,7 +180,7 @@ struct EdgeSwipeModifier: ViewModifier {
 
                 let calculator = EdgeSwipeCalculator(currentHorizontalDragDistance: value.translation.width,
                                                      chapterNavigationDirection: direction)
-                Self.logger.debug("hasPassedThreshold: \(calculator.hasPassedThreshold)")
+//                Self.logger.debug("hasPassedThreshold: \(calculator.hasPassedThreshold)")
 
                 if calculator.hasPassedThreshold {
                     Task { await onCommit(direction) }

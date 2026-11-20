@@ -80,17 +80,17 @@ final class AppEnvironment {
                 ? .private("iCloud.net.brandonthomas.SwiftBible")
                 : .none
             let modelConfiguration = Self.isSeedingLibrary
-                ? ModelConfiguration(isStoredInMemoryOnly: true, cloudKitDatabase: .none)
-                : ModelConfiguration(cloudKitDatabase: cloudKitDB)
+                ? ModelConfiguration(isStoredInMemoryOnly: true,
+                                     cloudKitDatabase: .none)
+                : ModelConfiguration(url: AppDirectories.libraryStore,
+                                     cloudKitDatabase: cloudKitDB)
 
             // Perform best-effort backup (if needed) BEFORE we assign modelContainer
             do {
                 if let currentBuildNumber = Bundle.main.infoDictionary?["CFBundleVersion"] as? String,
                    !Self.isRunningTests,
                    !Self.isSeedingLibrary {
-                    let backupURL = URL.applicationSupportDirectory
-                        .appending(path: "SwiftBible")
-                        .appending(path: "LibraryStoreBackups")
+                    let backupURL = AppDirectories.libraryStoreBackups
 
                     let backup = LibraryStoreBackup(storeURL: modelConfiguration.url,
                                                     backupsDirectory: backupURL,

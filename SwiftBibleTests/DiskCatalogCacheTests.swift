@@ -176,8 +176,6 @@ struct DiskCatalogCacheTests {
     /// Same path DiskCatalogCache builds internally for a given cache file name
     private func catalogFileUrl(in baseDirectory: URL, fileName: String) -> URL {
         baseDirectory
-            .appending(path: "net.brandonthomas.SwiftBible", directoryHint: .isDirectory)
-            .appending(path: "Cache", directoryHint: .isDirectory)
             .appending(path: "Catalog", directoryHint: .isDirectory)
             .appending(path: fileName, directoryHint: .notDirectory)
     }
