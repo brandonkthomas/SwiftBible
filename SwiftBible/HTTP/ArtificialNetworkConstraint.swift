@@ -8,6 +8,6 @@
 import Foundation
 
 // nonisolated primarily for unit tests
-nonisolated struct ArtificialNetworkConstraint {
+nonisolated enum ArtificialNetworkConstraint {
     static let isNetworkRequired: Bool = true
 }
