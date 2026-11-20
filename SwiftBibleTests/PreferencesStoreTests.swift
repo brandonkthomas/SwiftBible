@@ -662,19 +662,19 @@ struct PreferencesStoreTests {
 
     // MARK: Applying Changes From Other Devices
 
-    /// values another device synced update the properties and this device's UserDefaults copy
+    /// values another device synced after launch update the properties and this device's
+    /// UserDefaults copy
     @Test func ubiquitousChangesUpdatePropertiesAndUserDefaults() throws {
         let suiteName = UUID().uuidString
         defer { UserDefaults().removePersistentDomain(forName: suiteName) }
         let userDefaults = try #require(UserDefaults(suiteName: suiteName))
         let customChanges = try JSONEncoder().encode([ReaderTheme.ink.rawValue: ReaderThemeCustom(fontWeight: .regular)])
-        let ubiquitousStore = InMemoryUbiquitousKeyValueStore(values: [
-            Self.readerThemeKey: "ink",
-            Self.preferredColorSchemeKey: "dark",
-            Self.readerTextSizeStepKey: 3,
-            Self.readerThemeCustomChangesKey: customChanges
-        ])
+        let ubiquitousStore = InMemoryUbiquitousKeyValueStore()
         let store = PreferencesStore(userDefaults: userDefaults, ubiquitousStore: ubiquitousStore)
+        ubiquitousStore.receiveRemoteValue("ink", forKey: Self.readerThemeKey)
+        ubiquitousStore.receiveRemoteValue("dark", forKey: Self.preferredColorSchemeKey)
+        ubiquitousStore.receiveRemoteValue(3, forKey: Self.readerTextSizeStepKey)
+        ubiquitousStore.receiveRemoteValue(customChanges, forKey: Self.readerThemeCustomChangesKey)
 
         store.applyUbiquitousChanges(forKeys: [Self.readerThemeKey,
                                                Self.preferredColorSchemeKey,
@@ -748,8 +748,9 @@ struct PreferencesStoreTests {
         let suiteName = UUID().uuidString
         defer { UserDefaults().removePersistentDomain(forName: suiteName) }
         let userDefaults = try #require(UserDefaults(suiteName: suiteName))
-        let ubiquitousStore = InMemoryUbiquitousKeyValueStore(values: [Self.readerThemeKey: "ink"])
+        let ubiquitousStore = InMemoryUbiquitousKeyValueStore()
         let store = PreferencesStore(userDefaults: userDefaults, ubiquitousStore: ubiquitousStore)
+        ubiquitousStore.receiveRemoteValue("ink", forKey: Self.readerThemeKey)
 
         postExternalChange(from: ubiquitousStore,
                            reason: NSUbiquitousKeyValueStoreServerChange,
@@ -763,8 +764,9 @@ struct PreferencesStoreTests {
         let suiteName = UUID().uuidString
         defer { UserDefaults().removePersistentDomain(forName: suiteName) }
         let userDefaults = try #require(UserDefaults(suiteName: suiteName))
-        let ubiquitousStore = InMemoryUbiquitousKeyValueStore(values: [Self.readerThemeKey: "ink"])
+        let ubiquitousStore = InMemoryUbiquitousKeyValueStore()
         let store = PreferencesStore(userDefaults: userDefaults, ubiquitousStore: ubiquitousStore)
+        ubiquitousStore.receiveRemoteValue("ink", forKey: Self.readerThemeKey)
 
         postExternalChange(from: ubiquitousStore,
                            reason: NSUbiquitousKeyValueStoreQuotaViolationChange,
@@ -783,6 +785,66 @@ struct PreferencesStoreTests {
         _ = PreferencesStore(userDefaults: userDefaults, ubiquitousStore: ubiquitousStore)
 
         #expect(ubiquitousStore.synchronizeCount == 1)
+    }
+
+    // MARK: Reading iCloud at Launch
+
+    /// A fresh install (empty UserDefaults) adopts the values iCloud already holds at launch.
+    /// iCloud's change notification only reports values that arrive after launch, so without
+    /// this read a reinstall keeps the defaults
+    @Test func launchAdoptsICloudValuesOnFreshInstall() throws {
+        let suiteName = UUID().uuidString
+        defer { UserDefaults().removePersistentDomain(forName: suiteName) }
+        let userDefaults = try #require(UserDefaults(suiteName: suiteName))
+        let customChanges = try JSONEncoder().encode([ReaderTheme.ink.rawValue: ReaderThemeCustom(fontWeight: .regular)])
+        let ubiquitousStore = InMemoryUbiquitousKeyValueStore(values: [
+            Self.readerThemeKey: "ink",
+            Self.preferredColorSchemeKey: "dark",
+            Self.readerTextSizeStepKey: 3,
+            Self.readerThemeCustomChangesKey: customChanges
+        ])
+
+        let store = PreferencesStore(userDefaults: userDefaults, ubiquitousStore: ubiquitousStore)
+
+        #expect(store.readerTheme == .ink)
+        #expect(store.preferredColorScheme == .dark)
+        #expect(store.readerTextSizeStep == 3)
+        #expect(store.readerThemeCustomChanges[ReaderTheme.ink.rawValue] == ReaderThemeCustom(fontWeight: .regular))
+        #expect(userDefaults.string(forKey: Self.readerThemeKey) == "ink")
+        #expect(userDefaults.integer(forKey: Self.readerTextSizeStepKey) == 3)
+        #expect(ubiquitousStore.writeCount == 0)
+    }
+
+    /// iCloud's value wins over this device's saved copy at launch. The key-value store keeps
+    /// this device's own writes locally until they upload, so it is never older than UserDefaults
+    @Test func launchPrefersICloudValueOverSavedValue() throws {
+        let suiteName = UUID().uuidString
+        defer { UserDefaults().removePersistentDomain(forName: suiteName) }
+        let userDefaults = try #require(UserDefaults(suiteName: suiteName))
+        userDefaults.set("folio", forKey: Self.readerThemeKey)
+        userDefaults.set(1, forKey: Self.readerTextSizeStepKey)
+        let ubiquitousStore = InMemoryUbiquitousKeyValueStore(values: [Self.readerThemeKey: "ink"])
+
+        let store = PreferencesStore(userDefaults: userDefaults, ubiquitousStore: ubiquitousStore)
+
+        #expect(store.readerTheme == .ink)
+        // keys iCloud doesn't have keep the saved value
+        #expect(store.readerTextSizeStep == 1)
+    }
+
+    /// With Sync Appearance off, launch ignores iCloud and keeps this device's saved values
+    @Test func launchWithSyncAppearanceOffKeepsSavedValues() throws {
+        let suiteName = UUID().uuidString
+        defer { UserDefaults().removePersistentDomain(forName: suiteName) }
+        let userDefaults = try #require(UserDefaults(suiteName: suiteName))
+        userDefaults.set(false, forKey: Self.syncAppearanceToICloudKey)
+        userDefaults.set("folio", forKey: Self.readerThemeKey)
+        let ubiquitousStore = InMemoryUbiquitousKeyValueStore(values: [Self.readerThemeKey: "ink"])
+
+        let store = PreferencesStore(userDefaults: userDefaults, ubiquitousStore: ubiquitousStore)
+
+        #expect(store.readerTheme == .folio)
+        #expect(ubiquitousStore.writeCount == 0)
     }
 
     // MARK: Sync Appearance to iCloud

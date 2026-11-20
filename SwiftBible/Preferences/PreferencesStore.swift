@@ -83,10 +83,7 @@ final class PreferencesStore {
         didSet {
             userDefaults.set(syncAppearanceToICloud, forKey: Self.syncAppearanceToICloudKey)
             if syncAppearanceToICloud {
-                applyUbiquitousChanges(forKeys: [Self.preferredColorSchemeKey,
-                                                 Self.readerThemeKey,
-                                                 Self.readerThemeCustomChangesKey,
-                                                 Self.readerTextSizeStepKey])
+                applyUbiquitousChanges(forKeys: Self.appearanceKeys)
                 // send the ones that iCloud lacks if needed
                 if ubiquitousStore?.object(forKey: Self.readerThemeKey) == nil {
                     writeToUbiquitousStore(readerTheme.rawValue,
@@ -127,6 +124,13 @@ final class PreferencesStore {
 
     /// Change store for ubiquitous changes
     private let ubiquitousStore: (any UbiquitousKeyValueStoring)?
+
+    private static var appearanceKeys: [String] {
+        [Self.preferredColorSchemeKey,
+         Self.readerThemeKey,
+         Self.readerThemeCustomChangesKey,
+         Self.readerTextSizeStepKey]
+    }
 
     /// Are we currently applying another device's values?
     @ObservationIgnored
@@ -238,6 +242,9 @@ final class PreferencesStore {
                 }
             }
             ubiquitousStore.synchronize()
+
+            // Immediately apply iCloud's value (was failing to show cloud theme after reinstall)
+            applyUbiquitousChanges(forKeys: Self.appearanceKeys)
         }
     }
 

@@ -39,4 +39,9 @@ final class InMemoryUbiquitousKeyValueStore: UbiquitousKeyValueStoring {
         synchronizeCount += 1
         return true
     }
+
+    /// Stands in for another device's write arriving after launch; not counted in `writeCount`
+    func receiveRemoteValue(_ value: Any, forKey key: String) {
+        values[key] = value
+    }
 }
