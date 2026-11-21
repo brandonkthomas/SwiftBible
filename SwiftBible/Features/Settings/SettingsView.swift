@@ -54,11 +54,7 @@ struct SettingsView: View {
                         }
                         // Search
                         NavigationLink {
-                            ContentUnavailableView(
-                                "Search",
-                                systemImage: "magnifyingglass",
-                                description: Text("Coming soon.")
-                            )
+                            SettingsSearchView()
                         } label: {
                             settingsRow(title: "Search",
                                         symbol: "magnifyingglass",
