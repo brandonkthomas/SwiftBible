@@ -40,6 +40,7 @@ struct SettingsView: View {
                         } label: {
                             settingsRow(title: "Read",
                                         symbol: "book.fill",
+                                        rightSymbol: nil,
                                         color: .accent)
                         }
                         // Library
@@ -48,6 +49,7 @@ struct SettingsView: View {
                         } label: {
                             settingsRow(title: "Annotations",
                                         symbol: "bookmark.fill",
+                                        rightSymbol: nil,
                                         color: Color(red: 0.95, green: 0.7, blue: 0.5))
                         }
                         // Search
@@ -60,6 +62,7 @@ struct SettingsView: View {
                         } label: {
                             settingsRow(title: "Search",
                                         symbol: "magnifyingglass",
+                                        rightSymbol: nil,
                                         color: Color(.systemGray2))
                         }
                     }
@@ -72,6 +75,7 @@ struct SettingsView: View {
                         } label: {
                             settingsRow(title: "Appearance",
                                         symbol: "paintbrush.fill",
+                                        rightSymbol: nil,
                                         color: .blue)
                         }
                         // Language
@@ -84,6 +88,7 @@ struct SettingsView: View {
                         } label: {
                             settingsRow(title: "Language",
                                         symbol: "globe",
+                                        rightSymbol: nil,
                                         color: .green)
                         }
                     }
@@ -96,6 +101,7 @@ struct SettingsView: View {
                         } label: {
                             settingsRow(title: "About",
                                         symbol: "info.circle.fill",
+                                        rightSymbol: nil,
                                         color: .purple)
                         }
                         // Acknowledgments
@@ -104,6 +110,7 @@ struct SettingsView: View {
                         } label: {
                             settingsRow(title: "Acknowledgments",
                                         symbol: "text.document.fill",
+                                        rightSymbol: nil,
                                         color: .pink)
                         }
                         // Help/Email
@@ -112,12 +119,14 @@ struct SettingsView: View {
                         } label: {
                             settingsRow(title: "Help & Support",
                                         symbol: "questionmark.circle.fill",
+                                        rightSymbol: nil,
                                         color: .orange)
                         }
                         // Rate link (app store)
                         Link(destination: URL(string: Self.appReviewLink)!) {
                             settingsRow(title: "Rate Bible",
                                         symbol: "star.fill",
+                                        rightSymbol: "arrow.up.right.square",
                                         color: .yellow)
                         }
                         .foregroundStyle(.primary)
@@ -147,15 +156,32 @@ struct SettingsView: View {
     @ViewBuilder
     private func settingsRow(title: LocalizedStringKey,
                              symbol: String,
+                             rightSymbol: String?,
                              color: Color) -> some View {
         if dynamicTypeSize.isAccessibilitySize {
-            VStack(alignment: .leading, spacing: 8) {
-                settingsIcon(symbol: symbol, color: color)
-                Text(title)
+            HStack {
+                VStack(alignment: .leading, spacing: 8) {
+                    settingsIcon(symbol: symbol, color: color)
+                    Text(title)
+                }
+                if let rightSymbol {
+                    Spacer()
+                    Image(systemName: rightSymbol)
+                        .foregroundStyle(.secondary)
+                        .accessibilityHidden(true)
+                }
             }
         } else {
             Label {
-                Text(title)
+                HStack {
+                    Text(title)
+                    if let rightSymbol {
+                        Spacer()
+                        Image(systemName: rightSymbol)
+                            .foregroundStyle(.secondary)
+                            .accessibilityHidden(true)
+                    }
+                }
             } icon: {
                 settingsIcon(symbol: symbol, color: color)
             }
