@@ -80,13 +80,9 @@ struct SettingsView: View {
                         }
                         // Language
                         NavigationLink {
-                            ContentUnavailableView(
-                                "Language",
-                                systemImage: "globe",
-                                description: Text("Coming soon.")
-                            )
+                            SettingsLanguageView()
                         } label: {
-                            settingsRow(title: "Language",
+                            settingsRow(title: "Language & Region",
                                         symbol: "globe",
                                         rightSymbol: nil,
                                         color: .green)

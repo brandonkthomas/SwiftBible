@@ -9,8 +9,7 @@ import SwiftUI
 
 /// Copyright notice for every available translation, plus a link to each text provider
 ///
-/// Notices come from Translation.license: YouVersion's per-version copyright, or the
-/// notice CrosswayBibleRepository defines
+/// Notices come from Translation.license
 struct SettingsAcknowledgmentsView: View {
 
     // MARK: Types (Private)
@@ -72,7 +71,9 @@ struct SettingsAcknowledgmentsView: View {
         .navigationBarTitleDisplayMode(.inline)
     }
 
-    /// Translation title + abbreviation, then its copyright notice as plain text
+    /// Translation title + abbreviation
+    ///
+    /// copyright notice is plain text
     private func translationRow(_ translation: Translation) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(alignment: .firstTextBaseline) {
@@ -100,7 +101,6 @@ struct SettingsAcknowledgmentsView: View {
         .padding(.vertical, 4)
     }
 
-    /// Provider name + the translations it serves; opens the provider's site
     private func providerRow(_ provider: Provider) -> some View {
         Link(destination: provider.url) {
             HStack {
@@ -124,7 +124,6 @@ struct SettingsAcknowledgmentsView: View {
         }
     }
 
-    /// YouVersion's guide: use the version's copyright, else its promotional content
     private func copyrightNotice(for translation: Translation) -> String? {
         let candidates = [translation.license, translation.promotionalText]
 
