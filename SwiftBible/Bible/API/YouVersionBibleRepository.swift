@@ -10,6 +10,8 @@ import OSLog
 
 final class YouVersionBibleRepository: BibleRepository {
 
+    static let searchPageSize = 25
+
     // MARK: Properties (Private)
 
     private let apiKey: String
@@ -172,5 +174,71 @@ final class YouVersionBibleRepository: BibleRepository {
                                                      from: data)
 
         return passageResponse.passageForApp()
+    }
+
+    /// All YouVersion translations support search
+    func supportsSearch(translationID: Translation.ID) -> Bool { true }
+
+    /// API verse search implementation
+    func searchVerses(_ query: String,
+                      translationID: Translation.ID,
+                      cursor: ScriptureSearchCursor?) async throws -> ScriptureSearchPage {
+        // obtain URL
+        let url = try searchVersesUrl(for: query,
+                                      translationID: translationID,
+                                      cursor: cursor)
+
+        // make request
+        let data = try await HttpRequest.fetchData(url: url,
+                                                   httpMethod: "GET",
+                                                   headers: ["X-YVP-App-Key": apiKey],
+                                                   urlSession: urlSession)
+
+        // decode into YouVersionSearchVersesResponse
+        let jsonDecoder = JSONDecoder()
+        let searchResponse = try jsonDecoder.decode(YouVersionSearchVersesResponse.self,
+                                                    from: data)
+
+        // build ScriptureSearchPage from YouVersionSearchVersesResponse
+        return searchResponse.searchPage(translationID: translationID)
+    }
+
+    // MARK: Functions (Helpers)
+
+    // Internal for unit tests
+    internal func searchVersesUrl(for query: String,
+                                  translationID: Translation.ID,
+                                  cursor: ScriptureSearchCursor?) throws -> URL {
+        // build base URL
+        let searchPath = baseURL.appending(path: "v1/search-verses")
+
+        guard var components = URLComponents(url: searchPath,
+                                             resolvingAgainstBaseURL: false) else {
+            throw BibleRepositoryError.internalError("Unable to create search request URL")
+        }
+
+        // clean user search query
+        let trimmedQuery = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedAndShortenedQuery = String(trimmedQuery.prefix(100))
+
+        // build URL query
+        components.queryItems = [
+            URLQueryItem(name: "query",
+                         value: trimmedAndShortenedQuery),
+            URLQueryItem(name: "bible_id",
+                         value: translationID.description),
+            URLQueryItem(name: "page_size",
+                         value: Self.searchPageSize.description)
+        ]
+        if case .pageToken(let pageToken) = cursor { // dont need pageNumber (Crossway exclusive)
+            components.queryItems?.append(URLQueryItem(name: "page_token",
+                                                       value: pageToken))
+        }
+
+        guard let builtUrl = components.url else {
+            throw BibleRepositoryError.invalidRequestURL
+        }
+
+        return builtUrl
     }
 }

@@ -25,6 +25,14 @@ protocol BibleRepository {
 
     /// How BiblePassageStore may cache this provider's passages for a translation
     func passageCachePolicy(for translationID: Translation.ID) -> PassageCachePolicy
+
+    /// Does the requested translation support search results?
+    func supportsSearch(translationID: Translation.ID) -> Bool
+
+    /// Search verses (optionally from a specific translation) for a given text query
+    func searchVerses(_ query: String,
+                      translationID: Translation.ID,
+                      cursor: ScriptureSearchCursor?) async throws -> ScriptureSearchPage
 }
 
 extension BibleRepository {
@@ -37,6 +45,18 @@ extension BibleRepository {
     /// Default: no caching limits
     func passageCachePolicy(for translationID: Translation.ID) -> PassageCachePolicy {
         .unlimited
+    }
+
+    /// Default: false
+    func supportsSearch(translationID: Translation.ID) -> Bool {
+        false
+    }
+
+    /// Default: throw .unsupportedTranslation
+    func searchVerses(_ query: String,
+                      translationID: Translation.ID,
+                      cursor: ScriptureSearchCursor?) async throws -> ScriptureSearchPage {
+        throw ScriptureSearchError.unsupportedTranslation
     }
 }
 

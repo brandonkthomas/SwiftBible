@@ -14,8 +14,12 @@ import OSLog
 /// www.esv.org, and no more than 500 verses cached or stored locally.
 final class CrosswayBibleRepository: BibleRepository {
 
+    static let searchPageSize = 25
+
+    nonisolated static let esvTranslationID: Int = 59
+
     static let esvTranslation = Translation(
-        id: 59,
+        id: esvTranslationID, // from YouVersion Bible list
         abbreviation: "ESV",
         title: "English Standard Version",
         languageTag: "en",
@@ -162,6 +166,39 @@ final class CrosswayBibleRepository: BibleRepository {
         return builtUrl
     }
 
+    /// Crossway ESV supports search
+    func supportsSearch(translationID: Translation.ID) -> Bool {
+        translationID == Self.esvTranslationID
+    }
+
+    /// API verse search implementation
+    func searchVerses(_ query: String,
+                      translationID: Translation.ID,
+                      cursor: ScriptureSearchCursor?) async throws -> ScriptureSearchPage {
+        // sanity check
+        if !supportsSearch(translationID: translationID) {
+            throw ScriptureSearchError.unsupportedTranslation
+        }
+
+        // obtain URL
+        let url = try searchVersesUrl(for: query,
+                                      cursor: cursor)
+
+        // make request
+        let data = try await HttpRequest.fetchData(url: url,
+                                                   httpMethod: "GET",
+                                                   headers: ["Authorization": "Token \(apiKey)"],
+                                                   urlSession: urlSession)
+
+        // decode into YouVersionSearchVersesResponse
+        let jsonDecoder = JSONDecoder()
+        let searchResponse = try jsonDecoder.decode(CrosswaySearchResponse.self,
+                                                    from: data)
+
+        // build ScriptureSearchPage from YouVersionSearchVersesResponse
+        return searchResponse.searchPage()
+    }
+
     // MARK: Functions (Private Helpers)
 
     /// "John 3"; also the q param, which the ESV API parses as a reference
@@ -175,5 +212,39 @@ final class CrosswayBibleRepository: BibleRepository {
         }
 
         return "\(bookDisplayName) \(reference.chapter)"
+    }
+
+    // Internal for unit tests
+    internal func searchVersesUrl(for query: String,
+                                  cursor: ScriptureSearchCursor?) throws -> URL {
+        // build base URL
+        let searchPath = baseURL.appending(path: "v3/passage/search/")
+
+        guard var components = URLComponents(url: searchPath,
+                                             resolvingAgainstBaseURL: false) else {
+            throw BibleRepositoryError.internalError("Unable to create search request URL")
+        }
+
+        // clean user search query
+        let trimmedQuery = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedAndShortenedQuery = String(trimmedQuery.prefix(100))
+
+        // build URL query
+        components.queryItems = [
+            URLQueryItem(name: "q",
+                         value: trimmedAndShortenedQuery),
+            URLQueryItem(name: "page-size",
+                         value: Self.searchPageSize.description)
+        ]
+        if case .pageNumber(let pageNumber) = cursor { // dont need pageToken (YouVersion exclusive)
+            components.queryItems?.append(URLQueryItem(name: "page",
+                                                       value: pageNumber.description))
+        }
+
+        guard let builtUrl = components.url else {
+            throw BibleRepositoryError.invalidRequestURL
+        }
+
+        return builtUrl
     }
 }

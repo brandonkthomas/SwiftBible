@@ -11,20 +11,32 @@
 /// Nonisolated since this is plain data
 nonisolated enum BookDefaults {
     /// All 66 books, built once from `rows`
-    static let defaultBooks: [Book] = rows.enumerated().map { index, row in
-        let chapters = (1...row.chapterCount).map { number in
-            Chapter(id: "\(row.code).\(number)",
-                    number: number,
-                    bookID: row.code,
-                    displayName: String(number),
-                    verses: [])
-        }
+    static let defaultBooks: [Book] = makeBooks(from: rows)
 
-        return Book(id: row.code,
-                    code: row.code,
-                    displayName: row.displayName,
-                    canon: index < oldTestamentCount ? .oldTestament : .newTestament,
-                    chapters: chapters)
+    /// All 66 books for ESV (Psalm and Song of Solomon are renamed)
+    static let defaultBooksEsv: [Book] = makeBooks(from: rows.map { row in
+        // if there's a CODE match in esvRowOverrides, use that one; else, use original
+        esvRowOverrides.first { $0.code == row.code } ?? row
+    })
+
+    private static func makeBooks(from rows: [(code: String,
+                                               displayName: String,
+                                               chapterCount: Int)]) -> [Book] {
+        rows.enumerated().map { index, row in
+            let chapters = (1...row.chapterCount).map { number in
+                Chapter(id: "\(row.code).\(number)",
+                        number: number,
+                        bookID: row.code,
+                        displayName: String(number),
+                        verses: [])
+            }
+
+            return Book(id: row.code,
+                        code: row.code,
+                        displayName: row.displayName,
+                        canon: index < oldTestamentCount ? .oldTestament : .newTestament,
+                        chapters: chapters)
+        }
     }
 
     // MARK: Raw Data (Private)
@@ -101,5 +113,10 @@ nonisolated enum BookDefaults {
         ("3JN", "3 John", 1),
         ("JUD", "Jude", 1),
         ("REV", "Revelation", 22)
+    ]
+
+    private static let esvRowOverrides: [(code: String, displayName: String, chapterCount: Int)] = [
+        ("PSA", "Psalm", 150),
+        ("SNG", "Song of Solomon", 8)
     ]
 }
