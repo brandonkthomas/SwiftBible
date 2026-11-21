@@ -109,6 +109,9 @@ struct AnnotationEditorSheetView: View {
                 .lineLimit(1...8)
                 // padding before glassEffect (glass wraps padded field)
                 .padding()
+                // Padding isn't part of the TextField's hit area, so route taps on the whole rect to focus
+                .contentShape(.rect(cornerRadius: 16))
+                .onTapGesture { focusedField = .note }
                 .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 16))
                 .focused($focusedField, equals: .note)
             }
