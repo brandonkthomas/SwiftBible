@@ -14,16 +14,42 @@ import OSLog
 @Observable
 final class SearchStore {
 
+    /// What was our last search?
+    var annotationSearchQuery: String = ""
+
     // MARK: Properties (Computed)
 
+    // True if we have an upcoming cursor object
     var canLoadMoreBibleResults: Bool {
         bibleNextCursor != nil
+    }
+
+    /// Computed annotation search results according to current annotationSearchQuery value
+    ///
+    /// Ordered by date; 
+    var annotationResults: [VerseAnnotation] {
+        let annotations = libraryStore.annotations
+            .sorted(by: { $0.createdAt > $1.createdAt })
+
+        let librarySearch = LibrarySearch(query: annotationSearchQuery)
+        let searchedAnnotations = librarySearch.results(
+            in: annotations,
+            passageLabel: { bibleCatalogStore.friendlyPassageName(for: $0) },
+            translationAbbreviation: { bibleCatalogStore.translation(for: $0.translationID)?.abbreviation }
+        )
+        return searchedAnnotations
     }
 
     // MARK: Properties (Private)
 
     /// Used to interface w/ search functions
     private let repository: any BibleRepository
+
+    /// Used to search annotations
+    private let libraryStore: LibraryStore
+
+    /// Used to retrieve passageLabel and translationAbbreviation for annotationResults
+    private let bibleCatalogStore: BibleCatalogStore
 
     /// Used to load any missing passage texts
     private let biblePassageStore: BiblePassageStore
@@ -77,8 +103,12 @@ final class SearchStore {
     // MARK: Init
 
     init(repository: any BibleRepository,
+         libraryStore: LibraryStore,
+         bibleCatalogStore: BibleCatalogStore,
          biblePassageStore: BiblePassageStore) {
         self.repository = repository
+        self.libraryStore = libraryStore
+        self.bibleCatalogStore = bibleCatalogStore
         self.biblePassageStore = biblePassageStore
     }
 

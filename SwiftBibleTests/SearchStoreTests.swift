@@ -7,8 +7,8 @@ import Foundation
 import Testing
 @testable import SwiftBible
 
-/// Search steps 5a-5d: SearchStore runs a submitted Bible search, pages it, loads verse text, and
-/// exposes its state
+/// Search steps 5a-5d and 7: SearchStore runs a submitted Bible search, pages it, loads verse text,
+/// filters saved annotations as you type, and exposes its state
 @MainActor
 struct SearchStoreTests {
 
@@ -271,14 +271,86 @@ struct SearchStoreTests {
         #expect(store.passageLoadFailure(for: genesisResult) == .offline)
     }
 
+    // MARK: Step 7: saved annotations, filtered as you type
+
+    /// Matching annotations show newest first; others are left out
+    @Test func annotationResultsMatchQueryNewestFirst() throws {
+        let libraryRepository = InMemoryLibraryRepository()
+        let older = makeAnnotation(.note("the good shepherd"), createdAt: Date(timeIntervalSince1970: 1_000))
+        let newer = makeAnnotation(.note("shepherd psalm"), createdAt: Date(timeIntervalSince1970: 2_000))
+        let other = makeAnnotation(.tags(["Faith"]), createdAt: Date(timeIntervalSince1970: 3_000))
+        try libraryRepository.save(older)
+        try libraryRepository.save(newer)
+        try libraryRepository.save(other)
+        let store = makeStore(SearchingBibleRepository(), libraryRepository: libraryRepository)
+
+        store.annotationSearchQuery = "shepherd"
+
+        #expect(store.annotationResults.map(\.id) == [newer.id, older.id])
+    }
+
+    /// An annotation saved while searching shows up without searching again
+    @Test func annotationResultsFollowLibraryChanges() throws {
+        let libraryRepository = InMemoryLibraryRepository()
+        let (store, libraryStore) = makeStores(SearchingBibleRepository(), libraryRepository: libraryRepository)
+        store.annotationSearchQuery = "hope"
+        #expect(store.annotationResults.isEmpty)
+
+        let saved = makeAnnotation(.tags(["Hope"]), createdAt: .now)
+        try libraryRepository.save(saved)
+        libraryStore.load()
+
+        #expect(store.annotationResults.map(\.id) == [saved.id])
+    }
+
+    /// A blank query shows no annotations rather than all of them
+    @Test func blankAnnotationQueryShowsNothing() throws {
+        let libraryRepository = InMemoryLibraryRepository()
+        try libraryRepository.save(makeAnnotation(.note("anything"), createdAt: .now))
+        let store = makeStore(SearchingBibleRepository(), libraryRepository: libraryRepository)
+
+        store.annotationSearchQuery = "  "
+
+        #expect(store.annotationResults.isEmpty)
+    }
+
     // MARK: Helpers
 
     private func makeStore(_ repository: SearchingBibleRepository,
-                           networkStatus: FakeNetworkStatus? = nil) -> SearchStore {
-        SearchStore(repository: repository,
-                    biblePassageStore: BiblePassageStore(repository: repository,
-                                                         passageCache: InMemoryPassageCache(),
-                                                         networkStatus: networkStatus ?? FakeNetworkStatus()))
+                           networkStatus: FakeNetworkStatus? = nil,
+                           libraryRepository: InMemoryLibraryRepository? = nil) -> SearchStore {
+        makeStores(repository, networkStatus: networkStatus, libraryRepository: libraryRepository).search
+    }
+
+    /// The search store plus the LibraryStore it reads annotations from
+    private func makeStores(_ repository: SearchingBibleRepository,
+                            networkStatus: FakeNetworkStatus? = nil,
+                            libraryRepository: InMemoryLibraryRepository? = nil) -> (search: SearchStore,
+                                                                                     library: LibraryStore) {
+        let passageStore = BiblePassageStore(repository: repository,
+                                             passageCache: InMemoryPassageCache(),
+                                             networkStatus: networkStatus ?? FakeNetworkStatus())
+        let catalogStore = BibleCatalogStore(repository: repository)
+        let libraryStore = LibraryStore(libraryRepository: libraryRepository ?? InMemoryLibraryRepository(),
+                                        catalogStore: catalogStore,
+                                        passageStore: passageStore)
+        libraryStore.load()
+        let searchStore = SearchStore(repository: repository,
+                                      libraryStore: libraryStore,
+                                      bibleCatalogStore: catalogStore,
+                                      biblePassageStore: passageStore)
+        return (searchStore, libraryStore)
+    }
+
+    private func makeAnnotation(_ content: AnnotationContent, createdAt: Date) -> VerseAnnotation {
+        VerseAnnotation(id: UUID(),
+                        translationID: 111,
+                        bookCode: "PSA",
+                        chapter: 23,
+                        startVerse: 1,
+                        endVerse: nil,
+                        content: content,
+                        createdAt: createdAt)
     }
 }
 
