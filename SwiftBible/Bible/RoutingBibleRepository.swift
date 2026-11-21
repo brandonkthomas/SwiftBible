@@ -70,6 +70,19 @@ final class RoutingBibleRepository: BibleRepository {
         repository(for: translationID).passageCachePolicy(for: translationID)
     }
 
+    func supportsSearch(translationID: Translation.ID) -> Bool {
+        repository(for: translationID).supportsSearch(translationID: translationID)
+    }
+
+    /// Route to the correct provider
+    func searchVerses(_ query: String,
+                      translationID: Translation.ID,
+                      cursor: ScriptureSearchCursor?) async throws -> ScriptureSearchPage {
+        try await repository(for: translationID).searchVerses(query,
+                                                              translationID: translationID,
+                                                              cursor: cursor)
+    }
+
     // MARK: Functions (Private Helpers)
 
     private func repository(for translationID: Translation.ID) -> any BibleRepository {

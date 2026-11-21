@@ -162,6 +162,41 @@ struct RoutingBibleRepositoryTests {
         }
     }
 
+    // MARK: Search
+
+    /// Search for a claimed translation reaches only its provider, with the query and cursor intact
+    @Test func claimedSearchReachesOnlyOwningProvider() async throws {
+        let (router, routed, fallback) = makeRouter()
+
+        _ = try await router.searchVerses("shepherd", translationID: routedTranslationID, cursor: .pageNumber(2))
+
+        #expect(routed.searchRequests == [
+            RecordingBibleRepository.SearchRequest(query: "shepherd",
+                                                   translationID: routedTranslationID,
+                                                   cursor: .pageNumber(2))
+        ])
+        #expect(fallback.searchRequests.isEmpty)
+    }
+
+    @Test func unclaimedSearchReachesFallback() async throws {
+        let (router, routed, fallback) = makeRouter()
+
+        _ = try await router.searchVerses("shepherd", translationID: unclaimedTranslationID, cursor: nil)
+
+        #expect(fallback.searchRequests.map(\.translationID) == [unclaimedTranslationID])
+        #expect(routed.searchRequests.isEmpty)
+    }
+
+    /// Whether a translation can be searched is the owning provider's answer, not the router's
+    @Test func searchSupportComesFromOwningProvider() {
+        let (router, routed, fallback) = makeRouter()
+        routed.supportsSearchResult = true
+        fallback.supportsSearchResult = false
+
+        #expect(router.supportsSearch(translationID: routedTranslationID))
+        #expect(router.supportsSearch(translationID: unclaimedTranslationID) == false)
+    }
+
     // MARK: Functions (Private Helpers)
 
     private func makeRouter(routedTranslations: [Translation] = [],
@@ -201,14 +236,23 @@ private final class RecordingBibleRepository: BibleRepository {
         case translationsFailed
     }
 
+    /// One searchVerses call, as received
+    struct SearchRequest: Equatable {
+        let query: String
+        let translationID: Translation.ID
+        let cursor: ScriptureSearchCursor?
+    }
+
     let translations: [Translation]
     var failsLoadingTranslations = false
     var cachePolicy: PassageCachePolicy = .unlimited
+    var supportsSearchResult = false
 
     private(set) var translationsLanguageTags: [String?] = []
     private(set) var booksRequests: [Translation.ID] = []
     private(set) var passageRequests: [ScriptureReference] = []
     private(set) var renderRequests: [Translation.ID] = []
+    private(set) var searchRequests: [SearchRequest] = []
 
     init(translations: [Translation]) {
         self.translations = translations
@@ -242,5 +286,16 @@ private final class RecordingBibleRepository: BibleRepository {
 
     func passageCachePolicy(for translationID: Translation.ID) -> PassageCachePolicy {
         cachePolicy
+    }
+
+    func supportsSearch(translationID: Translation.ID) -> Bool {
+        supportsSearchResult
+    }
+
+    func searchVerses(_ query: String,
+                      translationID: Translation.ID,
+                      cursor: ScriptureSearchCursor?) async throws -> ScriptureSearchPage {
+        searchRequests.append(SearchRequest(query: query, translationID: translationID, cursor: cursor))
+        return ScriptureSearchPage(results: [], nextCursor: nil)
     }
 }
