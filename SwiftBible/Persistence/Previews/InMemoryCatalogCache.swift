@@ -17,6 +17,9 @@ final class InMemoryCatalogCache: CatalogCache {
     /// Maps translation ID keys => books
     private var bookCache: [Translation.ID: CatalogCacheEntry<[Book]>] = [:]
 
+    /// Maps translation ID keys => copyright notices
+    private var copyrightCache: [Translation.ID: CatalogCacheEntry<TranslationCopyright>] = [:]
+
     // MARK: Functions
 
     /// Retrieves cached translation list for a given language
@@ -45,5 +48,19 @@ final class InMemoryCatalogCache: CatalogCache {
     func save(_ booksEntry: CatalogCacheEntry<[Book]>,
               for translationID: Translation.ID) async throws {
         self.bookCache[translationID] = booksEntry
+    }
+
+    /// Retrieves a cached copyright notice for a given translation
+    func copyright(for translationID: Translation.ID) async throws -> CatalogCacheEntry<TranslationCopyright>? {
+        return self.copyrightCache[translationID]
+    }
+
+    /// Persists a given copyright notice to the in-memory cache
+    /// (requires translation ID as PK)
+    ///
+    /// Replaces the key if it already exists
+    func save(_ copyrightEntry: CatalogCacheEntry<TranslationCopyright>,
+              for translationID: Translation.ID) async throws {
+        self.copyrightCache[translationID] = copyrightEntry
     }
 }

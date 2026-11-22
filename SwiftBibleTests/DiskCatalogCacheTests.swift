@@ -167,6 +167,30 @@ struct DiskCatalogCacheTests {
         #expect(saved.createdByBuildNumber == entry.createdByBuildNumber)
     }
 
+    // MARK: Copyright
+
+    /// Saving then reading returns the notice, including "no notice"; another ID is a miss
+    @Test func saveCopyrightThenReadReturnsCopyright() async throws {
+        let tempDirectory = makeTempDirectory()
+        defer { try? FileManager.default.removeItem(at: tempDirectory) }
+
+        let cache = try DiskCatalogCache(baseDirectory: tempDirectory)
+        let notice = CatalogCacheEntry(value: TranslationCopyright(license: "Copyright © Biblica", promotionalText: nil),
+                                       createdOn: Date(timeIntervalSince1970: 1_800_000_000),
+                                       createdByBuildNumber: "100")
+        let none = CatalogCacheEntry(value: TranslationCopyright(license: nil, promotionalText: nil),
+                                     createdOn: Date(timeIntervalSince1970: 1_800_000_000),
+                                     createdByBuildNumber: "100")
+
+        try await cache.save(notice, for: 111)
+        try await cache.save(none, for: 12)
+
+        #expect(try await cache.copyright(for: 111)?.value == notice.value)
+        #expect(try await cache.copyright(for: 111)?.createdOn == notice.createdOn)
+        #expect(try await cache.copyright(for: 12)?.value == none.value)
+        #expect(try await cache.copyright(for: 59) == nil)
+    }
+
     // MARK: Private Helpers
 
     /// Fixed date so round-trip comparisons don't depend on the wall clock

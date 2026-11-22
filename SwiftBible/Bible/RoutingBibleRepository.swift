@@ -52,6 +52,10 @@ final class RoutingBibleRepository: BibleRepository {
         return fallbackTranslations + routedTranslations
     }
 
+    func translationDetail(for translationID: Translation.ID) async throws -> Translation? {
+        try await repository(for: translationID).translationDetail(for: translationID)
+    }
+
     func books(for translationID: Translation.ID) async throws -> [Book] {
         try await repository(for: translationID).books(for: translationID)
     }

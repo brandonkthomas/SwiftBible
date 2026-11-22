@@ -383,6 +383,155 @@ struct BibleCatalogStoreTests {
         #expect(catalogStore.friendlyPassageName(for: reference, selectedVerses: 1...3) == "Genesis 1:1–3")
     }
 
+    // MARK: Copyright Notices
+
+    /// A translation listed without copyright gets it from translationDetail(for:)
+    @Test func missingCopyrightNoticeLoadsFromDetail() async throws {
+        let repository = StubBibleRepository(translations: [Self.noNoticeTranslation])
+        repository.detailsByTranslation = [111: Self.makeNoticeTranslation(abbreviation: "NIV11", license: "Copyright © Biblica")]
+        let catalogStore = makeStore(repository: repository, catalogCache: InMemoryCatalogCache())
+        try await catalogStore.loadTranslations()
+
+        await catalogStore.loadMissingCopyrightNotices()
+
+        let translation = try #require(catalogStore.translation(for: 111))
+        #expect(translation.copyrightNotice == "Copyright © Biblica")
+        #expect(translation.abbreviation == "NIV") // list fields kept; only copyright merged
+        #expect(catalogStore.copyrightNoticeStatuses[111] == nil)
+    }
+
+    /// Translations that already have a notice never cost a request, and found ones aren't re-requested
+    @Test func translationsWithNoticeAreNotRequested() async throws {
+        let listed = Self.makeNoticeTranslation(id: 59, license: "ESV notice")
+        let repository = StubBibleRepository(translations: [listed, Self.noNoticeTranslation])
+        repository.detailsByTranslation = [111: Self.makeNoticeTranslation(license: "Copyright © Biblica")]
+        let catalogStore = makeStore(repository: repository, catalogCache: InMemoryCatalogCache())
+        try await catalogStore.loadTranslations()
+
+        await catalogStore.loadMissingCopyrightNotices()
+        await catalogStore.loadMissingCopyrightNotices()
+
+        #expect(repository.detailRequests == [111])
+    }
+
+    /// No notice anywhere (ASV) is marked unavailable and not asked again
+    @Test func noticeMissingFromDetailIsUnavailable() async throws {
+        let repository = StubBibleRepository(translations: [Self.noNoticeTranslation])
+        repository.detailsByTranslation = [111: Self.noNoticeTranslation]
+        let catalogStore = makeStore(repository: repository, catalogCache: InMemoryCatalogCache())
+        try await catalogStore.loadTranslations()
+
+        await catalogStore.loadMissingCopyrightNotices()
+        await catalogStore.loadMissingCopyrightNotices()
+
+        #expect(catalogStore.copyrightNoticeStatuses[111] == .unavailable)
+        #expect(repository.detailRequests == [111])
+    }
+
+    /// A failed lookup reports failure, and the next call tries again
+    @Test func failedNoticeLoadIsRetried() async throws {
+        let repository = StubBibleRepository(translations: [Self.noNoticeTranslation])
+        repository.failingDetailIDs = [111]
+        let catalogStore = makeStore(repository: repository, catalogCache: InMemoryCatalogCache())
+        try await catalogStore.loadTranslations()
+
+        await catalogStore.loadMissingCopyrightNotices()
+        #expect(catalogStore.copyrightNoticeStatuses[111] == .failed)
+
+        repository.failingDetailIDs = []
+        repository.detailsByTranslation = [111: Self.makeNoticeTranslation(license: "Copyright © Biblica")]
+        await catalogStore.loadMissingCopyrightNotices()
+
+        #expect(repository.detailRequests == [111, 111])
+        #expect(catalogStore.translation(for: 111)?.copyrightNotice == "Copyright © Biblica")
+        #expect(catalogStore.copyrightNoticeStatuses[111] == nil)
+    }
+
+    /// A fetched notice is cached; a later launch (new store, same cache) makes no request
+    @Test func fetchedCopyrightIsCachedForNextLaunch() async throws {
+        let catalogCache = InMemoryCatalogCache()
+        let repository = StubBibleRepository(translations: [Self.noNoticeTranslation])
+        repository.detailsByTranslation = [111: Self.makeNoticeTranslation(license: "Copyright © Biblica")]
+        let firstStore = makeStore(repository: repository, catalogCache: catalogCache)
+        try await firstStore.loadTranslations()
+        await firstStore.loadMissingCopyrightNotices()
+
+        let nextRepository = StubBibleRepository(translations: [Self.noNoticeTranslation])
+        let nextStore = makeStore(repository: nextRepository, catalogCache: catalogCache)
+        try await nextStore.loadTranslations()
+        await nextStore.loadMissingCopyrightNotices()
+
+        #expect(nextRepository.detailRequests.isEmpty)
+        #expect(nextStore.translation(for: 111)?.copyrightNotice == "Copyright © Biblica")
+    }
+
+    /// "No notice" is cached too, so ASV isn't requested again within 30 days
+    @Test func cachedMissingNoticeSkipsRepository() async throws {
+        let catalogCache = InMemoryCatalogCache()
+        try await catalogCache.save(makeEntry(Self.noCopyright, ageInDays: 29), for: 111)
+        let repository = StubBibleRepository(translations: [Self.noNoticeTranslation])
+        let catalogStore = makeStore(repository: repository, catalogCache: catalogCache)
+        try await catalogStore.loadTranslations()
+
+        await catalogStore.loadMissingCopyrightNotices()
+
+        #expect(repository.detailRequests.isEmpty)
+        #expect(catalogStore.copyrightNoticeStatuses[111] == .unavailable)
+    }
+
+    /// At 30 days the cached notice is stale: request again and replace it
+    @Test func expiredCachedCopyrightRefreshesFromRepository() async throws {
+        let catalogCache = InMemoryCatalogCache()
+        try await catalogCache.save(makeEntry(Self.noCopyright, ageInDays: 30), for: 111)
+        let repository = StubBibleRepository(translations: [Self.noNoticeTranslation])
+        repository.detailsByTranslation = [111: Self.makeNoticeTranslation(license: "Copyright © Biblica")]
+        let catalogStore = makeStore(repository: repository, catalogCache: catalogCache)
+        try await catalogStore.loadTranslations()
+
+        await catalogStore.loadMissingCopyrightNotices()
+
+        #expect(repository.detailRequests == [111])
+        #expect(catalogStore.translation(for: 111)?.copyrightNotice == "Copyright © Biblica")
+        #expect(try await catalogCache.copyright(for: 111)?.value.license == "Copyright © Biblica")
+    }
+
+    /// A failed refresh shows the stale cached notice rather than an error
+    @Test func failedRefreshUsesStaleCachedCopyright() async throws {
+        let catalogCache = InMemoryCatalogCache()
+        let stale = TranslationCopyright(license: "Old notice", promotionalText: nil)
+        try await catalogCache.save(makeEntry(stale, ageInDays: 45), for: 111)
+        let repository = StubBibleRepository(translations: [Self.noNoticeTranslation])
+        repository.failingDetailIDs = [111]
+        let catalogStore = makeStore(repository: repository, catalogCache: catalogCache)
+        try await catalogStore.loadTranslations()
+
+        await catalogStore.loadMissingCopyrightNotices()
+
+        #expect(repository.detailRequests == [111])
+        #expect(catalogStore.translation(for: 111)?.copyrightNotice == "Old notice")
+        #expect(catalogStore.copyrightNoticeStatuses[111] == nil)
+    }
+
+    /// license wins; promotionalText is the fallback; blank text counts as none
+    @Test func copyrightNoticePrefersLicenseThenPromotionalText() {
+        #expect(Self.makeNoticeTranslation(license: "L", promotionalText: "P").copyrightNotice == "L")
+        #expect(Self.makeNoticeTranslation(license: "  ", promotionalText: "P").copyrightNotice == "P")
+        #expect(Self.makeNoticeTranslation(license: nil, promotionalText: "\n").copyrightNotice == nil)
+    }
+
+    // MARK: Fixtures (Copyright)
+
+    private static let noNoticeTranslation = makeNoticeTranslation(license: nil)
+    private static let noCopyright = TranslationCopyright(license: nil, promotionalText: nil)
+
+    private static func makeNoticeTranslation(id: Translation.ID = 111,
+                                              abbreviation: String = "NIV",
+                                              license: String?,
+                                              promotionalText: String? = nil) -> Translation {
+        Translation(id: id, abbreviation: abbreviation, title: "New International Version", languageTag: "en",
+                    license: license, promotionalText: promotionalText, availableBookCodes: [])
+    }
+
     // MARK: Fixtures (Cache)
 
     private static let currentBuildNumber = "100"
@@ -440,6 +589,11 @@ private final class StubBibleRepository: BibleRepository {
     var failsLoadingTranslations = false
     var failingTranslationIDs: Set<Translation.ID> = []
 
+    /// translationDetail(for:) answers from here; a missing ID answers nil
+    var detailsByTranslation: [Translation.ID: Translation] = [:]
+    var failingDetailIDs: Set<Translation.ID> = []
+    private(set) var detailRequests: [Translation.ID] = []
+
     /// Call counts; 0 proves the store answered from cache without touching the network
     private(set) var translationsCallCount = 0
     private(set) var booksCallCount = 0
@@ -458,6 +612,16 @@ private final class StubBibleRepository: BibleRepository {
         }
 
         return translations
+    }
+
+    func translationDetail(for translationID: Translation.ID) async throws -> Translation? {
+        detailRequests.append(translationID)
+
+        if failingDetailIDs.contains(translationID) {
+            throw RepositoryError.unsupportedOperation
+        }
+
+        return detailsByTranslation[translationID]
     }
 
     func books(for translationID: Translation.ID) async throws -> [Book] {

@@ -7,7 +7,7 @@
 
 import Foundation
 
-/// Shared cache for Translations & Books
+/// Shared cache for Translations, Books & copyright notices
 ///
 /// "throws" required because disk access can technically fail
 protocol CatalogCache {
@@ -25,5 +25,13 @@ protocol CatalogCache {
     /// Overwrites cache contents with a given book collection
     /// (requires translation ID as PK)
     func save(_ booksEntry: CatalogCacheEntry<[Book]>,
+              for translationID: Translation.ID) async throws
+
+    /// Retrieves a cached copyright notice for a given translation
+    func copyright(for translationID: Translation.ID) async throws -> CatalogCacheEntry<TranslationCopyright>?
+
+    /// Overwrites cache contents with a given copyright notice
+    /// (requires translation ID as PK)
+    func save(_ copyrightEntry: CatalogCacheEntry<TranslationCopyright>,
               for translationID: Translation.ID) async throws
 }

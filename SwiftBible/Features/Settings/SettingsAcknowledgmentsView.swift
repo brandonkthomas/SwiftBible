@@ -9,7 +9,8 @@ import SwiftUI
 
 /// Copyright notice for every available translation, plus a link to each text provider
 ///
-/// Notices come from Translation.license
+/// Notices come from Translation.copyrightNotice
+/// Missing ones are fetched when this view opens
 struct SettingsAcknowledgmentsView: View {
 
     // MARK: Types (Private)
@@ -64,6 +65,10 @@ struct SettingsAcknowledgmentsView: View {
         .listStyle(.insetGrouped)
         .navigationTitle("Acknowledgments")
         .navigationBarTitleDisplayMode(.inline)
+        // opening this view is the user action that allows these requests
+        .task(id: catalogStore.translations.map(\.id)) {
+            await catalogStore.loadMissingCopyrightNotices()
+        }
     }
 
     /// Translation title + abbreviation
@@ -82,15 +87,13 @@ struct SettingsAcknowledgmentsView: View {
 //                    .foregroundStyle(.secondary)
             }
 
-            if let notice = copyrightNotice(for: translation) {
+            if let notice = translation.copyrightNotice {
                 Text(verbatim: notice)
                     .font(.footnote)
                     .foregroundStyle(.secondary)
                     .textSelection(.enabled)
             } else {
-                Text("No copyright notice was provided for this translation.")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
+                missingNoticeView(for: translation)
             }
         }
         .padding(.vertical, 4)
@@ -119,12 +122,27 @@ struct SettingsAcknowledgmentsView: View {
         }
     }
 
-    private func copyrightNotice(for translation: Translation) -> String? {
-        let candidates = [translation.license, translation.promotionalText]
+    /// Spinner while the notice loads, else why there is none
+    ///
+    /// Nil status means the lookup hasn't started yet
+    @ViewBuilder
+    private func missingNoticeView(for translation: Translation) -> some View {
+        switch catalogStore.copyrightNoticeStatuses[translation.id] {
+        case .unavailable:
+            missingNoticeReason("Please contact YouVersion (below) to review this translation's copyright notice.")
+        case .failed:
+            missingNoticeReason("Couldn't load this copyright notice. Check your connection and reopen this screen.")
+        case .loading, nil:
+            ProgressView()
+                .controlSize(.small)
+                .accessibilityLabel("Loading copyright notice")
+        }
+    }
 
-        return candidates
-            .compactMap { $0?.trimmingCharacters(in: .whitespacesAndNewlines) }
-            .first { !$0.isEmpty }
+    private func missingNoticeReason(_ reason: LocalizedStringKey) -> some View {
+        Text(reason)
+            .font(.footnote)
+            .foregroundStyle(.secondary)
     }
 }
 

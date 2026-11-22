@@ -110,6 +110,35 @@ actor DiskCatalogCache: CatalogCache {
         try fileContents.write(to: bookFileUrl(for: translationID), options: .atomic)
     }
 
+    /// Returns the cached copyright notice for a key (translation ID), or nil when it is absent or unreadable
+    ///
+    /// Any failure counts as a miss so the caller can fall back to the network
+    func copyright(for translationID: Translation.ID) async throws -> CatalogCacheEntry<TranslationCopyright>? {
+        let url = copyrightFileUrl(for: translationID)
+
+        guard fileManager.fileExists(atPath: url.path(percentEncoded: false)) else {
+            return nil
+        }
+
+        do {
+            let fileContents = try Data(contentsOf: url)
+            return try JSONDecoder().decode(CatalogCacheEntry<TranslationCopyright>.self, from: fileContents)
+        } catch {
+            // Corrupt or truncated file: discard it and report a miss
+            try? fileManager.removeItem(at: url)
+            return nil
+        }
+    }
+
+    /// Persists a copyright notice as JSON, replacing any existing entry for the same key
+    func save(_ copyrightEntry: CatalogCacheEntry<TranslationCopyright>,
+              for translationID: Translation.ID) async throws {
+        try createCatalogDirectoryIfNeeded()
+
+        let fileContents = try JSONEncoder().encode(copyrightEntry)
+        try fileContents.write(to: copyrightFileUrl(for: translationID), options: .atomic)
+    }
+
     // MARK: Functions (Private Helpers)
 
     /// File location for one key; does not touch the filesystem
@@ -132,6 +161,12 @@ actor DiskCatalogCache: CatalogCache {
     /// rather than hashValue, whose seed changes every time the process starts
     private func bookFileUrl(for translationID: Translation.ID) -> URL {
         return catalogDirectory.appending(path: "sbc_bks_\(translationID).json",
+                                          directoryHint: .notDirectory)
+    }
+
+    /// File location for one key; does not touch the filesystem
+    private func copyrightFileUrl(for translationID: Translation.ID) -> URL {
+        return catalogDirectory.appending(path: "sbc_cpy_\(translationID).json",
                                           directoryHint: .notDirectory)
     }
 

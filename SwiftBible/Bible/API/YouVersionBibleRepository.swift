@@ -111,6 +111,27 @@ final class YouVersionBibleRepository: BibleRepository {
         return translations
     }
 
+    /// Load translation details incl. copyright that the /v1/bibles list leaves out
+    func translationDetail(for translationID: Translation.ID) async throws -> Translation? {
+        Self.logger.debug("ENTRY YouVersionBibleRepository.translationDetail(translationID: \(translationID, privacy: .public)) -- /v1/bibles/:id")
+
+        let data = try await HttpRequest.fetchData(url: translationDetailUrl(for: translationID),
+                                                   httpMethod: "GET",
+                                                   headers: ["X-YVP-App-Key": apiKey],
+                                                   urlSession: urlSession)
+
+        return try Self.translation(fromDetail: data)
+    }
+
+    internal func translationDetailUrl(for translationID: Translation.ID) -> URL {
+        baseURL.appending(path: "v1/bibles/\(translationID)")
+    }
+
+    /// Decode /v1/bibles/{id} response
+    internal static func translation(fromDetail data: Data) throws -> Translation {
+        try JSONDecoder().decode(YouVersionBible.self, from: data).translationForApp()
+    }
+
     /// Load all available Books + Chapters + Verses for a given Translation ID
     func books(for translationID: Translation.ID) async throws -> [Book] {
         Self.logger.debug("ENTRY YouVersionBibleRepository.books(translationID: \(translationID, privacy: .public)) -- /v1/bibles/:id/index")

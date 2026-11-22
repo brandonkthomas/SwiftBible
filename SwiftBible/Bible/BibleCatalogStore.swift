@@ -29,6 +29,11 @@ final class BibleCatalogStore {
     /// All available books; each mapped to one translation
     private var booksByTranslation: [Translation.ID: [Book]] = [:]
 
+    /// Copyright lookups for translations whose list entry had no notice
+    ///
+    /// No entry can mean not looked up yet or found and merged into translations
+    private(set) var copyrightNoticeStatuses: [Translation.ID: CopyrightNoticeStatus] = [:]
+
     /// USFM book codes in Protestant canonical order, then deuterocanonical books in USFM order
     /// https://ubsicap.github.io/usfm/identification/books.html
     private static let canonicalBookCodes: [String] = [
@@ -54,6 +59,7 @@ final class BibleCatalogStore {
     private let appBuildNumber: String?
     private static let unknownBuildNumber: String = "unknownBuildNumber"
     private static let maximumCacheAgeInDays: Int = 7
+    private static let maximumCopyrightCacheAgeInDays: Int = 30
 
     /// In-flight book loads per translation, so concurrent callers (ReaderStore and
     /// LibraryStore at launch) share one cache read and network request
@@ -134,7 +140,81 @@ final class BibleCatalogStore {
     func translation(for id: Translation.ID) -> Translation? {
         return self.translations.first { $0.id == id }
     }
-    
+
+    /// Fill in copyright for each translation that has none
+    ///
+    /// Called when Acknowledgments opens
+    ///
+    /// Cache for 30 days; otherwise one request per translation, in order
+    /// Skips translations already loading or known to have no notice; retries if failed
+    func loadMissingCopyrightNotices() async {
+        let missingIDs = translations
+            .filter { $0.copyrightNotice == nil }
+            .map(\.id)
+            .filter { copyrightNoticeStatuses[$0] == nil || copyrightNoticeStatuses[$0] == .failed }
+
+        for id in missingIDs {
+            copyrightNoticeStatuses[id] = .loading
+        }
+
+        for id in missingIDs {
+            guard let copyright = await copyrightFromCacheOrRepository(for: id) else {
+                copyrightNoticeStatuses[id] = .failed
+                continue
+            }
+
+            // translations may have been replaced while waiting; look entry up again
+            if copyright.notice != nil,
+               let index = translations.firstIndex(where: { $0.id == id }) {
+                translations[index] = translations[index].withCopyright(copyright)
+                copyrightNoticeStatuses[id] = nil
+            } else {
+                copyrightNoticeStatuses[id] = .unavailable
+            }
+        }
+    }
+
+    /// Fresh cache first; network when missing or stale; stale cache when the network fails
+    ///
+    /// nil only when network failed w/ nothing cached
+    /// Provider with no notice is cached too (i.e. ASV isn't asked again for 30 days)
+    private func copyrightFromCacheOrRepository(for translationID: Translation.ID) async -> TranslationCopyright? {
+        var cachedCopyright: TranslationCopyright?
+        do {
+            if let cachedEntry = try await catalogCache.copyright(for: translationID) {
+                cachedCopyright = cachedEntry.value
+
+                let isFresh = cachedEntry.isEntryFresh(Date.now,
+                                                       maximumAgeInDays: Self.maximumCopyrightCacheAgeInDays,
+                                                       currentBuildNumber: appBuildNumber)
+                if isFresh { return cachedEntry.value }
+            }
+        } catch {
+            Self.logger.error("copyrightFromCacheOrRepository catalogCache.copyright(for: \(translationID)) failed: \(error.localizedDescription)")
+        }
+
+        let copyright: TranslationCopyright
+        do {
+            let detail = try await repository.translationDetail(for: translationID)
+            copyright = detail?.copyright ?? TranslationCopyright(license: nil, promotionalText: nil)
+        } catch {
+            Self.logger.error("copyrightFromCacheOrRepository translationDetail(for: \(translationID)) failed: \(error.localizedDescription)")
+            return cachedCopyright
+        }
+
+        // best-effort, like the other catalog saves
+        do {
+            let entry = CatalogCacheEntry<TranslationCopyright>(value: copyright,
+                                                                createdOn: Date.now,
+                                                                createdByBuildNumber: appBuildNumber ?? Self.unknownBuildNumber)
+            try await catalogCache.save(entry, for: translationID)
+        } catch {
+            Self.logger.error("copyrightFromCacheOrRepository catalogCache.save(:for:) failed: \(error.localizedDescription)")
+        }
+
+        return copyright
+    }
+
     // MARK: Functions (Books)
 
     /// Load books using given BibleRepository implementation (try cache first)
@@ -270,4 +350,13 @@ final class BibleCatalogStore {
 
         return "\(book?.displayName ?? bookCode) \(chapter):\(verseRangeText)"
     }
+}
+
+/// Where a missing copyright lookup stands
+enum CopyrightNoticeStatus: Equatable {
+    case loading
+    /// The provider answered with no notice (ASV today)
+    case unavailable
+    /// The request failed; the next loadMissingCopyrightNotices() retries it
+    case failed
 }

@@ -10,6 +10,12 @@ protocol BibleRepository {
     /// Returns all available translations (optionally filtered by a given language; i.e. "en")
     func translations(languageTag: String?) async throws -> [Translation]
 
+    /// Returns translation full details / nil when translations() already had them all
+    ///
+    /// YouVersion's /v1/bibles list returns empty copyright
+    /// Use /v1/bibles/{id} instead
+    func translationDetail(for translationID: Translation.ID) async throws -> Translation?
+
     /// Returns all available books for a given translation w/ canon and individual chapters
     func books(for translationID: Translation.ID) async throws -> [Book]
 
@@ -40,6 +46,11 @@ protocol BibleRepository {
 }
 
 extension BibleRepository {
+    /// Default: nil (translations() already includes everything)
+    func translationDetail(for translationID: Translation.ID) async throws -> Translation? {
+        nil
+    }
+
     /// Default: YouVersion passage HTML
     func renderedPassage(from passage: Passage,
                          translationID: Translation.ID) throws -> RenderedPassage {

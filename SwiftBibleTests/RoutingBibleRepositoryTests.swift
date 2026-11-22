@@ -48,6 +48,18 @@ struct RoutingBibleRepositoryTests {
         #expect(fallback.booksRequests.isEmpty)
     }
 
+    // MARK: Translation Detail
+
+    @Test func translationDetailReachesOnlyOwningProvider() async throws {
+        let (router, routed, fallback) = makeRouter()
+
+        _ = try await router.translationDetail(for: routedTranslationID)
+        _ = try await router.translationDetail(for: unclaimedTranslationID)
+
+        #expect(routed.detailRequests == [routedTranslationID])
+        #expect(fallback.detailRequests == [unclaimedTranslationID])
+    }
+
     // MARK: Passages
 
     @Test func claimedPassageRequestReachesOnlyOwningProvider() async throws {
@@ -260,6 +272,7 @@ private final class RecordingBibleRepository: BibleRepository {
     var supportsSearchResult = false
 
     private(set) var translationsLanguageTags: [String?] = []
+    private(set) var detailRequests: [Translation.ID] = []
     private(set) var booksRequests: [Translation.ID] = []
     private(set) var passageRequests: [ScriptureReference] = []
     private(set) var renderRequests: [Translation.ID] = []
@@ -277,6 +290,11 @@ private final class RecordingBibleRepository: BibleRepository {
         }
 
         return translations
+    }
+
+    func translationDetail(for translationID: Translation.ID) async throws -> Translation? {
+        detailRequests.append(translationID)
+        return nil
     }
 
     func books(for translationID: Translation.ID) async throws -> [Book] {
