@@ -11,6 +11,11 @@ import OSLog
 @Observable
 final class BibleCatalogStore {
 
+    /// Translations sorted by title
+    var translationsByTitle: [Translation] {
+        translations.sorted { $0.title < $1.title }
+    }
+
     // MARK: Properties (Private)
 
     /// BibleRepository implementation
@@ -41,8 +46,6 @@ final class BibleCatalogStore {
         "1MA", "2MA", "3MA", "4MA", "1ES", "2ES", "MAN", "PS2"
     ]
 
-    private static let logger = Logger(subsystem: "SwiftBible", category: "BibleCatalogStore")
-
     // MARK: Properties (Private, Cache)
 
     /// Stores API-retrieved Translations/Books clientside for performance
@@ -58,6 +61,8 @@ final class BibleCatalogStore {
     /// @ObservationIgnored: bookkeeping only; views never read it
     @ObservationIgnored
     private var inFlightBookLoads: [Translation.ID: Task<Void, Error>] = [:]
+
+    private static let logger = Logger(subsystem: "SwiftBible", category: "BibleCatalogStore")
 
     // MARK: Init
 

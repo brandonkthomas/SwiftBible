@@ -39,23 +39,17 @@ struct SettingsAcknowledgmentsView: View {
                  url: URL(string: "https://www.esv.org")!)
     ]
 
-    // MARK: Properties (Computed, Private)
-
-    private var sortedTranslations: [Translation] {
-        catalogStore.translations.sorted { $0.title < $1.title }
-    }
-
     // MARK: Views
 
     var body: some View {
         List {
             Section("Bible Translations") {
-                if sortedTranslations.isEmpty {
+                if catalogStore.translationsByTitle.isEmpty {
                     Text("Translations haven’t loaded yet.")
                         .foregroundStyle(.secondary)
                 }
 
-                ForEach(sortedTranslations) { translation in
+                ForEach(catalogStore.translationsByTitle) { translation in
                     translationRow(translation)
                 }
             }

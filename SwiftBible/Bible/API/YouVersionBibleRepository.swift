@@ -183,6 +183,8 @@ final class YouVersionBibleRepository: BibleRepository {
     func searchVerses(_ query: String,
                       translationID: Translation.ID,
                       cursor: ScriptureSearchCursor?) async throws -> ScriptureSearchPage {
+        Self.logger.debug("ENTRY YouVersionBibleRepository.searchVerses(query: \(query, privacy: .public)) -- /v1/search-verses")
+
         // obtain URL
         let url = try searchVersesUrl(for: query,
                                       translationID: translationID,

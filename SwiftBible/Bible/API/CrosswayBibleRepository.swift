@@ -175,6 +175,8 @@ final class CrosswayBibleRepository: BibleRepository {
     func searchVerses(_ query: String,
                       translationID: Translation.ID,
                       cursor: ScriptureSearchCursor?) async throws -> ScriptureSearchPage {
+        Self.logger.debug("ENTRY CrosswayBibleRepository.searchVerses(query: \(query, privacy: .public)) -- /v3/passage/search")
+
         // sanity check
         if !supportsSearch(translationID: translationID) {
             throw ScriptureSearchError.unsupportedTranslation

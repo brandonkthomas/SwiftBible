@@ -22,6 +22,8 @@ struct PassagePickerSheetView: View {
 
     @Environment(ReaderStore.self) private var readerStore: ReaderStore
 
+    @Environment(BibleCatalogStore.self) private var bibleCatalogStore: BibleCatalogStore
+
     /// What's our current configured theme?
     @Environment(\.readerTheme) private var readerTheme
 
@@ -62,10 +64,6 @@ struct PassagePickerSheetView: View {
     @ScaledMetric(relativeTo: .body) private var chapterCellHeight: CGFloat = 40
 
     // MARK: Properties (Private, Computed)
-
-    private var sortedTranslations: [Translation] {
-        readerStore.translations.sorted { $0.title < $1.title }
-    }
 
     /// Shown after the (English) list once it has loaded
     private var disabledTranslations: [DisabledTranslation] {
@@ -228,7 +226,7 @@ struct PassagePickerSheetView: View {
 
     private var translationsListView: some View {
         List {
-            ForEach(sortedTranslations) { translation in
+            ForEach(bibleCatalogStore.translationsByTitle) { translation in
                 let isSelected = readerStore.selectedTranslation?.id == translation.id
                 Button {
                     select(translation: translation)
