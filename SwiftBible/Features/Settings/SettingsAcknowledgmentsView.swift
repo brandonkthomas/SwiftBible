@@ -44,22 +44,29 @@ struct SettingsAcknowledgmentsView: View {
 
     var body: some View {
         List {
-            Section("Bible Translations") {
+            // Bible Translations
+            Section {
                 if catalogStore.translationsByTitle.isEmpty {
                     ProgressView()
-//                    Text("Loading...")
-//                        .foregroundStyle(.secondary)
                 }
 
                 ForEach(catalogStore.translationsByTitle) { translation in
                     translationRow(translation)
                 }
+            } header: {
+                Text("Bible Translations")
+            } footer: {
+                Text("* Translations marked \"Unavailable\" in the translation picker (NLT, KJV) are not licensed to this app and cannot be used.")
+                    .font(.footnote)
             }
 
-            Section("Bible Text Providers") {
+            // Bible Text Providers
+            Section {
                 ForEach(Self.providers) { provider in
                     providerRow(provider)
                 }
+            } header: {
+                Text("Bible Text Providers")
             }
         }
         .listStyle(.insetGrouped)
