@@ -153,12 +153,12 @@ struct SearchView: View {
                     if scope == .all || scope == .annotations {
                         Section {
                             Group {
-                                if searchStore.annotationResults.isEmpty {
-                                    Text("No Results")
-                                        .foregroundStyle(.secondary)
-                                        .font(.footnote)
-                                } else {
-                                    if !collapsedSections.contains(.annotations) {
+                                if !collapsedSections.contains(.annotations) {
+                                    if searchStore.annotationResults.isEmpty {
+                                        Text("No Results")
+                                            .foregroundStyle(.secondary)
+                                            .font(.footnote)
+                                    } else {
                                         ForEach(searchStore.annotationResults) { annotation in
                                             // TODO: strong-highlight query match in text
                                             let data = LibraryRowViewData(annotation: annotation,

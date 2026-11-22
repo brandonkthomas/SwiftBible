@@ -80,24 +80,8 @@ struct SearchBarView: View {
     private var filterAndCloseButtons: some View {
         // Container lets the menu and X morph into each other
         GlassEffectContainer {
-            if isFocused.wrappedValue {
-                Button {
-                    text = ""
-                    isFocused.wrappedValue = false
-                    // ensure SearchStore resets state
-                    Task {
-                        await onTextSubmit(text)
-                    }
-                } label: {
-                    Label("Clear", systemImage: "xmark")
-                        .labelStyle(.iconOnly)
-                        .imageScale(.large)
-                        .frame(width: 48, height: 48)
-                        .contentShape(.circle)
-                }
-                .glassEffect(.regular.interactive(), in: .circle)
-                .glassEffectID("trailing", in: glassNamespace)
-            } else {
+            HStack {
+                // Filters
                 Menu {
                     Section("Filter By") {
                         // Scope
@@ -140,6 +124,26 @@ struct SearchBarView: View {
                 .menuOrder(.fixed)
                 .glassEffect(.regular.interactive(), in: .circle)
                 .glassEffectID("trailing", in: glassNamespace)
+
+                // Close
+                if isFocused.wrappedValue {
+                    Button {
+                        text = ""
+                        isFocused.wrappedValue = false
+                        // ensure SearchStore resets state
+                        Task {
+                            await onTextSubmit(text)
+                        }
+                    } label: {
+                        Label("Clear", systemImage: "xmark")
+                            .labelStyle(.iconOnly)
+                            .imageScale(.large)
+                            .frame(width: 48, height: 48)
+                            .contentShape(.circle)
+                    }
+                    .glassEffect(.regular.interactive(), in: .circle)
+                    .glassEffectID("trailing", in: glassNamespace)
+                }
             }
         }
     }
