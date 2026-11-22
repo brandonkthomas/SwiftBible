@@ -89,7 +89,10 @@ final class SearchStore {
     private var latestSearchNumber: Int = 0
 
     /// Is a next-page request in flight? (prevents duplicate page loads)
-    private var isLoadingNextPage: Bool = false
+    private(set) var isLoadingNextPage: Bool = false
+
+    /// Did the next page fail to load?
+    private(set) var bibleNextPageFailure: LibraryPassageLoadFailure?
 
     /// What is our current translation filter?
     private(set) var bibleSearchTranslationID: Translation.ID?
@@ -152,6 +155,7 @@ final class SearchStore {
         self.bibleSearchTranslationID = translationID
         self.bibleSearchIsExactText = exactText
         self.isLoadingNextPage = false
+        self.bibleNextPageFailure = nil
 
         do {
             // kick off search
@@ -215,12 +219,14 @@ final class SearchStore {
         // capture search number so a newer search can invalidate this page
         let thisSearchNumber = self.latestSearchNumber
         self.isLoadingNextPage = true
+        self.bibleNextPageFailure = nil
         defer {
             // a newer search owns the flag now; leave it alone
             if thisSearchNumber == self.latestSearchNumber {
                 self.isLoadingNextPage = false
             }
         }
+
 
         do {
             let page = try await repository.searchVerses(bibleSearchQuery,
@@ -239,6 +245,17 @@ final class SearchStore {
         } catch {
             // keep results, state & cursor so "Load more" can retry
             Self.logger.error("loadNextBiblePage() failed: \(error)")
+
+            // discard if a new search started while loading
+            guard thisSearchNumber == self.latestSearchNumber else {
+                return
+            }
+
+            if error.isOfflineError {
+                self.bibleNextPageFailure = .offline
+            } else {
+                self.bibleNextPageFailure = .failed
+            }
         }
     }
 
@@ -311,6 +328,8 @@ final class SearchStore {
 
         self.loadedPassages = [:]
         self.passageLoadFailures = [:]
+
+        self.bibleNextPageFailure = nil
     }
 }
 

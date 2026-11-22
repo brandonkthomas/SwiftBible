@@ -368,6 +368,70 @@ struct SearchStoreTests {
         #expect(repository.searchExactTextFlags == [true, true, false])
     }
 
+    // MARK: Task 10: "Load More" row
+
+    /// The row can show a spinner while the next page is loading, and only then
+    @Test func nextPageIsLoadingUntilAnswered() async {
+        let repository = SearchingBibleRepository()
+        repository.holdsRequests = true
+        let store = makeStore(repository)
+        let search = Task { await store.submitBibleSearch("shepherd", translationID: 111) }
+        await repository.waitForHeldRequests(1)
+        repository.releaseHeldRequest(query: "shepherd",
+                                      with: ScriptureSearchPage(results: [result], nextCursor: .pageToken("page-2")))
+        await search.value
+        #expect(store.isLoadingNextPage == false)
+
+        let nextPage = Task { await store.loadNextBiblePage() }
+        await repository.waitForHeldRequests(1)
+        #expect(store.isLoadingNextPage)
+
+        repository.releaseHeldRequest(query: "shepherd",
+                                      with: ScriptureSearchPage(results: [secondResult], nextCursor: nil))
+        await nextPage.value
+        #expect(store.isLoadingNextPage == false)
+    }
+
+    /// A failed next page says why (offline or other), until a retry succeeds
+    @Test func failedNextPageReportsWhyUntilRetried() async {
+        let repository = SearchingBibleRepository()
+        repository.queuedPages = [
+            ScriptureSearchPage(results: [result], nextCursor: .pageToken("page-2")),
+            ScriptureSearchPage(results: [secondResult], nextCursor: nil)
+        ]
+        let store = makeStore(repository)
+        await store.submitBibleSearch("shepherd", translationID: 111)
+        #expect(store.bibleNextPageFailure == nil)
+
+        repository.error = URLError(.notConnectedToInternet)
+        await store.loadNextBiblePage()
+        #expect(store.bibleNextPageFailure == .offline)
+
+        repository.error = URLError(.badServerResponse)
+        await store.loadNextBiblePage()
+        #expect(store.bibleNextPageFailure == .failed)
+
+        repository.error = nil
+        await store.loadNextBiblePage()
+        #expect(store.bibleNextPageFailure == nil)
+        #expect(store.bibleResults == [result, secondResult])
+    }
+
+    /// A new search doesn't carry the old search's next-page failure
+    @Test func newSearchClearsNextPageFailure() async {
+        let repository = SearchingBibleRepository()
+        repository.page = ScriptureSearchPage(results: [result], nextCursor: .pageToken("page-2"))
+        let store = makeStore(repository)
+        await store.submitBibleSearch("shepherd", translationID: 111)
+        repository.error = URLError(.notConnectedToInternet)
+        await store.loadNextBiblePage()
+
+        repository.error = nil
+        await store.submitBibleSearch("lamb", translationID: 111)
+
+        #expect(store.bibleNextPageFailure == nil)
+    }
+
     // MARK: Task 8: when Search shows its start screen
 
     /// Typed text with no annotation matches still shows the sections (so "press Search" can appear)

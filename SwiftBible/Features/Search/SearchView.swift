@@ -163,6 +163,7 @@ struct SearchView: View {
                                         case .searching:
                                             ProgressView()
                                         case .results:
+                                            // All Bible results
                                             ForEach(searchStore.bibleResults) { result in
                                                 SearchResultRowView(result: result,
                                                                     query: query,
@@ -171,6 +172,9 @@ struct SearchView: View {
                                                                        bookCode: result.bookCode,
                                                                        chapter: result.chapter)
                                                 })
+                                            }
+                                            if searchStore.canLoadMoreBibleResults {
+                                                loadMoreBibleResultsView
                                             }
                                         case .empty:
                                             Text("No Results")
@@ -355,6 +359,27 @@ struct SearchView: View {
             },
             onRowSelected: {}
         )
+    }
+
+    /// Load More Results button, or a spinner while the next page loads
+    @ViewBuilder
+    private var loadMoreBibleResultsView: some View {
+        if searchStore.isLoadingNextPage {
+            ProgressView()
+        } else {
+            Button {
+                Task {
+                    await searchStore.loadNextBiblePage()
+                }
+            } label: {
+                Text("Load More Results")
+            }
+            .padding(15)
+            // Padding isn't part of hit area, so route taps on the whole rect to focus
+            .contentShape(.rect(cornerRadius: .infinity))
+            .glassEffect(.regular.interactive(), in: .rect(cornerRadius: .infinity))
+            .frame(maxWidth: .infinity, alignment: .center)
+        }
     }
 
     /// Tappable section header; toggles the section's collapsed state
