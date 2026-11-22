@@ -68,7 +68,7 @@ struct LibraryRowView: View {
                 Button {
                     isDeleteConfirmationVisible = true
                 } label: {
-                    Image(systemName: "trash.fill")
+                    Label("Delete", systemImage: "trash.fill")
                 }
                 .tint(Color(.systemRed))
                 Button {
@@ -78,9 +78,22 @@ struct LibraryRowView: View {
                         onAnnotationEditorRequested()
                     }
                 } label: {
-                    Image(systemName: "pencil")
+                    Label("Edit", systemImage: "pencil")
                 }
                 .tint(Color(.systemGray))
+            }
+        }
+        // other edge -- Read Passage action
+        .swipeActions(edge: .leading) {
+            if isRowSelected == nil { // NOT in edit mode
+                Button {
+                    Task {
+                        await onPassageViewRequested()
+                    }
+                } label: {
+                    Label("Read", systemImage: "book.fill")
+                }
+                .tint(.accent)
             }
         }
         // highlight popover
@@ -177,13 +190,13 @@ struct LibraryRowView: View {
             Text("Created on \(data.annotation.createdAt.formatted(date: .long, time: .shortened))")
             Divider()
 
-            // View Passage
+            // Read Passage
             Button {
                 Task {
                     await onPassageViewRequested()
                 }
             } label: {
-                Label("View Passage", systemImage: "book")
+                Label("Read Passage", systemImage: "book")
             }
 
             // Edit Annotation

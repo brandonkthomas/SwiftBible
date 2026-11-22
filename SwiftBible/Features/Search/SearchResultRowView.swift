@@ -20,6 +20,9 @@ struct SearchResultRowView: View {
     /// Query to highlight when drawing this view
     let query: String
 
+    /// What should we do when we need to open this result's passage in the Read tab?
+    let onPassageViewRequested: () async -> Void
+
     // MARK: Properties (Private, Environment)
 
     @Environment(SearchStore.self) private var searchStore: SearchStore
@@ -35,6 +38,9 @@ struct SearchResultRowView: View {
     // MARK: Properties (Private, Dynamic Type)
 
     @ScaledMetric(relativeTo: .body) private var fontSize16: CGFloat = 16
+    @ScaledMetric(relativeTo: .body) private var frameSize18: CGFloat = 18
+    @ScaledMetric(relativeTo: .body) private var frameSize32: CGFloat = 32
+    @ScaledMetric(relativeTo: .body) private var symbolSize20: CGFloat = 20
 
     /// Line height from resolved Theme
     private var passageLineHeight: CGFloat {
@@ -74,12 +80,16 @@ struct SearchResultRowView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            // Row 1: Reference / translation
+            // Row 1: Reference / translation + actions menu
             // At accessibility sizes the labels stack so book names don't break mid-word
-            if systemDynamicTypeSize.isAccessibilitySize {
-                passageLabels(in: AnyLayout(VStackLayout(alignment: .leading, spacing: 2)))
-            } else {
-                passageLabels(in: AnyLayout(HStackLayout(spacing: 8)))
+            HStack(alignment: systemDynamicTypeSize.isAccessibilitySize ? .top : .center) {
+                if systemDynamicTypeSize.isAccessibilitySize {
+                    passageLabels(in: AnyLayout(VStackLayout(alignment: .leading, spacing: 2)))
+                } else {
+                    passageLabels(in: AnyLayout(HStackLayout(spacing: 8)))
+                }
+                Spacer()
+                resultItemMenu
             }
 
             // Row 2: Snippet, loaded passage text, or loading state
@@ -118,9 +128,40 @@ struct SearchResultRowView: View {
         .background(readerTheme.backgroundColor,
                     in: RoundedRectangle(cornerRadius: 16, style: .continuous))
         .shadow(color: .black.opacity(0.08), radius: 4, y: 2)
+        // Leading edge (swipe right): Read Passage, same action as the menu item
+        .swipeActions(edge: .leading) {
+            Button {
+                Task {
+                    await onPassageViewRequested()
+                }
+            } label: {
+                Label("Read", systemImage: "book.fill")
+            }
+            .tint(.accent)
+        }
         // no-op when the result has a snippet or its chapter is already loaded
         .task {
             await searchStore.loadPassage(for: result)
+        }
+    }
+
+    /// "..." actions menu; styled to match LibraryRowView's annotation menu
+    private var resultItemMenu: some View {
+        Menu {
+            Button {
+                Task {
+                    await onPassageViewRequested()
+                }
+            } label: {
+                Label("Read Passage", systemImage: "book")
+            }
+        } label: {
+            Image(systemName: "ellipsis")
+                .font(.system(size: symbolSize20))
+                .foregroundStyle(Color(.label))
+                // touch target optimization
+                .frame(width: frameSize32, height: frameSize18)
+                .contentShape(.rect.inset(by: -14))
         }
     }
 
@@ -174,13 +215,15 @@ struct SearchResultRowView: View {
                                                           chapter: 3,
                                                           verseRange: 16...16,
                                                           snippet: "For God so loved the world, that he gave his only Son"),
-                            query: "loved world")
+                            query: "loved world",
+                            onPassageViewRequested: {})
         SearchResultRowView(result: ScriptureSearchResult(translationID: 1234,
                                                           bookCode: "GEN",
                                                           chapter: 1,
                                                           verseRange: 1...2,
                                                           snippet: nil),
-                            query: "beginning")
+                            query: "beginning",
+                            onPassageViewRequested: {})
     }
     .padding()
     .previewEnvironment()

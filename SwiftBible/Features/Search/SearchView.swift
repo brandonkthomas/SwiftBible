@@ -10,6 +10,9 @@ import SwiftUI
 /// Search tab
 struct SearchView: View {
 
+    /// Called after the reader has been pointed at a result's passage
+    var onShowInReader: () -> Void = {}
+
     /// Focus state for search bar
     @FocusState var isSearchBarFocused: Bool
 
@@ -31,6 +34,17 @@ struct SearchView: View {
 
     /// Result sections that are collapsed
     @State private var collapsedSections: Set<ResultSection> = []
+
+    /// Did changing a specific annotation's highlight color fail?
+    @State private var didHighlightColorChangeFail: Bool = false
+
+    /// Did deleting a specific annotation fail?
+    @State private var didDeleteFail: Bool = false
+
+    /// AnnotationEditor session:
+    /// if nil, nothing selected;
+    /// if non-nil, we have an existing session and need to open AnnotationEditorSheetView
+    @State private var annotationEditor: AnnotationEditor?
 
     /// Explicit search translation, else reader selection, else default translation, else first available
     private var effectiveTranslationID: Translation.ID? {
@@ -145,7 +159,12 @@ struct SearchView: View {
                                     case .results:
                                         ForEach(searchStore.bibleResults) { result in
                                             SearchResultRowView(result: result,
-                                                                query: query)
+                                                                query: query,
+                                                                onPassageViewRequested: {
+                                                await showInReader(translationID: result.translationID,
+                                                                   bookCode: result.bookCode,
+                                                                   chapter: result.chapter)
+                                            })
                                             .listRowInsets(EdgeInsets(top: 8,
                                                                       leading: 16,
                                                                       bottom: 8,
@@ -199,10 +218,7 @@ struct SearchView: View {
                                     } else {
                                         ForEach(searchStore.annotationResults) { annotation in
                                             // TODO: strong-highlight query match in text
-                                            let data = LibraryRowViewData(annotation: annotation,
-                                                                          bibleCatalogStore: bibleCatalogStore,
-                                                                          libraryStore: libraryStore)
-                                            LibraryRowReadOnlyView(data: data)
+                                            annotationRowView(annotation: annotation)
                                                 .listRowInsets(EdgeInsets(top: 8,
                                                                           leading: 16,
                                                                           bottom: 8,
@@ -260,6 +276,70 @@ struct SearchView: View {
         }
         .navigationTitle("Search")
         .navigationBarHidden(true)
+        // Deletion failure popup
+        .alert("Unable to Delete Annotation",
+               isPresented: $didDeleteFail) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text("Please try again.")
+        }
+        // Highlight change failure popup
+        .alert("Unable to Change Highlight Color",
+               isPresented: $didHighlightColorChangeFail) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text("Please try again.")
+        }
+        // Fire AnnotationEditorSheetView when $annotationEditor instance is assigned
+        .sheet(
+            item: $annotationEditor,
+            onDismiss: {
+                withAnimation {
+                    libraryStore.load()
+                }
+            },
+            content: { editor in
+                AnnotationEditorSheetView(editor: editor,
+                                          bibleCatalogStore: bibleCatalogStore)
+                .presentationDragIndicator(.visible)
+            }
+        )
+    }
+
+    /// Annotation result card with the same menu, context menu, and swipe actions as LibraryView
+    ///
+    /// Inside a List, .swipeActions works on every supported iOS version
+    private func annotationRowView(annotation: VerseAnnotation) -> some View {
+        let data = LibraryRowViewData(annotation: annotation,
+                                      bibleCatalogStore: bibleCatalogStore,
+                                      libraryStore: libraryStore)
+
+        return LibraryRowView(
+            data: data,
+            isRowSelected: nil, // Search has no selection mode
+            onHighlightColorChangeRequested: { color in
+                let didChange = withAnimation(.snappy(duration: 0.35)) {
+                    libraryStore.changeHighlightColor(annotation.id,
+                                                      color: color)
+                }
+                didHighlightColorChangeFail = !didChange
+            },
+            onDeleteRequested: {
+                let didDelete = withAnimation(.snappy(duration: 0.35)) {
+                    libraryStore.delete(annotation.id)
+                }
+                didDeleteFail = !didDelete
+            },
+            onPassageViewRequested: {
+                await showInReader(translationID: annotation.translationID,
+                                   bookCode: annotation.bookCode,
+                                   chapter: annotation.chapter)
+            },
+            onAnnotationEditorRequested: {
+                annotationEditor = libraryStore.annotationEditor(for: annotation)
+            },
+            onRowSelected: {}
+        )
     }
 
     /// Tappable section header; toggles the section's collapsed state
@@ -290,6 +370,18 @@ struct SearchView: View {
     }
 
     // MARK: Functions (Private)
+
+    /// Points the reader at a passage's chapter, then switches to the Read tab
+    private func showInReader(translationID: Translation.ID,
+                              bookCode: String,
+                              chapter: Int) async {
+        await readerStore.selectTranslationBookAndChapter(
+            translationID: translationID,
+            bookID: bookCode,
+            chapterID: "\(bookCode).\(chapter)"
+        )
+        onShowInReader()
+    }
 
     /// User picked a translation in the Filter menu
     ///

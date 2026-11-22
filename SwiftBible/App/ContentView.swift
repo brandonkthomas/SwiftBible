@@ -71,7 +71,7 @@ struct ContentView: View {
                     .font(.body)
             }
             Tab("Search", systemImage: "magnifyingglass", value: CurrentTab.search) {
-                SearchView()
+                SearchView(onShowInReader: { selectedTab = .read })
                     .font(.body)
             }
         }
