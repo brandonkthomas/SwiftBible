@@ -47,11 +47,11 @@ final class AppEnvironment {
         || NSClassFromString("XCTestCase") != nil
     }
 
-    /// True when launched with `-seedLibrary` (DEBUG builds only)
+    /// True when launched with `-seedLibraryInMemory` (DEBUG builds only)
     /// Library will use in-memorystore seeded from `LibrarySeedFixtures`... on-disk store and iCloud are ignored
     private static var isSeedingLibrary: Bool {
         #if DEBUG
-        ProcessInfo.processInfo.arguments.contains("-seedLibrary")
+        ProcessInfo.processInfo.arguments.contains("-seedLibraryInMemory")
         #else
         false
         #endif

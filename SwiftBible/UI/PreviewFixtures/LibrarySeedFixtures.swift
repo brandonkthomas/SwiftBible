@@ -8,7 +8,7 @@
 #if DEBUG
 import Foundation
 
-/// Library contents for the DEBUG-only `-seedLibrary` launch argument (see `AppEnvironment`).
+/// Library contents for the DEBUG-only `-seedLibraryInMemory` launch argument (see `AppEnvironment`).
 ///
 /// Copied from a simulator's `default.store` on 2026-11-20 (17 annotations): IDs, references,
 /// content, and `createdAt` match the store; `createdAt` values are seconds since 2001-01-01
