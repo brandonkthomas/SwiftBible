@@ -87,6 +87,11 @@ struct ReaderPassageView: View {
     /// Keep track of which verses are being deselected (so highlight remove renderer can paint deltas)
     @State private var fadingVerses: ClosedRange<Int>?
 
+    // MARK: Properties (Scrolling, Private)
+
+    /// Scroll position keyed by paragraph index (the ForEach ids inside .scrollTargetLayout())
+    @State private var scrollPosition = ScrollPosition(idType: Int.self)
+
     // MARK: Views
 
     /// Reader view
@@ -169,6 +174,7 @@ struct ReaderPassageView: View {
                                 bottom: 75,
                                 trailing: 0))
         }
+        .scrollPosition($scrollPosition)
         // Bind footnote tap to set selectedVerse
         // Bind verse tap to selection/store/animations
         .environment(\.openURL, OpenURLAction { url in
@@ -247,7 +253,13 @@ struct ReaderPassageView: View {
         .onChange(of: readerStore.selectedVerses) {
             if readerStore.selectedVerses == nil {
                 fadeOutVerses(currentlyHighlightedVerses)
+            } else {
+                revealExternalSelection()
             }
+        }
+        // passage view is rebuilt on every open, so this is the main path for external selections
+        .onAppear {
+            revealExternalSelection()
         }
         // trigger slight haptic on selection change
         .sensoryFeedback(.selection, trigger: readerStore.selectedVerses)
@@ -350,6 +362,31 @@ struct ReaderPassageView: View {
         } else {
             // Deselection: clear everything
             fadeOutVerses(previous)
+        }
+    }
+
+    /// Reveal + scroll to a selection this view didn't make (e.g. opened from Library/Search)
+    ///
+    /// Taps already sync currentlyHighlightedVerses with the store, so they never reach here
+    private func revealExternalSelection() {
+        guard let selectedVerses = readerStore.selectedVerses,
+              selectedVerses != currentlyHighlightedVerses else {
+            return
+        }
+
+        // no tap origin; renderer falls back to its default origin
+        tappedParagraphIndex = nil
+        tapLocation = nil
+
+        settledVerses = nil
+        revealingVerses = selectedVerses
+        revealProgress = 0
+        withAnimation(.snappy(duration: 0.35)) {
+            revealProgress = 1
+        }
+
+        if let paragraphIndex = renderedPassage.paragraphIndex(containing: selectedVerses.lowerBound) {
+            scrollPosition.scrollTo(id: paragraphIndex, anchor: .top)
         }
     }
 

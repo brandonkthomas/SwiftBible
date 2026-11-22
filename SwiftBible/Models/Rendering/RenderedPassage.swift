@@ -28,6 +28,27 @@ nonisolated struct RenderedPassage {
         return verses.count
     }
 
+    /// Highest verse number in this passage, or nil when there are no verses
+    var lastVerseNumber: Int? {
+        paragraphs.flatMap(\.runs)
+            .compactMap(\.verseRange)
+            .map { max($0.endVerse ?? $0.startVerse, $0.startVerse) }
+            .max()
+    }
+
+    /// Index of the first paragraph whose runs include the given verse
+    func paragraphIndex(containing verse: Int) -> Int? {
+        paragraphs.firstIndex { paragraph in
+            paragraph.runs.contains { run in
+                guard let verseRange = run.verseRange else {
+                    return false
+                }
+                return verseRange.startVerse <= verse
+                    && verse <= max(verseRange.endVerse ?? verseRange.startVerse, verseRange.startVerse)
+            }
+        }
+    }
+
     /// Retrieve all runs from this RenderedPassage for a given RenderedVerseRange
     /// Number of distinct verses in this passage; a "16-17" range counts as 2
     func runs(for verseRange: RenderedVerseRange) -> [RenderedPassageRun] {

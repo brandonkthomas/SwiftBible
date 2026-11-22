@@ -321,9 +321,10 @@ final class ReaderStore {
            selectedChapter?.id == chapterID,
            let verses,
            let selectedRenderedPassage,
-           selectedRenderedPassage.verseCount > 0 {
+           let lastVerseNumber = selectedRenderedPassage.lastVerseNumber,
+           lastVerseNumber > 0 {
             // clamp to the chapter's verses; select nothing if the request falls entirely outside it
-            let chapterVerses = 1...selectedRenderedPassage.verseCount
+            let chapterVerses = 1...lastVerseNumber
             if chapterVerses.overlaps(verses) {
                 self.selectedVerses = verses.clamped(to: chapterVerses)
             }
