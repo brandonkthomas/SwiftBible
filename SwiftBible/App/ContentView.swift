@@ -1,8 +1,18 @@
+//
+//  ContentView.swift
+//  SwiftBible
+//
+//  Created by Brandon Thomas.
+//
+
+import OSLog
 import SwiftUI
 
 struct ContentView: View {
 
     // MARK: Properties (Private)
+
+    private static let logger = Logger(subsystem: "SwiftBible", category: "ContentView")
 
     private enum CurrentTab {
         case read
@@ -15,6 +25,9 @@ struct ContentView: View {
 
     /// Mirrors tab bar minimization, derived from the bottom accessory's placement
     @State private var isTabBarExpanded = true
+
+    /// Which focus tap is this?
+    @State private var searchFocusRequest: Int = 0
 
     /// Home Screen quick action handoff from the scene delegate
     private let quickActionRouter = QuickActionRouter.shared
@@ -52,11 +65,26 @@ struct ContentView: View {
         disableReaderAutoLockKey && selectedTab == .read && scenePhase == .active
     }
 
+    /// Wraps selectedTab so user-driven tab changes are logged
+    private var selectedTabBinding: Binding<CurrentTab> {
+        Binding(
+            get: { selectedTab },
+            set: { newValue in
+                // check for Search doubletap first
+                if selectedTab == .search, newValue == .search {
+                    searchFocusRequest += 1
+                }
+                // now we can set
+                selectedTab = newValue
+            }
+        )
+    }
+
     // MARK: Views
 
     /// Primary application body
     var body: some View {
-        TabView(selection: $selectedTab) {
+        TabView(selection: selectedTabBinding) {
             Tab("Read", systemImage: "book", value: CurrentTab.read) {
                 ReaderView()
                 // TODO: Listen Mode (v1.1)
@@ -71,7 +99,8 @@ struct ContentView: View {
                     .font(.body)
             }
             Tab("Search", systemImage: "magnifyingglass", value: CurrentTab.search) {
-                SearchView(onShowInReader: { selectedTab = .read })
+                SearchView(onShowInReader: { selectedTab = .read },
+                           focusRequest: searchFocusRequest)
                     .font(.body)
             }
         }

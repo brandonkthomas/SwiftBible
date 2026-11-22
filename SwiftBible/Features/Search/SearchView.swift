@@ -16,6 +16,9 @@ struct SearchView: View {
     /// Focus state for search bar
     @FocusState var isSearchBarFocused: Bool
 
+    /// When this is incremented, we need to focus the textfield
+    var focusRequest: Int = 0
+
     // MARK: Properties (Private)
 
     /// What's our current search query?
@@ -293,6 +296,10 @@ struct SearchView: View {
             guard !hasAppliedScope else { return }
             scope = preferencesStore.defaultSearchScope
             hasAppliedScope = true
+        }
+        // focus search field on focus request increment
+        .onChange(of: focusRequest) {
+            isSearchBarFocused = true
         }
         .navigationTitle("Search")
         .navigationBarHidden(true)
