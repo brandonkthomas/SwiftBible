@@ -47,6 +47,9 @@ struct LibraryView: View {
     /// IDs of groups whose sections are collapsed
     @State private var collapsedGroupIDs: Set<LibraryOrderGroup.ID> = []
 
+    /// Library list scroll offset; reset to top when the filter changes
+    @State private var scrollPosition = ScrollPosition(edge: .top)
+
 //    @Namespace private var chipBarNamespace
 
     /// AnnotationEditor session:
@@ -82,10 +85,12 @@ struct LibraryView: View {
     // MARK: Properties (Private, Dynamic Type)
 
     @ScaledMetric(relativeTo: .body) private var deleteSymbolSize24: CGFloat = 24
+    @ScaledMetric(relativeTo: .body) private var scaledFrameSize32: CGFloat = 32
     @ScaledMetric(relativeTo: .body) private var scaledFrameSize40: CGFloat = 40
     @ScaledMetric(relativeTo: .body) private var scaledFrameSize42: CGFloat = 42
 
     /// Toolbar circle sizes stop growing at the largest standard size
+    private var frameSize32: CGFloat { ScaledMetricLimit.capped(scaledFrameSize32, base: 32) }
     private var frameSize40: CGFloat { ScaledMetricLimit.capped(scaledFrameSize40, base: 40) }
     private var frameSize42: CGFloat { ScaledMetricLimit.capped(scaledFrameSize42, base: 42) }
 
@@ -234,9 +239,14 @@ struct LibraryView: View {
             .padding(.horizontal, 16)
             .padding(.vertical, 8)
         }
-        // reset view when filtering (fixes LazyVStack scroll offset bug which permanently
-        // blanked view when scrolling down far then filtering to shorter list)
-        .id(libraryStore.filter)
+        // Scroll to top when filtering (fixes LazyVStack scroll offset bug which permanently
+        //   blanked view when scrolling down far then filtering to shorter list).
+        //   Not .id(filter): rebuilding the view while the filter menu is open makes the
+        //   menu vanish without its dismiss animation
+        .scrollPosition($scrollPosition)
+        .onChange(of: libraryStore.filter) {
+            scrollPosition.scrollTo(edge: .top)
+        }
         // Delete confirmation lives in each LibraryRowView (menu + swipe share it) so the
         //   popover anchors to the card being deleted rather than the whole ScrollView
         .swipeActionsContainerIfAvailable()
@@ -488,12 +498,16 @@ struct LibraryView: View {
                 }
             }
         } label: {
+            // Filled circle lives in the label (not a glass tint) so it updates while the menu collapses
             Image(systemName: "line.3.horizontal.decrease")
-            // TODO: copy stock iOS filter indicator (filled circle BG when true)
-                .foregroundStyle(
-                    Color(libraryStore.filter.isAnyFilterActive ? .accent : .label)
-                )
-                .fontWeight(libraryStore.filter.isAnyFilterActive ? .heavy : .medium)
+                .fontWeight(.medium)
+                .foregroundStyle(libraryStore.filter.isAnyFilterActive
+                                 ? Color(.systemBackground)
+                                 : Color(.label))
+                .frame(width: frameSize32, height: frameSize32)
+                .background(libraryStore.filter.isAnyFilterActive
+                            ? Color.accent
+                            : Color.clear, in: .circle)
         }
     }
 
@@ -538,6 +552,9 @@ struct LibraryView: View {
             }
         } label: {
             Label("Sort By", systemImage: "arrow.up.arrow.down")
+                .labelStyle(.iconOnly)
+                // Same frame as the filter/group menus so the three icons space evenly
+                .frame(width: frameSize32, height: frameSize32)
         }
     }
 
@@ -557,10 +574,14 @@ struct LibraryView: View {
             }
         } label: {
             Label("Group By", systemImage: "square.stack.3d.up")
-                .foregroundStyle(
-                    Color(libraryStore.order.isAnyGroupActive ? .accent : .label)
-                )
-                .fontWeight(libraryStore.order.isAnyGroupActive ? .heavy : .regular)
+                .labelStyle(.iconOnly)
+                .foregroundStyle(libraryStore.order.isAnyGroupActive
+                                 ? Color(.systemBackground)
+                                 : Color(.label))
+                .frame(width: frameSize32, height: frameSize32)
+                .background(libraryStore.order.isAnyGroupActive
+                            ? Color.accent
+                            : Color.clear, in: .circle)
         }
     }
 
