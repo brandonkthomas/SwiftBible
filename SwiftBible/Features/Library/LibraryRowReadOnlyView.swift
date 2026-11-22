@@ -339,3 +339,41 @@ extension LibraryRowReadOnlyView where TrailingControl == EmptyView {
         self.init(data: data) { EmptyView() }
     }
 }
+
+#Preview {
+    let environment = PreviewEnvironment()
+
+    LibraryRowReadOnlyViewPreviewHost(libraryStore: environment.libraryStore,
+                                      catalogStore: environment.catalogStore)
+}
+
+/// Preview-only host: loads each sample's passage before building its `LibraryRowViewData`,
+/// mirroring the real load path in LibraryView
+private struct LibraryRowReadOnlyViewPreviewHost: View {
+    let libraryStore: LibraryStore
+    let catalogStore: BibleCatalogStore
+
+    private let annotations = [
+        PreviewFixtures.sampleHighlightAnnotation,
+        PreviewFixtures.sampleNoteAnnotation,
+        PreviewFixtures.sampleTagsAnnotation
+    ]
+
+    var body: some View {
+        VStack(spacing: 16) {
+            ForEach(annotations) { annotation in
+                LibraryRowReadOnlyView(
+                    data: LibraryRowViewData(annotation: annotation,
+                                             bibleCatalogStore: catalogStore,
+                                             libraryStore: libraryStore))
+            }
+        }
+        .padding()
+        .background(Color(.systemGroupedBackground))
+        .task {
+            for annotation in annotations {
+                await libraryStore.loadPassage(for: annotation)
+            }
+        }
+    }
+}

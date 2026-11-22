@@ -283,6 +283,29 @@ struct SearchStoreTests {
         #expect(store.passageLoadFailure(for: genesisResult) == .offline)
     }
 
+    // MARK: Task 7: Bible result labels
+
+    /// Without that translation's books in memory, standard book names are used (no request is
+    /// made for labels), and a verse range uses the same en dash as Library labels
+    @Test func resultLabelFallsBackToStandardBookName() {
+        let repository = SearchingBibleRepository()
+        let store = makeStore(repository)
+        let range = ScriptureSearchResult(translationID: 111, bookCode: "PSA", chapter: 23,
+                                          verseRange: 1...3, snippet: nil)
+
+        #expect(store.referenceLabel(for: range) == "Psalms 23:1\u{2013}3")
+        #expect(repository.passageRequestCount == 0)
+    }
+
+    /// A book code the app doesn't know is shown as-is rather than dropped
+    @Test func resultLabelShowsUnknownBookCode() {
+        let store = makeStore(SearchingBibleRepository())
+        let unknown = ScriptureSearchResult(translationID: 111, bookCode: "XYZ", chapter: 2,
+                                            verseRange: 5...5, snippet: nil)
+
+        #expect(store.referenceLabel(for: unknown) == "XYZ 2:5")
+    }
+
     // MARK: Step 7: saved annotations, filtered as you type
 
     /// Matching annotations show newest first; others are left out
@@ -324,6 +347,27 @@ struct SearchStoreTests {
         store.annotationSearchQuery = "  "
 
         #expect(store.annotationResults.isEmpty)
+    }
+
+    // MARK: Task 8: when Search shows its start screen
+
+    /// Typed text with no annotation matches still shows the sections (so "press Search" can appear)
+    @Test func typedQueryWithoutMatchesIsNotIdle() {
+        let store = makeStore(SearchingBibleRepository())
+
+        store.annotationSearchQuery = "zzz"
+
+        #expect(store.annotationResults.isEmpty)
+        #expect(store.isIdle == false)
+    }
+
+    /// Nothing typed and nothing searched shows the start screen
+    @Test func blankQueryWithoutSearchIsIdle() {
+        let store = makeStore(SearchingBibleRepository())
+
+        store.annotationSearchQuery = "   "
+
+        #expect(store.isIdle)
     }
 
     // MARK: Helpers

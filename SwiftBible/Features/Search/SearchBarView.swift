@@ -137,6 +137,7 @@ struct SearchBarView: View {
                         .foregroundStyle(scope == .all ? Color.primary : Color(.systemBackground))
                         .background(scope == .all ? Color.clear : Color.accent, in: .circle)
                 }
+                .menuOrder(.fixed)
                 .glassEffect(.regular.interactive(), in: .circle)
                 .glassEffectID("trailing", in: glassNamespace)
             }

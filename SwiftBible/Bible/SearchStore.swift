@@ -25,7 +25,8 @@ final class SearchStore {
     }
 
     var isIdle: Bool {
-        bibleState == .idle && annotationResults.isEmpty
+        bibleState == .idle
+        && annotationSearchQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
     /// Computed annotation search results according to current annotationSearchQuery value
@@ -258,6 +259,23 @@ final class SearchStore {
             Self.logger.error("Unable to load passage: \(error.localizedDescription)")
             passageLoadFailures[key] = error.isOfflineError ? .offline : .failed
         }
+    }
+
+    /// Reference label for a given ScriptureSearchResult (i.e. Genesis 1:1-2)
+    func referenceLabel(for result: ScriptureSearchResult) -> String {
+        let book = bibleCatalogStore.book(for: result.translationID, bookCode: result.bookCode)
+
+        var displayName = ""
+        if let book {
+            displayName = book.displayName
+        } else {
+            let defaultBook = BookDefaults.defaultBooks.filter { $0.code == result.bookCode }
+            let defaultBookDisplayName = defaultBook.first?.displayName
+            displayName = defaultBookDisplayName ?? result.bookCode
+        }
+
+        let versesText = RenderedVerseRange(range: result.verseRange).displayText
+        return "\(displayName) \(result.chapter):\(versesText)"
     }
 
     /// Text runs for a result's verses, once its chapter is loaded

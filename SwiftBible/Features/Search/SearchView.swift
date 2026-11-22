@@ -29,6 +29,9 @@ struct SearchView: View {
     /// Which translation are we looking for?
     @State private var searchTranslationID: Translation.ID?
 
+    /// Result sections that are collapsed
+    @State private var collapsedSections: Set<ResultSection> = []
+
     /// Explicit search translation, else reader selection, else default translation, else first available
     private var effectiveTranslationID: Translation.ID? {
         if let searchTranslationID {
@@ -88,47 +91,103 @@ struct SearchView: View {
                     // Bible
                     if scope == .all || scope == .bible {
                         Section {
-                            switch searchStore.bibleState {
-                            case .searching:
-                                ProgressView()
-                            case .results:
-                                ForEach(searchStore.bibleResults) { result in
-                                    Text(result.snippet ?? result.bookCode) // TODO: custom view
+                            if !collapsedSections.contains(.bible) {
+                                Group {
+                                    switch searchStore.bibleState {
+                                    case .idle:
+                                        if !query.isEmpty {
+                                            Text("Press Enter to search.")
+                                                .foregroundStyle(.secondary)
+                                                .font(.footnote)
+                                        } else if searchTranslationID == nil {
+                                            ProgressView()
+                                        }
+                                    case .searching:
+                                        ProgressView()
+                                    case .results:
+                                        ForEach(searchStore.bibleResults) { result in
+                                            SearchResultRowView(result: result,
+                                                                query: query)
+                                            .listRowInsets(EdgeInsets(top: 8,
+                                                                      leading: 16,
+                                                                      bottom: 8,
+                                                                      trailing: 16))
+                                        }
+                                    case .empty:
+                                        Text("No Results")
+                                            .foregroundStyle(.secondary)
+                                            .font(.footnote)
+                                    case .unsupported:
+                                        if let searchTranslationID,
+                                           let abbreviation = bibleCatalogStore.translation(for: searchTranslationID)?.abbreviation {
+                                            Text("Search is unavailable for \(abbreviation).")
+                                                .foregroundStyle(.secondary)
+                                                .font(.footnote)
+                                        } else {
+                                            Text("Search is unavailable for the selected translation.")
+                                                .foregroundStyle(.secondary)
+                                                .font(.footnote)
+                                        }
+                                    case .offline:
+                                        Text("Unable to load results. Please check your internet connection.")
+                                            .foregroundStyle(.secondary)
+                                            .font(.footnote)
+                                    case .failed:
+                                        Text("Unable to load results. Please try again.")
+                                            .foregroundStyle(.secondary)
+                                            .font(.footnote)
+                                    }
                                 }
-                            default:
-                                if effectiveTranslationID == nil {
-                                    ProgressView()
-                                } else {
-                                    EmptyView()
-                                }
+                                .listRowSeparator(.hidden)
                             }
                         } header: {
                             if let effectiveTranslationAbbreviation {
-                                Text("Bible · \(effectiveTranslationAbbreviation)")
+                                sectionHeaderView(title: "Bible · \(effectiveTranslationAbbreviation)",
+                                                  section: .bible)
                             } else {
-                                Text("Bible")
+                                sectionHeaderView(title: "Bible", section: .bible)
                             }
                         }
                     }
                     // Annotations
                     if scope == .all || scope == .annotations {
-                        Section("Annotations") {
-                            ForEach(searchStore.annotationResults) { annotation in
-                                // TODO: strong-highlight query match in text
-                                let data = LibraryRowViewData(annotation: annotation,
-                                                              bibleCatalogStore: bibleCatalogStore,
-                                                              libraryStore: libraryStore)
-                                LibraryRowReadOnlyView(data: data)
-                                .task {
-                                    // Required for annotation to load its associated passage
-                                    // Prereq for rendering this card's verse
-                                    // Will use cache rather than API, if possible
-                                    await libraryStore.loadPassage(for: annotation)
+                        Section {
+                            Group {
+                                if searchStore.annotationResults.isEmpty {
+                                    Text("No Results")
+                                        .foregroundStyle(.secondary)
+                                        .font(.footnote)
+                                } else {
+                                    if !collapsedSections.contains(.annotations) {
+                                        ForEach(searchStore.annotationResults) { annotation in
+                                            // TODO: strong-highlight query match in text
+                                            let data = LibraryRowViewData(annotation: annotation,
+                                                                          bibleCatalogStore: bibleCatalogStore,
+                                                                          libraryStore: libraryStore)
+                                            LibraryRowReadOnlyView(data: data)
+                                                .listRowInsets(EdgeInsets(top: 8,
+                                                                          leading: 16,
+                                                                          bottom: 8,
+                                                                          trailing: 16))
+                                                .task {
+                                                    // Required for annotation to load its associated passage
+                                                    // Prereq for rendering this card's verse
+                                                    // Will use cache rather than API, if possible
+                                                    await libraryStore.loadPassage(for: annotation)
+                                                }
+                                        }
+                                    }
                                 }
                             }
+                            .listRowSeparator(.hidden) // not working???
+                        } header: {
+                            sectionHeaderView(title: "Annotations", section: .annotations)
                         }
                     }
                 }
+                .listStyle(.plain)
+                // contentMargins, not padding: padding shrinks the List frame so rows stop above the tab bar
+                .contentMargins(.bottom, 64, for: .scrollContent)
             }
         }
         .safeAreaInset(edge: .bottom) {
@@ -172,6 +231,33 @@ struct SearchView: View {
         .navigationBarHidden(true)
     }
 
+    /// Tappable section header; toggles the section's collapsed state
+    private func sectionHeaderView(title: LocalizedStringKey, section: ResultSection) -> some View {
+        let isCollapsed = collapsedSections.contains(section)
+
+        return Button {
+            withAnimation(.snappy(duration: 0.35)) {
+                if isCollapsed {
+                    collapsedSections.remove(section)
+                } else {
+                    collapsedSections.insert(section)
+                }
+            }
+        } label: {
+            HStack {
+                Text(title)
+                    .font(.system(.title3, weight: .semibold))
+                Spacer()
+                Image(systemName: "chevron.down")
+                    .font(.system(.subheadline, weight: .semibold))
+                    .foregroundStyle(.secondary)
+                    .rotationEffect(.degrees(isCollapsed ? -90 : 0))
+            }
+            .contentShape(.rect)
+        }
+        .buttonStyle(.plain)
+    }
+
     // MARK: Functions (Private)
 
     /// User picked a translation in the Filter menu
@@ -193,11 +279,29 @@ struct SearchView: View {
             await searchStore.submitBibleSearch(query, translationID: translationID)
         }
     }
+
+    // MARK: Types (Private)
+
+    /// Collapsible result sections
+    private enum ResultSection {
+        case bible
+        case annotations
+    }
 }
 
 #Preview("SearchView") {
-    SearchView()
-        .previewEnvironment()
+    let libraryRepository = InMemoryLibraryRepository()
+    for annotation in [PreviewFixtures.sampleHighlightAnnotation,
+                       PreviewFixtures.sampleNoteAnnotation,
+                       PreviewFixtures.sampleTagsAnnotation] {
+        try? libraryRepository.save(annotation)
+    }
+
+    let environment = PreviewEnvironment(libraryRepository: libraryRepository)
+    environment.libraryStore.load()
+
+    return SearchView()
+        .previewEnvironment(environment)
 }
 
 #Preview("ContentView") {
