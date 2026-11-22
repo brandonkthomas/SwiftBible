@@ -35,6 +35,9 @@ struct SearchView: View {
     /// Result sections that are collapsed
     @State private var collapsedSections: Set<ResultSection> = []
 
+    /// Results scroll offset; reset to top when the results change
+    @State private var scrollPosition = ScrollPosition(edge: .top)
+
     /// Did changing a specific annotation's highlight color fail?
     @State private var didHighlightColorChangeFail: Bool = false
 
@@ -234,6 +237,21 @@ struct SearchView: View {
                     }
                     .padding(.horizontal, 16)
                     .padding(.vertical, 8)
+                }
+                // Scroll to top when results change (same fix as LibraryView: scrolled far down, a
+                //   shorter LazyVStack left the ScrollView past its end, permanently blank)
+                //   query: annotation results filter live while typing
+                //   scope: hides a whole section
+                //   bibleState: a new search replaces the Bible results
+                .scrollPosition($scrollPosition)
+                .onChange(of: query) {
+                    scrollPosition.scrollTo(edge: .top)
+                }
+                .onChange(of: scope) {
+                    scrollPosition.scrollTo(edge: .top)
+                }
+                .onChange(of: searchStore.bibleState) {
+                    scrollPosition.scrollTo(edge: .top)
                 }
                 // contentMargins, not padding: padding shrinks the ScrollView frame so rows stop above the tab bar
                 .contentMargins(.bottom, 64, for: .scrollContent)
