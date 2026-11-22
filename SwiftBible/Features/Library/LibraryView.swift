@@ -682,24 +682,6 @@ struct LibraryView: View {
     }
 }
 
-// MARK: Swipe Actions Availability
-
-private extension View {
-
-    /// Enables row `.swipeActions` outside a List on iOS 27+; no-op on earlier versions
-    ///
-    /// The `if` depends only on the OS version, which never changes while the app runs,
-    /// so view identity stays stable (unlike a conditional modifier driven by state)
-    @ViewBuilder
-    func swipeActionsContainerIfAvailable() -> some View {
-        if #available(iOS 27, *) {
-            swipeActionsContainer()
-        } else {
-            self
-        }
-    }
-}
-
 // MARK: Xcode Canvas Previews
 
 #Preview {

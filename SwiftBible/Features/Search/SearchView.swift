@@ -101,147 +101,144 @@ struct SearchView: View {
                     description: Text("Find phrases, verses, or annotations.")
                 )
             } else {
-                List {
-                    // Bible
-                    if scope == .all || scope == .bible {
-                        Section {
-                            if !collapsedSections.contains(.bible) {
-                                // Corrections
-                                if let bibleSearchedInsteadFor = searchStore.bibleSearchedInsteadFor {
-                                    VStack(alignment: .leading, spacing: 5) {
-                                        // this is the original typo
-                                        Text("Showing corrected results")
-                                            .font(.footnote)
-                                        Button {
-                                            Task {
-                                                // search the original words exactly; quotes don't
-                                                // stop YouVersion's correction, exactText does
-                                                await triggerSearch(for: bibleSearchedInsteadFor,
-                                                                    applySuggestionCorrection: true,
-                                                                    exactText: true)
-                                            }
-                                        } label: {
-                                            Text("Search instead for “\(bibleSearchedInsteadFor)”?")
-                                                .foregroundStyle(.accent) // imply interactivity
+                // ScrollView + LazyVStack rather than List, same as LibraryView: List resizes rows
+                //   around their center, so expanding/collapsing an annotation card jumped
+                ScrollView {
+                    LazyVStack(alignment: .leading, spacing: 16) {
+                        // Bible
+                        if scope == .all || scope == .bible {
+                            Section {
+                                if !collapsedSections.contains(.bible) {
+                                    // Corrections
+                                    if let bibleSearchedInsteadFor = searchStore.bibleSearchedInsteadFor {
+                                        VStack(alignment: .leading, spacing: 5) {
+                                            // this is the original typo
+                                            Text("Showing corrected results")
                                                 .font(.footnote)
+                                            Button {
+                                                Task {
+                                                    // search the original words exactly; quotes don't
+                                                    // stop YouVersion's correction, exactText does
+                                                    await triggerSearch(for: bibleSearchedInsteadFor,
+                                                                        applySuggestionCorrection: true,
+                                                                        exactText: true)
+                                                }
+                                            } label: {
+                                                Text("Search instead for “\(bibleSearchedInsteadFor)”?")
+                                                    .foregroundStyle(.accent) // imply interactivity
+                                                    .font(.footnote)
+                                            }
                                         }
                                     }
-                                }
 
-                                // Suggestions
-                                if !searchStore.bibleSuggestions.isEmpty {
-                                    ForEach(searchStore.bibleSuggestions, id: \.self) { suggestion in
-                                        Button {
-                                            Task {
-                                                await triggerSearch(for: suggestion,
-                                                                    applySuggestionCorrection: true)
+                                    // Suggestions
+                                    if !searchStore.bibleSuggestions.isEmpty {
+                                        ForEach(searchStore.bibleSuggestions, id: \.self) { suggestion in
+                                            Button {
+                                                Task {
+                                                    await triggerSearch(for: suggestion,
+                                                                        applySuggestionCorrection: true)
+                                                }
+                                            } label: {
+                                                Text("Did you mean \"\(suggestion)\"?")
+                                                    .foregroundStyle(.accent) // imply interactivity
+                                                    .font(.footnote)
                                             }
-                                        } label: {
-                                            Text("Did you mean \"\(suggestion)\"?")
-                                                .foregroundStyle(.accent) // imply interactivity
-                                                .font(.footnote)
                                         }
                                     }
-                                }
 
-                                Group {
-                                    switch searchStore.bibleState {
-                                    case .idle:
-                                        if !query.isEmpty {
-                                            Text("Press Enter to search.")
+                                    Group {
+                                        switch searchStore.bibleState {
+                                        case .idle:
+                                            if !query.isEmpty {
+                                                Text("Press Enter to search.")
+                                                    .foregroundStyle(.secondary)
+                                                    .font(.footnote)
+                                            } else if searchTranslationID == nil {
+                                                ProgressView()
+                                            }
+                                        case .searching:
+                                            ProgressView()
+                                        case .results:
+                                            ForEach(searchStore.bibleResults) { result in
+                                                SearchResultRowView(result: result,
+                                                                    query: query,
+                                                                    onPassageViewRequested: {
+                                                    await showInReader(translationID: result.translationID,
+                                                                       bookCode: result.bookCode,
+                                                                       chapter: result.chapter)
+                                                })
+                                            }
+                                        case .empty:
+                                            Text("No Results")
                                                 .foregroundStyle(.secondary)
                                                 .font(.footnote)
-                                        } else if searchTranslationID == nil {
-                                            ProgressView()
+                                        case .unsupported:
+                                            if let searchTranslationID,
+                                               let abbreviation = bibleCatalogStore.translation(for: searchTranslationID)?.abbreviation {
+                                                Text("Search is unavailable for \(abbreviation).")
+                                                    .foregroundStyle(.secondary)
+                                                    .font(.footnote)
+                                            } else {
+                                                Text("Search is unavailable for the selected translation.")
+                                                    .foregroundStyle(.secondary)
+                                                    .font(.footnote)
+                                            }
+                                        case .offline:
+                                            Text("Unable to load results. Please check your internet connection.")
+                                                .foregroundStyle(.secondary)
+                                                .font(.footnote)
+                                        case .failed:
+                                            Text("Unable to load results. Please try again.")
+                                                .foregroundStyle(.secondary)
+                                                .font(.footnote)
                                         }
-                                    case .searching:
-                                        ProgressView()
-                                    case .results:
-                                        ForEach(searchStore.bibleResults) { result in
-                                            SearchResultRowView(result: result,
-                                                                query: query,
-                                                                onPassageViewRequested: {
-                                                await showInReader(translationID: result.translationID,
-                                                                   bookCode: result.bookCode,
-                                                                   chapter: result.chapter)
-                                            })
-                                            .listRowInsets(EdgeInsets(top: 8,
-                                                                      leading: 16,
-                                                                      bottom: 8,
-                                                                      trailing: 16))
-                                        }
-                                    case .empty:
-                                        Text("No Results")
-                                            .foregroundStyle(.secondary)
-                                            .font(.footnote)
-                                    case .unsupported:
-                                        if let searchTranslationID,
-                                           let abbreviation = bibleCatalogStore.translation(for: searchTranslationID)?.abbreviation {
-                                            Text("Search is unavailable for \(abbreviation).")
+                                    }
+                                }
+                            } header: {
+                                if let effectiveTranslationAbbreviation {
+                                    sectionHeaderView(title: "Bible · \(effectiveTranslationAbbreviation)",
+                                                      section: .bible)
+                                } else {
+                                    sectionHeaderView(title: "Bible", section: .bible)
+                                }
+                            }
+                        }
+                        // Annotations
+                        if scope == .all || scope == .annotations {
+                            Section {
+                                Group {
+                                    if !collapsedSections.contains(.annotations) {
+                                        if searchStore.annotationResults.isEmpty {
+                                            Text("No Results")
                                                 .foregroundStyle(.secondary)
                                                 .font(.footnote)
                                         } else {
-                                            Text("Search is unavailable for the selected translation.")
-                                                .foregroundStyle(.secondary)
-                                                .font(.footnote)
-                                        }
-                                    case .offline:
-                                        Text("Unable to load results. Please check your internet connection.")
-                                            .foregroundStyle(.secondary)
-                                            .font(.footnote)
-                                    case .failed:
-                                        Text("Unable to load results. Please try again.")
-                                            .foregroundStyle(.secondary)
-                                            .font(.footnote)
-                                    }
-                                }
-                                .listRowSeparator(.hidden)
-                            }
-                        } header: {
-                            if let effectiveTranslationAbbreviation {
-                                sectionHeaderView(title: "Bible · \(effectiveTranslationAbbreviation)",
-                                                  section: .bible)
-                            } else {
-                                sectionHeaderView(title: "Bible", section: .bible)
-                            }
-                        }
-                    }
-                    // Annotations
-                    if scope == .all || scope == .annotations {
-                        Section {
-                            Group {
-                                if !collapsedSections.contains(.annotations) {
-                                    if searchStore.annotationResults.isEmpty {
-                                        Text("No Results")
-                                            .foregroundStyle(.secondary)
-                                            .font(.footnote)
-                                    } else {
-                                        ForEach(searchStore.annotationResults) { annotation in
-                                            // TODO: strong-highlight query match in text
-                                            annotationRowView(annotation: annotation)
-                                                .listRowInsets(EdgeInsets(top: 8,
-                                                                          leading: 16,
-                                                                          bottom: 8,
-                                                                          trailing: 16))
-                                                .task {
-                                                    // Required for annotation to load its associated passage
-                                                    // Prereq for rendering this card's verse
-                                                    // Will use cache rather than API, if possible
-                                                    await libraryStore.loadPassage(for: annotation)
-                                                }
+                                            ForEach(searchStore.annotationResults) { annotation in
+                                                // TODO: strong-highlight query match in text
+                                                annotationRowView(annotation: annotation)
+                                                    .task {
+                                                        // Required for annotation to load its associated passage
+                                                        // Prereq for rendering this card's verse
+                                                        // Will use cache rather than API, if possible
+                                                        await libraryStore.loadPassage(for: annotation)
+                                                    }
+                                            }
                                         }
                                     }
                                 }
+                            } header: {
+                                sectionHeaderView(title: "Annotations", section: .annotations)
                             }
-                            .listRowSeparator(.hidden) // not working???
-                        } header: {
-                            sectionHeaderView(title: "Annotations", section: .annotations)
                         }
                     }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
                 }
-                .listStyle(.plain)
-                // contentMargins, not padding: padding shrinks the List frame so rows stop above the tab bar
+                // contentMargins, not padding: padding shrinks the ScrollView frame so rows stop above the tab bar
                 .contentMargins(.bottom, 64, for: .scrollContent)
+                // Enables the rows' .swipeActions outside a List (iOS 27+)
+                .swipeActionsContainerIfAvailable()
             }
         }
         .safeAreaInset(edge: .bottom) {
