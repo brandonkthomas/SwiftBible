@@ -295,7 +295,6 @@ struct LibraryView: View {
             return librarySelection.isSelected(annotation.id)
         }
 
-
         // Build actual single annotation view
         return LibraryRowView(
             data: libraryRowViewData,
