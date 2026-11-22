@@ -50,6 +50,7 @@ struct SwiftBibleApp: App {
                 .environment(appEnvironment.readerStore)
                 .environment(appEnvironment.catalogStore)
                 .environment(appEnvironment.libraryStore)
+                .environment(appEnvironment.searchStore)
                 .environment(appEnvironment.preferencesStore)
                 .environment(appEnvironment.networkMonitor)
                 // inject custom env/key value for LibraryRepository protocol

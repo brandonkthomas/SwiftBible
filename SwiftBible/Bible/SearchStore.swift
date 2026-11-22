@@ -24,6 +24,11 @@ final class SearchStore {
         bibleNextCursor != nil
     }
 
+    var isIdle: Bool {
+        bibleState == .idle && bibleSearchQuery.isEmpty
+        && annotationResults.isEmpty && annotationSearchQuery.isEmpty
+    }
+
     /// Computed annotation search results according to current annotationSearchQuery value
     ///
     /// Ordered by date; 
@@ -121,17 +126,17 @@ final class SearchStore {
         let thisSearchNumber = self.latestSearchNumber + 1
         self.latestSearchNumber = thisSearchNumber
 
-        // sanity check
-        guard repository.supportsSearch(translationID: translationID) else {
-            self.bibleState = .unsupported
-            resetBibleResults()
-            return
-        }
-
         // clean query & short-circuit if empty
         bibleSearchQuery = query.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !bibleSearchQuery.isEmpty else {
             self.bibleState = .idle
+            resetBibleResults()
+            return
+        }
+
+        // supportsSearch check
+        guard repository.supportsSearch(translationID: translationID) else {
+            self.bibleState = .unsupported
             resetBibleResults()
             return
         }

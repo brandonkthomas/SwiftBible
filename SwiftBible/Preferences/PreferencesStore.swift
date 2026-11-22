@@ -113,6 +113,13 @@ final class PreferencesStore {
         }
     }
 
+    ///
+    var defaultSearchScope: SearchScope = .all {
+        didSet {
+            userDefaults.set(defaultSearchScope.rawValue, forKey: Self.defaultSearchScopeKey)
+        }
+    }
+
     // MARK: Properties (NOT Persisted)
 
     /// Resolved ReaderTheme for the currently selected preset + all its user customizations
@@ -166,6 +173,9 @@ final class PreferencesStore {
 
     /// Stable UserDefaults key for storage of Reader AutoLock preference
     static let disableReaderAutoLockKey = "net.brandonthomas.SwiftBible.disableReaderAutoLock"
+
+    /// Stable UserDefaults key for storage of default SearchScope preference
+    private static let defaultSearchScopeKey = "net.brandonthomas.SwiftBible.defaultSearchScope"
 
     private static let logger = Logger(subsystem: "SwiftBible", category: "PreferencesStore")
 
@@ -221,6 +231,12 @@ final class PreferencesStore {
         // Reader Auto-Lock
         // OK to use .bool() here because default false is what we want
         self.disableReaderAutoLock = userDefaults.bool(forKey: Self.disableReaderAutoLockKey)
+
+        // Default Search Scope
+        if let defaultSearchScopeString = userDefaults.string(forKey: Self.defaultSearchScopeKey),
+           let defaultSearchScope = SearchScope(rawValue: defaultSearchScopeString) {
+            self.defaultSearchScope = defaultSearchScope
+        }
 
         // lastly...
         // run this last AFTER above userDefaults checks so we don't override them

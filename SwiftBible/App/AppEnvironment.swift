@@ -27,6 +27,7 @@ final class AppEnvironment {
     let passageStore: BiblePassageStore
     let catalogStore: BibleCatalogStore
     let libraryStore: LibraryStore
+    let searchStore: SearchStore
     let preferencesStore: PreferencesStore
     let networkMonitor: NetworkMonitor
 
@@ -203,6 +204,12 @@ final class AppEnvironment {
         self.libraryStore = LibraryStore(libraryRepository: libraryRepository,
                                          catalogStore: catalogStore,
                                          passageStore: passageStore)
+
+        // SearchStore
+        self.searchStore = SearchStore(repository: bibleRepository,
+                                       libraryStore: libraryStore,
+                                       bibleCatalogStore: catalogStore,
+                                       biblePassageStore: passageStore)
 
         // Done with deps...
         // TipKit

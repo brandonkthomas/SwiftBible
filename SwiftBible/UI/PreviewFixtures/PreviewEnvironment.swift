@@ -17,6 +17,7 @@ struct PreviewEnvironment {
     let passageStore: BiblePassageStore
     let catalogStore: BibleCatalogStore
     let libraryStore: LibraryStore
+    let searchStore: SearchStore
     let preferencesStore: PreferencesStore
     let libraryRepository: LibraryRepository
 
@@ -42,6 +43,10 @@ struct PreviewEnvironment {
         self.libraryStore = LibraryStore(libraryRepository: libraryRepository,
                                          catalogStore: catalogStore,
                                          passageStore: passageStore)
+        self.searchStore = SearchStore(repository: repository,
+                                       libraryStore: libraryStore,
+                                       bibleCatalogStore: catalogStore,
+                                       biblePassageStore: passageStore)
     }
 }
 
@@ -52,6 +57,7 @@ extension View {
             .environment(environment.readerStore)
             .environment(environment.catalogStore)
             .environment(environment.libraryStore)
+            .environment(environment.searchStore)
             .environment(environment.preferencesStore)
             .environment(environment.networkMonitor)
             .environment(\.libraryRepository, environment.libraryRepository)

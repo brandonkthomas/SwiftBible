@@ -12,38 +12,29 @@ struct SettingsSearchView: View {
 
     // MARK: Properties (Static, Private)
 
-    /// hardcoded for now
-    private static let defaults: [String] = ["Bible & Annotations",
-                                             "Bible Only",
-                                             "Annotations Only"]
-
-    // MARK: Properties (State, Private)
-
-    /// Selected
-    @State private var `default` = "Bible & Annotations"
+    /// Read appEnvironment.preferencesStore environment value from current view environment
+    @Environment(PreferencesStore.self) private var preferencesStore: PreferencesStore
 
     // MARK: Views
 
     /// Main body
     var body: some View {
+        @Bindable var prefStore = preferencesStore
         List {
             Section {
                 // Default Filter
-                Picker(selection: $default,
-                       label: Label("Default", systemImage: "text.page.badge.magnifyingglass")
+                Picker(selection: $prefStore.defaultSearchScope,
+                       label: Label("Default Source", systemImage: "archivebox")
                     .imageScale(.medium)
-                    .foregroundStyle(.primary)) {
-                        ForEach(Self.defaults, id: \.self) { option in
-                            Text(option)
-                                .tag(option)
-                        }
+                    .foregroundStyle(.primary)
+                ) {
+                    ForEach(SearchScope.allCases) { scope in
+                        Text(scope.title)
+                            .tag(scope)
                     }
-                .disabled(true)
+                }
             } header: {
                 Text("Filters")
-            } footer: {
-                Text("Coming soon.")
-                    .font(.footnote)
             }
         }
         .navigationTitle("Search")
