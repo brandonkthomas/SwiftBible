@@ -26,6 +26,29 @@ struct SearchView: View {
     /// Only allow applying scope from PreferencesStore once
     @State private var hasAppliedScope: Bool = false
 
+    /// Which translation are we looking for?
+    @State private var searchTranslationID: Translation.ID?
+
+    /// Explicit search translation, else reader selection, else default translation, else first available
+    private var effectiveTranslationID: Translation.ID? {
+        if let searchTranslationID {
+            return searchTranslationID
+        }
+        if let selectedID = readerStore.selectedTranslation?.id {
+            return selectedID
+        }
+        let translations = readerStore.translations
+        let defaultTranslation = translations.first(where: {
+            $0.abbreviation == ReaderStore.defaultTranslationAbbreviation
+        })
+        return defaultTranslation?.id ?? translations.first?.id
+    }
+
+    /// Abbreviation of the effective translation, for the Bible section header
+    private var effectiveTranslationAbbreviation: String? {
+        readerStore.translations.first(where: { $0.id == effectiveTranslationID })?.abbreviation
+    }
+
     // MARK: Properties (Proj Env, Private)
 
     /// Read appEnvironment.searchStore environment value from current view environment
@@ -64,9 +87,26 @@ struct SearchView: View {
                 List {
                     // Bible
                     if scope == .all || scope == .bible {
-                        Section("Bible") {
-                            ForEach(searchStore.bibleResults) { result in
-                                Text(result.snippet ?? result.bookCode) // TODO: custom view
+                        Section {
+                            switch searchStore.bibleState {
+                            case .searching:
+                                ProgressView()
+                            case .results:
+                                ForEach(searchStore.bibleResults) { result in
+                                    Text(result.snippet ?? result.bookCode) // TODO: custom view
+                                }
+                            default:
+                                if effectiveTranslationID == nil {
+                                    ProgressView()
+                                } else {
+                                    EmptyView()
+                                }
+                            }
+                        } header: {
+                            if let effectiveTranslationAbbreviation {
+                                Text("Bible · \(effectiveTranslationAbbreviation)")
+                            } else {
+                                Text("Bible")
                             }
                         }
                     }
@@ -96,15 +136,25 @@ struct SearchView: View {
                 SearchBarView(
                     text: $query,
                     scope: $scope,
+                    translations: bibleCatalogStore.translationsByTitle,
+                    selectedTranslationID: Binding(
+                        get: { effectiveTranslationID },
+                        set: { selectSearchTranslation($0) }
+                    ),
                     isFocused: $isSearchBarFocused,
                     onTextChange: { text in
                         searchStore.annotationSearchQuery = text
                     }, onTextSubmit: { text in
-                        guard let selectedTranslation = readerStore.selectedTranslation else {
+                        guard let effectiveTranslationID else {
                             return
                         }
+                        // pin the translation at the first search so later Reader changes
+                        // never change (or re-request) Search's results
+                        if searchTranslationID == nil {
+                            searchTranslationID = effectiveTranslationID
+                        }
                         await searchStore.submitBibleSearch(text,
-                                                            translationID: selectedTranslation.id)
+                                                            translationID: effectiveTranslationID)
                     }
                 )
             }
@@ -120,6 +170,28 @@ struct SearchView: View {
         }
         .navigationTitle("Search")
         .navigationBarHidden(true)
+    }
+
+    // MARK: Functions (Private)
+
+    /// User picked a translation in the Filter menu
+    ///
+    /// Re-runs current search only when its results are in a different translation...
+    /// dont waste API calls. Nothing else (Reader changes, picking the same
+    /// translation again) can start a new request
+    private func selectSearchTranslation(_ translationID: Translation.ID?) {
+        searchTranslationID = translationID
+
+        guard let translationID,
+              searchStore.bibleState != .idle,
+              searchStore.bibleSearchTranslationID != translationID,
+              !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            return
+        }
+
+        Task {
+            await searchStore.submitBibleSearch(query, translationID: translationID)
+        }
     }
 }
 

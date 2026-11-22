@@ -25,8 +25,7 @@ final class SearchStore {
     }
 
     var isIdle: Bool {
-        bibleState == .idle && bibleSearchQuery.isEmpty
-        && annotationResults.isEmpty && annotationSearchQuery.isEmpty
+        bibleState == .idle && annotationResults.isEmpty
     }
 
     /// Computed annotation search results according to current annotationSearchQuery value

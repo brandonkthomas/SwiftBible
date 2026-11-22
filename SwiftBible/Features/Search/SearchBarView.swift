@@ -18,6 +18,12 @@ struct SearchBarView: View {
     /// What is our search scope? (Bible, Annotations, Both)
     @Binding var scope: SearchScope
 
+    /// Translations available to search, sorted by title
+    var translations: [Translation]
+
+    /// Which translation are we searching?
+    @Binding var selectedTranslationID: Translation.ID?
+
     /// Is the text field focused?
     var isFocused: FocusState<Bool>.Binding
 
@@ -93,14 +99,37 @@ struct SearchBarView: View {
                 .glassEffectID("trailing", in: glassNamespace)
             } else {
                 Menu {
-                    Picker("Scope", selection: $scope) {
-                        ForEach(SearchScope.allCases) { scope in
-                            Label(scope.title, systemImage: scope.systemImage)
-                                .tag(scope)
+                    Section("Filter By") {
+                        // Scope
+                        Picker(selection: $scope) {
+                            ForEach(SearchScope.allCases) { scope in
+                                Label(scope.title, systemImage: scope.systemImage)
+                                    .tag(scope)
+                            }
+                        } label: {
+                            Label("Source", systemImage: "archivebox")
+                            Text(scope.title)
+                                .foregroundStyle(Color.secondary)
                         }
+                        .pickerStyle(.menu)
+
+                        // Translations
+                        Picker(selection: $selectedTranslationID) {
+                            ForEach(translations) { translation in
+                                Text(verbatim: translation.title)
+                                    .tag(Optional(translation.id))
+                            }
+                        } label: {
+                            Label("Translation", systemImage: "text.book.closed")
+                            if let abbreviation = translations.first(where: { $0.id == selectedTranslationID })?.abbreviation {
+                                Text(verbatim: abbreviation)
+                                    .foregroundStyle(Color.secondary)
+                            }
+                        }
+                        .pickerStyle(.menu)
                     }
                 } label: {
-                    Label("Scope", systemImage: "line.3.horizontal.decrease")
+                    Label("Filters", systemImage: "line.3.horizontal.decrease")
                         .labelStyle(.iconOnly)
                         .imageScale(.large)
                         .frame(width: 48, height: 48)
@@ -118,10 +147,13 @@ struct SearchBarView: View {
 #Preview {
     @Previewable @State var text = ""
     @Previewable @State var scope = SearchScope.all
+    @Previewable @State var translationID: Translation.ID?
     @Previewable @FocusState var isFocused: Bool
 
     SearchBarView(text: $text,
                   scope: $scope,
+                  translations: FakeBibleRepository.defaultTranslations,
+                  selectedTranslationID: $translationID,
                   isFocused: $isFocused,
                   onTextChange: { text in },
                   onTextSubmit: { text in })

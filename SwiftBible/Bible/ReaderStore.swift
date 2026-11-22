@@ -179,7 +179,7 @@ final class ReaderStore {
     private(set) var passageVersesWithTextAnnotations: Set<Int> = []
 
     /// Attempt to load this translation first if nothing else was saved/requested
-    private static let defaultTranslationAbbreviation: String = "NIV"
+    static let defaultTranslationAbbreviation: String = "NIV"
 
     /// OS Logging
     private static let logger = Logger(subsystem: "SwiftBible", category: "ReaderStore")

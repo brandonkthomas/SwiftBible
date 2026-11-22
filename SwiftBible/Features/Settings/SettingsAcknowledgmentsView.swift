@@ -45,8 +45,9 @@ struct SettingsAcknowledgmentsView: View {
         List {
             Section("Bible Translations") {
                 if catalogStore.translationsByTitle.isEmpty {
-                    Text("Translations haven’t loaded yet.")
-                        .foregroundStyle(.secondary)
+                    ProgressView()
+//                    Text("Loading...")
+//                        .foregroundStyle(.secondary)
                 }
 
                 ForEach(catalogStore.translationsByTitle) { translation in
@@ -127,9 +128,20 @@ struct SettingsAcknowledgmentsView: View {
     }
 }
 
-#Preview {
+#Preview("Loading") {
     NavigationStack {
         SettingsAcknowledgmentsView()
     }
     .previewEnvironment()
+}
+#Preview("Loaded") {
+    @Previewable @State var environment = PreviewEnvironment()
+
+    NavigationStack {
+        SettingsAcknowledgmentsView()
+    }
+    .previewEnvironment(environment)
+    .task {
+        try? await environment.catalogStore.loadTranslations()
+    }
 }
