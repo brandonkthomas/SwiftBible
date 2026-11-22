@@ -1,17 +1,17 @@
 ## Privacy Policy
 
-**Effective November 20, 2026**
+**Effective November 22, 2026**
 
 SwiftBible is a free Bible reader for iPhone and iPad. I do not operate a server for the app, and I do not collect, sell, or share your personal information. The app has no accounts, advertising, analytics, or tracking.
 
-### Bible text requests
+### Bible text and search requests
 
-To show Bible text, the app connects directly to the provider of the translation you are reading:
+To show Bible text and search results, the app connects directly to the provider of the translation you are reading or searching:
 
 - [YouVersion](https://www.bible.com/privacy)
 - [Crossway](https://www.crossway.org/privacy/)
 
-These requests include what is needed to return the text, such as the translation, passage, and language, along with an app key that identifies SwiftBible rather than you. Like any internet service, a provider can also receive your IP address and basic connection information. Your highlights, notes, and tags are not included. Each provider's privacy policy applies to the information it receives.
+These requests include what is needed to return the text, such as the translation, passage, and language, along with an app key that identifies SwiftBible rather than you. When you search the Bible, the words you search for are sent to that provider. I (Brandon Thomas) do not control, nor have access to, these providers' deployments. Searches of your own highlights, notes, and tags stay on your device. Like any internet service, a provider can also receive your IP address and basic connection information. Your highlights, notes, and tags are not included. Each provider's privacy policy applies to the information it receives.
 
 ### Information stored on your device
 
