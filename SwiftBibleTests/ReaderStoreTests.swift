@@ -552,6 +552,63 @@ struct ReaderStoreTests {
                                                                         chapter: 1))
     }
 
+    // MARK: Task 12: open a Search or Library result at its verses
+
+    /// Opening a result selects its verses once the chapter has loaded
+    @Test func openingPassageSelectsVerses() async {
+        let store = readerStore()
+        await store.loadTranslationsAndBooks(languageTag: "en")
+
+        await store.selectTranslationBookAndChapter(translationID: 1234,
+                                                    bookID: "GEN",
+                                                    chapterID: "GEN.1",
+                                                    selectingVerses: 2...2)
+
+        #expect(store.passageLoadState == .loaded)
+        #expect(store.selectedVerses == 2...2)
+    }
+
+    /// Only verses the loaded chapter has are selected (the fixture's GEN.1 has verses 1-2)
+    @Test func openingPassageKeepsSelectionInsideChapter() async {
+        let store = readerStore()
+        await store.loadTranslationsAndBooks(languageTag: "en")
+
+        await store.selectTranslationBookAndChapter(translationID: 1234,
+                                                    bookID: "GEN",
+                                                    chapterID: "GEN.1",
+                                                    selectingVerses: 2...9)
+        #expect(store.selectedVerses == 2...2)
+
+        await store.selectTranslationBookAndChapter(translationID: 1234,
+                                                    bookID: "GEN",
+                                                    chapterID: "GEN.1",
+                                                    selectingVerses: 5...6)
+        #expect(store.selectedVerses == nil)
+    }
+
+    /// Nothing is selected when the requested chapter isn't the one shown, or doesn't load
+    @Test func openingMissingOrFailedChapterSelectsNothing() async {
+        let store = readerStore()
+        await store.loadTranslationsAndBooks(languageTag: "en")
+
+        // LEV isn't in the fixture's books, so the Reader stays on GEN 1
+        await store.selectTranslationBookAndChapter(translationID: 1234,
+                                                    bookID: "LEV",
+                                                    chapterID: "LEV.1",
+                                                    selectingVerses: 1...1)
+        #expect(store.selectedChapter?.id == "GEN.1")
+        #expect(store.passageLoadState == .loaded)
+        #expect(store.selectedVerses == nil)
+
+        // GEN 2 exists but has no passage fixture, so its load fails
+        await store.selectTranslationBookAndChapter(translationID: 1234,
+                                                    bookID: "GEN",
+                                                    chapterID: "GEN.2",
+                                                    selectingVerses: 1...1)
+        #expect(store.selectedChapter?.id == "GEN.2")
+        #expect(store.selectedVerses == nil)
+    }
+
     // MARK: Functions (Private)
 
     private func readerStore(

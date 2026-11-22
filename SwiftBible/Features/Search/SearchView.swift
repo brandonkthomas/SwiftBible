@@ -170,7 +170,8 @@ struct SearchView: View {
                                                                     onPassageViewRequested: {
                                                     await showInReader(translationID: result.translationID,
                                                                        bookCode: result.bookCode,
-                                                                       chapter: result.chapter)
+                                                                       chapter: result.chapter,
+                                                                       verseRange: result.verseRange)
                                                 })
                                             }
                                             if searchStore.canLoadMoreBibleResults {
@@ -349,10 +350,11 @@ struct SearchView: View {
                 }
                 didDeleteFail = !didDelete
             },
-            onPassageViewRequested: {
+            onPassageViewRequested: { range in
                 await showInReader(translationID: annotation.translationID,
                                    bookCode: annotation.bookCode,
-                                   chapter: annotation.chapter)
+                                   chapter: annotation.chapter,
+                                   verseRange: range)
             },
             onAnnotationEditorRequested: {
                 annotationEditor = libraryStore.annotationEditor(for: annotation)
@@ -414,11 +416,13 @@ struct SearchView: View {
     /// Points the reader at a passage's chapter, then switches to the Read tab
     private func showInReader(translationID: Translation.ID,
                               bookCode: String,
-                              chapter: Int) async {
+                              chapter: Int,
+                              verseRange: ClosedRange<Int>) async {
         await readerStore.selectTranslationBookAndChapter(
             translationID: translationID,
             bookID: bookCode,
-            chapterID: "\(bookCode).\(chapter)"
+            chapterID: "\(bookCode).\(chapter)",
+            selectingVerses: verseRange
         )
         onShowInReader()
     }

@@ -287,7 +287,8 @@ final class ReaderStore {
     /// exist in the requested translation, the translation's default selection is kept.
     func selectTranslationBookAndChapter(translationID: Translation.ID,
                                          bookID: Book.ID,
-                                         chapterID: Chapter.ID) async {
+                                         chapterID: Chapter.ID,
+                                         selectingVerses verses: ClosedRange<Int>? = nil) async {
         Self.logger.debug("ENTRY ReaderStore.selectTranslationBookAndChapter(translationID: \(translationID, privacy: .public), bookID: \(bookID, privacy: .public), chapterID: \(chapterID, privacy: .public))")
 
         guard let requestedTranslation = bibleCatalogStore.translation(for: translationID) else {
@@ -313,6 +314,20 @@ final class ReaderStore {
         // Regardless of selection result, clear + load current passage
         clearPassageStates()
         await loadSelectedPassage()
+
+        // finally, set selected verses IF provided and all these criteria are met
+        if passageLoadState == .loaded,
+           selectedBook?.id == bookID,
+           selectedChapter?.id == chapterID,
+           let verses,
+           let selectedRenderedPassage,
+           selectedRenderedPassage.verseCount > 0 {
+            // clamp to the chapter's verses; select nothing if the request falls entirely outside it
+            let chapterVerses = 1...selectedRenderedPassage.verseCount
+            if chapterVerses.overlaps(verses) {
+                self.selectedVerses = verses.clamped(to: chapterVerses)
+            }
+        }
     }
 
     /// Selects a book ID + chapter ID if they exist

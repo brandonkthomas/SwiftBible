@@ -24,7 +24,7 @@ struct LibraryRowView: View {
     let onDeleteRequested: () -> Void
 
     /// What should we do when we need to open this row's passage in the Read tab?
-    let onPassageViewRequested: () async -> Void
+    let onPassageViewRequested: (ClosedRange<Int>) async -> Void
 
     /// What should we do when we need to open the Annotation Editor sheet?
     let onAnnotationEditorRequested: () -> Void
@@ -88,7 +88,7 @@ struct LibraryRowView: View {
             if isRowSelected == nil { // NOT in edit mode
                 Button {
                     Task {
-                        await onPassageViewRequested()
+                        await onPassageViewRequested(data.annotation.verseRange)
                     }
                 } label: {
                     Label("Read", systemImage: "book.fill")
@@ -193,7 +193,7 @@ struct LibraryRowView: View {
             // Read Passage
             Button {
                 Task {
-                    await onPassageViewRequested()
+                    await onPassageViewRequested(data.annotation.verseRange)
                 }
             } label: {
                 Label("Read Passage", systemImage: "book")
@@ -261,7 +261,7 @@ private struct LibraryRowViewPreviewHost: View {
                     isRowSelected: nil,
                     onHighlightColorChangeRequested: { color in },
                     onDeleteRequested: {},
-                    onPassageViewRequested: {},
+                    onPassageViewRequested: { range in },
                     onAnnotationEditorRequested: {},
                     onRowSelected: {})
             }

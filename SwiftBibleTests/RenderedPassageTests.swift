@@ -178,6 +178,44 @@ struct RenderedPassageTests {
         #expect(passage.verseCount == 3)
     }
 
+    // MARK: Task 12: open a result at its verses
+
+    /// The last verse is the highest verse number, even when a translation leaves a verse out
+    /// (NIV has no Matthew 17:21, so counting verses would stop one short)
+    @Test func lastVerseNumberIgnoresOmittedVerses() {
+        let passage = makePassage(runs: [
+            .text("Verse twenty", verseRange: RenderedVerseRange(startVerse: 20)),
+            .text("Verse twenty-two", verseRange: RenderedVerseRange(startVerse: 22)),
+            .text("Verses twenty-three to twenty-four", verseRange: RenderedVerseRange(startVerse: 23, endVerse: 24))
+        ])
+
+        #expect(passage.verseCount == 4)
+        #expect(passage.lastVerseNumber == 24)
+        #expect(makePassage(runs: [.text("No verses", verseRange: nil)]).lastVerseNumber == nil)
+    }
+
+    /// Finds the first paragraph holding a verse, including inside a combined "4-6" range
+    @Test func paragraphIndexFindsFirstParagraphWithVerse() {
+        let passage = RenderedPassage(
+            paragraphs: [
+                RenderedParagraph(runs: [
+                    .text("Verse one", verseRange: RenderedVerseRange(startVerse: 1)),
+                    .text("Verse three starts", verseRange: RenderedVerseRange(startVerse: 3))
+                ]),
+                RenderedParagraph(runs: [
+                    .text("Verse three ends", verseRange: RenderedVerseRange(startVerse: 3)),
+                    .text("Verses four to six", verseRange: RenderedVerseRange(startVerse: 4, endVerse: 6))
+                ])
+            ],
+            footnotes: []
+        )
+
+        #expect(passage.paragraphIndex(containing: 1) == 0)
+        #expect(passage.paragraphIndex(containing: 3) == 0)
+        #expect(passage.paragraphIndex(containing: 5) == 1)
+        #expect(passage.paragraphIndex(containing: 9) == nil)
+    }
+
     private func makePassage(runs: [RenderedPassageRun]) -> RenderedPassage {
         RenderedPassage(
             paragraphs: [RenderedParagraph(runs: runs)],

@@ -312,11 +312,12 @@ struct LibraryView: View {
                 }
                 didDeleteFail = !didDelete
             },
-            onPassageViewRequested: {
+            onPassageViewRequested: { range in
                 await readerStore.selectTranslationBookAndChapter(
                     translationID: annotation.translationID,
                     bookID: annotation.bookCode,
-                    chapterID: "\(annotation.bookCode).\(annotation.chapter)"
+                    chapterID: "\(annotation.bookCode).\(annotation.chapter)",
+                    selectingVerses: range
                 )
                 onShowInReader()
             },
