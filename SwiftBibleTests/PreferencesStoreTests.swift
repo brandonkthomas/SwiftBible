@@ -952,6 +952,33 @@ struct PreferencesStoreTests {
         #expect(secondStore.readerThemeCustomChanges[ReaderTheme.folio.rawValue]?.characterSpacingPercent == 5)
     }
 
+    // MARK: Default Search Scope
+
+    /// The chosen default survives a relaunch (a second store on the same defaults)
+    @Test func defaultSearchScopeIsSavedAndReloaded() throws {
+        let suiteName = UUID().uuidString
+        defer { UserDefaults().removePersistentDomain(forName: suiteName) }
+        let userDefaults = try #require(UserDefaults(suiteName: suiteName))
+
+        let firstStore = PreferencesStore(userDefaults: userDefaults)
+        firstStore.defaultSearchScope = .annotations
+
+        let secondStore = PreferencesStore(userDefaults: userDefaults)
+        #expect(secondStore.defaultSearchScope == .annotations)
+    }
+
+    /// A stored value this version doesn't know (e.g. from a newer build) falls back to All
+    @Test func unknownStoredSearchScopeFallsBackToAll() throws {
+        let suiteName = UUID().uuidString
+        defer { UserDefaults().removePersistentDomain(forName: suiteName) }
+        let userDefaults = try #require(UserDefaults(suiteName: suiteName))
+        userDefaults.set("everything", forKey: "net.brandonthomas.SwiftBible.defaultSearchScope")
+
+        let store = PreferencesStore(userDefaults: userDefaults)
+
+        #expect(store.defaultSearchScope == .all)
+    }
+
     // MARK: Private Helpers
 
     /// Posts the notification `NSUbiquitousKeyValueStore` sends when another device's values arrive

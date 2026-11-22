@@ -34,6 +34,19 @@ struct BibleCatalogStoreTests {
     }
 
     /// Ensure failing to load translations does not populate BibleCatalogStore
+    /// The passage picker and Search list translations from one shared, title-sorted list
+    @Test func translationsByTitleSortsByTitle() async throws {
+        let zebra = Translation(id: 2, abbreviation: "ZZZ", title: "Zebra Version", languageTag: "en",
+                                license: nil, promotionalText: nil, availableBookCodes: [])
+        let apple = Translation(id: 1, abbreviation: "AAA", title: "Apple Version", languageTag: "en",
+                                license: nil, promotionalText: nil, availableBookCodes: [])
+        let catalogStore = BibleCatalogStore(repository: FakeBibleRepository(translations: [zebra, apple]))
+
+        try await catalogStore.loadTranslations(languageTag: "en")
+
+        #expect(catalogStore.translationsByTitle.map(\.abbreviation) == ["AAA", "ZZZ"])
+    }
+
     @Test func failedTranslationLoadLeavesCatalogEmpty() async {
         // Confirm the catalog starts empty
         let repository = FakeBibleRepository(throwWhenLoadingTranslations: true)

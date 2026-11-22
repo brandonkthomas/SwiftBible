@@ -52,6 +52,18 @@ struct SearchStoreTests {
         #expect(repository.searchQueries.isEmpty)
     }
 
+    /// Clearing the field on a translation that can't be searched goes back to idle, not "unsupported"
+    @Test func blankQueryIsIdleEvenWhenTranslationUnsupported() async {
+        let repository = SearchingBibleRepository()
+        repository.supportsSearchResult = false
+        let store = makeStore(repository)
+
+        await store.submitBibleSearch("  ", translationID: 111)
+
+        #expect(store.bibleState == .idle)
+        #expect(repository.searchQueries.isEmpty)
+    }
+
     // MARK: Step 5b: new searches, errors, blank queries, page details
 
     /// A new search starts from the first page, even when the previous search had more pages
