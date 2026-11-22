@@ -349,6 +349,25 @@ struct SearchStoreTests {
         #expect(store.annotationResults.isEmpty)
     }
 
+    // MARK: Task 9b: "Search instead for" searches the original words exactly
+
+    /// An exact search asks for exact text, and so does its next page; a later normal search doesn't
+    @Test func exactSearchStaysExactForNextPageOnly() async {
+        let repository = SearchingBibleRepository()
+        repository.queuedPages = [
+            ScriptureSearchPage(results: [result], nextCursor: .pageToken("page-2")),
+            ScriptureSearchPage(results: [secondResult], nextCursor: nil),
+            ScriptureSearchPage(results: [result], nextCursor: nil)
+        ]
+        let store = makeStore(repository)
+
+        await store.submitBibleSearch("sheperd", translationID: 111, exactText: true)
+        await store.loadNextBiblePage()
+        await store.submitBibleSearch("shepherd", translationID: 111)
+
+        #expect(repository.searchExactTextFlags == [true, true, false])
+    }
+
     // MARK: Task 8: when Search shows its start screen
 
     /// Typed text with no annotation matches still shows the sections (so "press Search" can appear)
@@ -432,6 +451,7 @@ private final class SearchingBibleRepository: BibleRepository {
 
     private(set) var searchQueries: [String] = []
     private(set) var searchCursors: [ScriptureSearchCursor?] = []
+    private(set) var searchExactTextFlags: [Bool] = []
 
     func translations(languageTag: String?) async throws -> [Translation] {
         try await repository.translations(languageTag: languageTag)
@@ -452,9 +472,11 @@ private final class SearchingBibleRepository: BibleRepository {
 
     func searchVerses(_ query: String,
                       translationID: Translation.ID,
-                      cursor: ScriptureSearchCursor?) async throws -> ScriptureSearchPage {
+                      cursor: ScriptureSearchCursor?,
+                      exactText: Bool) async throws -> ScriptureSearchPage {
         searchQueries.append(query)
         searchCursors.append(cursor)
+        searchExactTextFlags.append(exactText)
 
         if let error {
             throw error

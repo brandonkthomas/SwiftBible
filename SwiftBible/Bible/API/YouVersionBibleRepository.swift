@@ -182,13 +182,15 @@ final class YouVersionBibleRepository: BibleRepository {
     /// API verse search implementation
     func searchVerses(_ query: String,
                       translationID: Translation.ID,
-                      cursor: ScriptureSearchCursor?) async throws -> ScriptureSearchPage {
+                      cursor: ScriptureSearchCursor?,
+                      exactText: Bool) async throws -> ScriptureSearchPage {
         Self.logger.debug("ENTRY YouVersionBibleRepository.searchVerses(query: \(query, privacy: .public)) -- /v1/search-verses")
 
         // obtain URL
         let url = try searchVersesUrl(for: query,
                                       translationID: translationID,
-                                      cursor: cursor)
+                                      cursor: cursor,
+                                      exactText: exactText)
 
         // make request
         let data = try await HttpRequest.fetchData(url: url,
@@ -210,7 +212,8 @@ final class YouVersionBibleRepository: BibleRepository {
     // Internal for unit tests
     internal func searchVersesUrl(for query: String,
                                   translationID: Translation.ID,
-                                  cursor: ScriptureSearchCursor?) throws -> URL {
+                                  cursor: ScriptureSearchCursor?,
+                                  exactText: Bool = false) throws -> URL {
         // build base URL
         let searchPath = baseURL.appending(path: "v1/search-verses")
 
@@ -235,6 +238,13 @@ final class YouVersionBibleRepository: BibleRepository {
         if case .pageToken(let pageToken) = cursor { // dont need pageNumber (Crossway exclusive)
             components.queryItems?.append(URLQueryItem(name: "page_token",
                                                        value: pageToken))
+        }
+
+        // "text" intent searches the words as typed; without it YouVersion auto-corrects typos
+        // (probe 2026-11-21: quotes did NOT stop the correction, user_intent=text did)
+        if exactText {
+            components.queryItems?.append(URLQueryItem(name: "user_intent",
+                                                       value: "text"))
         }
 
         guard let builtUrl = components.url else {

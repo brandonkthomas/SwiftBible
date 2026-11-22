@@ -26,6 +26,19 @@ struct YouVersionSearchRequestTests {
         #expect(try queryValue("bible_id", in: url) == "111")
         #expect(try queryValue("page_size", in: url) == String(YouVersionBibleRepository.searchPageSize))
         #expect(try queryValue("page_token", in: url) == nil)
+        #expect(try queryValue("user_intent", in: url) == nil)
+    }
+
+    /// Exact text adds user_intent=text, which turns off YouVersion's spelling correction
+    /// (probe 2026-11-21: quotes didn't; user_intent=text did)
+    @Test func exactTextAddsTextIntent() throws {
+        let url = try makeRepository().searchVersesUrl(for: "sheperd",
+                                                       translationID: 1849,
+                                                       cursor: nil,
+                                                       exactText: true)
+
+        #expect(try queryValue("user_intent", in: url) == "text")
+        #expect(try queryValue("query", in: url) == "sheperd")
     }
 
     /// Later pages repeat the query and translation and add the token from the previous page

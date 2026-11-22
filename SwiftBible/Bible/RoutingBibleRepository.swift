@@ -77,10 +77,12 @@ final class RoutingBibleRepository: BibleRepository {
     /// Route to the correct provider
     func searchVerses(_ query: String,
                       translationID: Translation.ID,
-                      cursor: ScriptureSearchCursor?) async throws -> ScriptureSearchPage {
+                      cursor: ScriptureSearchCursor?,
+                      exactText: Bool) async throws -> ScriptureSearchPage {
         try await repository(for: translationID).searchVerses(query,
                                                               translationID: translationID,
-                                                              cursor: cursor)
+                                                              cursor: cursor,
+                                                              exactText: exactText)
     }
 
     // MARK: Functions (Private Helpers)

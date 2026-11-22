@@ -29,10 +29,14 @@ protocol BibleRepository {
     /// Does the requested translation support search results?
     func supportsSearch(translationID: Translation.ID) -> Bool
 
-    /// Search verses (optionally from a specific translation) for a given text query
+    /// Search one translation's verses for a text query
+    ///
+    /// exactText: search the text as typed, without the provider's spelling correction
+    /// (YouVersion corrects typos unless asked not to; ESV never corrects)
     func searchVerses(_ query: String,
                       translationID: Translation.ID,
-                      cursor: ScriptureSearchCursor?) async throws -> ScriptureSearchPage
+                      cursor: ScriptureSearchCursor?,
+                      exactText: Bool) async throws -> ScriptureSearchPage
 }
 
 extension BibleRepository {
@@ -55,8 +59,16 @@ extension BibleRepository {
     /// Default: throw .unsupportedTranslation
     func searchVerses(_ query: String,
                       translationID: Translation.ID,
-                      cursor: ScriptureSearchCursor?) async throws -> ScriptureSearchPage {
+                      cursor: ScriptureSearchCursor?,
+                      exactText: Bool) async throws -> ScriptureSearchPage {
         throw ScriptureSearchError.unsupportedTranslation
+    }
+
+    /// A normal search (spelling correction allowed)
+    func searchVerses(_ query: String,
+                      translationID: Translation.ID,
+                      cursor: ScriptureSearchCursor?) async throws -> ScriptureSearchPage {
+        try await searchVerses(query, translationID: translationID, cursor: cursor, exactText: false)
     }
 }
 

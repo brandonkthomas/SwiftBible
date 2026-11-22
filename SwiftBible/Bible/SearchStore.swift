@@ -82,6 +82,9 @@ final class SearchStore {
     /// What was our last search?
     private var bibleSearchQuery: String = ""
 
+    /// Was the last search exact text (no spelling correction)? Kept for its later pages
+    private var bibleSearchIsExactText: Bool = false
+
     /// What is the latest search number? (used for async cancellations)
     private var latestSearchNumber: Int = 0
 
@@ -120,8 +123,11 @@ final class SearchStore {
     // MARK: Functions
 
     /// Search a Bible translation for a given text query
+    ///
+    /// exactText: search the words as typed, without spelling correction ("Search instead for")
     func submitBibleSearch(_ query: String,
-                           translationID: Translation.ID) async {
+                           translationID: Translation.ID,
+                           exactText: Bool = false) async {
         // mark this function call for later async cancellation if needed
         let thisSearchNumber = self.latestSearchNumber + 1
         self.latestSearchNumber = thisSearchNumber
@@ -144,13 +150,15 @@ final class SearchStore {
         // begin search
         self.bibleState = .searching
         self.bibleSearchTranslationID = translationID
+        self.bibleSearchIsExactText = exactText
         self.isLoadingNextPage = false
 
         do {
             // kick off search
             let page = try await repository.searchVerses(bibleSearchQuery,
                                                          translationID: translationID,
-                                                         cursor: nil)
+                                                         cursor: nil,
+                                                         exactText: exactText)
 
             // discard if we're no longer the latest search
             guard thisSearchNumber == self.latestSearchNumber else {
@@ -217,7 +225,8 @@ final class SearchStore {
         do {
             let page = try await repository.searchVerses(bibleSearchQuery,
                                                          translationID: bibleSearchTranslationID,
-                                                         cursor: cursor)
+                                                         cursor: cursor,
+                                                         exactText: bibleSearchIsExactText)
 
             // discard if a new search started while loading
             guard thisSearchNumber == self.latestSearchNumber else {
@@ -298,6 +307,7 @@ final class SearchStore {
         self.bibleIntent = .unknown
 
         self.bibleSearchQuery = ""
+        self.bibleSearchIsExactText = false
 
         self.loadedPassages = [:]
         self.passageLoadFailures = [:]

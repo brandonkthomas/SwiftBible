@@ -92,6 +92,44 @@ struct SearchView: View {
                     if scope == .all || scope == .bible {
                         Section {
                             if !collapsedSections.contains(.bible) {
+                                // Corrections
+                                if let bibleSearchedInsteadFor = searchStore.bibleSearchedInsteadFor {
+                                    VStack(alignment: .leading, spacing: 5) {
+                                        // this is the original typo
+                                        Text("Showing corrected results")
+                                            .font(.footnote)
+                                        Button {
+                                            Task {
+                                                // search the original words exactly; quotes don't
+                                                // stop YouVersion's correction, exactText does
+                                                await triggerSearch(for: bibleSearchedInsteadFor,
+                                                                    applySuggestionCorrection: true,
+                                                                    exactText: true)
+                                            }
+                                        } label: {
+                                            Text("Search instead for “\(bibleSearchedInsteadFor)”?")
+                                                .foregroundStyle(.accent) // imply interactivity
+                                                .font(.footnote)
+                                        }
+                                    }
+                                }
+
+                                // Suggestions
+                                if !searchStore.bibleSuggestions.isEmpty {
+                                    ForEach(searchStore.bibleSuggestions, id: \.self) { suggestion in
+                                        Button {
+                                            Task {
+                                                await triggerSearch(for: suggestion,
+                                                                    applySuggestionCorrection: true)
+                                            }
+                                        } label: {
+                                            Text("Did you mean \"\(suggestion)\"?")
+                                                .foregroundStyle(.accent) // imply interactivity
+                                                .font(.footnote)
+                                        }
+                                    }
+                                }
+
                                 Group {
                                     switch searchStore.bibleState {
                                     case .idle:
@@ -204,16 +242,9 @@ struct SearchView: View {
                     onTextChange: { text in
                         searchStore.annotationSearchQuery = text
                     }, onTextSubmit: { text in
-                        guard let effectiveTranslationID else {
-                            return
+                        Task {
+                            await triggerSearch(for: text)
                         }
-                        // pin the translation at the first search so later Reader changes
-                        // never change (or re-request) Search's results
-                        if searchTranslationID == nil {
-                            searchTranslationID = effectiveTranslationID
-                        }
-                        await searchStore.submitBibleSearch(text,
-                                                            translationID: effectiveTranslationID)
                     }
                 )
             }
@@ -278,6 +309,28 @@ struct SearchView: View {
         Task {
             await searchStore.submitBibleSearch(query, translationID: translationID)
         }
+    }
+
+    /// Search for a new query
+    ///
+    /// exactText: search the words as typed, without the provider's spelling correction
+    private func triggerSearch(for query: String,
+                               applySuggestionCorrection: Bool = false,
+                               exactText: Bool = false) async {
+        guard let effectiveTranslationID else {
+            return
+        }
+        // pin the translation at the first search so later Reader changes
+        // never change (or re-request) Search's results
+        if searchTranslationID == nil {
+            searchTranslationID = effectiveTranslationID
+        }
+        if applySuggestionCorrection {
+            self.query = query
+        }
+        await searchStore.submitBibleSearch(query,
+                                            translationID: effectiveTranslationID,
+                                            exactText: exactText)
     }
 
     // MARK: Types (Private)

@@ -187,6 +187,16 @@ struct RoutingBibleRepositoryTests {
         #expect(routed.searchRequests.isEmpty)
     }
 
+    /// An exact-text search stays exact on its way to the provider
+    @Test func exactTextReachesProvider() async throws {
+        let (router, routed, _) = makeRouter()
+
+        _ = try await router.searchVerses("sheperd", translationID: routedTranslationID,
+                                          cursor: nil, exactText: true)
+
+        #expect(routed.searchRequests.map(\.exactText) == [true])
+    }
+
     /// Whether a translation can be searched is the owning provider's answer, not the router's
     @Test func searchSupportComesFromOwningProvider() {
         let (router, routed, fallback) = makeRouter()
@@ -241,6 +251,7 @@ private final class RecordingBibleRepository: BibleRepository {
         let query: String
         let translationID: Translation.ID
         let cursor: ScriptureSearchCursor?
+        var exactText: Bool = false
     }
 
     let translations: [Translation]
@@ -294,8 +305,10 @@ private final class RecordingBibleRepository: BibleRepository {
 
     func searchVerses(_ query: String,
                       translationID: Translation.ID,
-                      cursor: ScriptureSearchCursor?) async throws -> ScriptureSearchPage {
-        searchRequests.append(SearchRequest(query: query, translationID: translationID, cursor: cursor))
+                      cursor: ScriptureSearchCursor?,
+                      exactText: Bool) async throws -> ScriptureSearchPage {
+        searchRequests.append(SearchRequest(query: query, translationID: translationID,
+                                            cursor: cursor, exactText: exactText))
         return ScriptureSearchPage(results: [], nextCursor: nil)
     }
 }

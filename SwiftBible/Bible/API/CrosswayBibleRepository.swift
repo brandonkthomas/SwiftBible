@@ -172,9 +172,12 @@ final class CrosswayBibleRepository: BibleRepository {
     }
 
     /// API verse search implementation
+    ///
+    /// exactText is ignored: the ESV API never corrects spelling
     func searchVerses(_ query: String,
                       translationID: Translation.ID,
-                      cursor: ScriptureSearchCursor?) async throws -> ScriptureSearchPage {
+                      cursor: ScriptureSearchCursor?,
+                      exactText: Bool) async throws -> ScriptureSearchPage {
         Self.logger.debug("ENTRY CrosswayBibleRepository.searchVerses(query: \(query, privacy: .public)) -- /v3/passage/search")
 
         // sanity check
